@@ -1,7 +1,6 @@
 import { IonButton, IonContent, IonIcon, IonImg, IonInput, IonItem, IonLabel, IonList, IonModal, IonPage, IonRouterLink, IonText, IonToast, useIonViewDidEnter, useIonViewWillEnter } from '@ionic/react';
 import { checkmarkCircleOutline, eye, eyeOff, lockClosed, mail, person, warningOutline } from 'ionicons/icons';
 import { useState } from 'react';
-import { useHistory } from 'react-router-dom';
 import { db, auth } from '../firebase-config';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
@@ -25,7 +24,7 @@ const Registration: React.FC = () => {
 
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
-
+    const [isSuccess, setIsSuccess] = useState(false); //for toast message color
     // const [ isSuccessModalOpen, setIsSuccessModalOpen ] = useState(false);
 
     useIonViewWillEnter(() => {
@@ -118,6 +117,7 @@ const Registration: React.FC = () => {
         const user = userCredential.user;
         console.log('Registration Success!:', user);
         setToastMessage('Registration Success!');
+        setIsSuccess(true);
         setShowToast(true);
 
         await addDoc(collection(db, 'customers'), {
@@ -145,7 +145,6 @@ const Registration: React.FC = () => {
         } else {
             setPasswordError('Something went wrong. Please try again later');
         }
-
         setIsValidationError(true);
     }
 };
@@ -279,7 +278,7 @@ return (
                             onDidDismiss={() => setShowToast(false)}
                             message={toastMessage}
                             duration={2000}  // Toast disappears after 2 seconds
-                            color="success"  // Green color for success messages
+                            color={isSuccess ? "success" : "danger"}  // Green for success, Red for error
                         />
                     </div>
                 </IonList>

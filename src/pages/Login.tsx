@@ -1,10 +1,11 @@
 import { IonContent, IonHeader, IonPage, IonImg, IonText, IonList, IonItem, IonInput, IonButton, IonIcon, IonRouterLink, useIonViewWillEnter, IonToast, IonLabel } from '@ionic/react';
 import { eye, eyeOff, eyeOutline, lockClosed, mail, warningOutline } from 'ionicons/icons';
 import { useState } from 'react';
+import { useHistory } from 'react-router';
 import { db, auth } from '../firebase-config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import './Login.css';
-import { Icon } from 'ionicons/dist/types/components/icon/icon';
 
 const Login: React.FC = () => {
 
@@ -20,6 +21,9 @@ const Login: React.FC = () => {
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false); //for toast message color
+
+  const history = useHistory(); //for navigation
 
   useIonViewWillEnter(() => {
     setEmail(''); //clear email input field
@@ -73,19 +77,36 @@ const Login: React.FC = () => {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
 
       //clear login error message after successful login
       setEmailError('');
       setPasswordError('');
-    //   setLoginError('');
       setIsValidationError(false);
+      
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const q = query(collection(db, "customers"), where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        history.push('/home');
+        // setToastMessage("Customer found!");
+        // setIsSuccess(true);
+        // setShowToast(true);
+      } else {
+        setToastMessage("Access Denied: Only customers can log in to the mobile app");
+        setIsSuccess(false);
+        setShowToast(true);
+        return;
+      }
       
     } catch (error: any) {
         console.error('Login error:', error.code, error.message);
       
         if (error.code === 'auth/user-not-found') {
           setToastMessage('User not found');
+          setIsSuccess(false);
           setShowToast(true);
         } else if (error.code === 'auth/wrong-password') {
           setPasswordError('Incorrect password');
@@ -94,12 +115,13 @@ const Login: React.FC = () => {
         } else if (error.code === 'auth/too-many-requests') {
         //   setLoginError('Too many failed login attempts. Please try again later.');
           setToastMessage('Too many failed login attempts. Please try again later.');
+          setIsSuccess(false);
           setShowToast(true);
         } else {
           setToastMessage('Invalid email or password');
+          setIsSuccess(false);
           setShowToast(true);
         }
-      
         setIsValidationError(true);
     }
 };
@@ -215,7 +237,7 @@ const Login: React.FC = () => {
                             onDidDismiss={() => setShowToast(false)}
                             message={toastMessage}
                             duration={2000}  // Toast disappears after 2 seconds
-                            color="danger"  // red color for success messages
+                            color={isSuccess ? "success" : "danger"}  // Green for success, Red for error
                         />
                     </div>
                 </IonList>
