@@ -1,10 +1,11 @@
-import { IonButton, IonContent, IonIcon, IonImg, IonInput, IonItem, IonList, IonModal, IonPage, IonRouterLink, IonText, IonToast, useIonViewDidEnter, useIonViewWillEnter } from '@ionic/react';
-import { checkmarkCircleOutline, eye, eyeOff, warningOutline } from 'ionicons/icons';
+import { IonButton, IonContent, IonIcon, IonImg, IonInput, IonItem, IonLabel, IonList, IonModal, IonPage, IonRouterLink, IonText, IonToast, useIonViewDidEnter, useIonViewWillEnter } from '@ionic/react';
+import { checkmarkCircleOutline, eye, eyeOff, lockClosed, mail, person, warningOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { db, auth } from '../firebase-config';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
+// import { useKeyboardState } from '@ionic/react-hooks/keyboard';
 import './Registration.css';
 
 const Registration: React.FC = () => {
@@ -41,10 +42,12 @@ const Registration: React.FC = () => {
         setIsValidationError(false);
       });
 
+    //   display and hide password
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
       };
 
+    // input fields validation
     const validateFirstName = (firstName: string) => {
         if (!firstName) {
             return('First Name is required');
@@ -75,8 +78,14 @@ const Registration: React.FC = () => {
       const validatePassword = (password: string) => {
         if (!password) {
             return('Password is required');
-        } else if (password.length < 6) {
-            return('Password must be at least 6 characters');
+        } else if (password.length < 8) {
+            return('Password must be at least 8 characters');
+        } else if (!/[A-Z]/.test(password)) {
+            return('Password must contain at least one uppercase letter');
+        } else if (!/[0-9]/.test(password)) {
+            return('Password must contain at least one number');
+        } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+            return('Password must contain at least one special character');
         } else {
             return('');
         }
@@ -103,6 +112,7 @@ const Registration: React.FC = () => {
             return;
         }
 
+    // save to database
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
@@ -110,7 +120,7 @@ const Registration: React.FC = () => {
         setToastMessage('Registration Success!');
         setShowToast(true);
 
-        await addDoc(collection(db, 'users'), {
+        await addDoc(collection(db, 'customers'), {
             firstName,
             lastName,
             email: user.email,
@@ -131,7 +141,7 @@ const Registration: React.FC = () => {
         if (error.code === 'auth/email-already-in-use') {
             setEmailError('Email is already in use');
         } else if (error.code === 'auth/weak-password') {
-            setPasswordError('Password should be at least 6 characters');
+            setPasswordError('Password should be at least 8 characters');
         } else {
             setPasswordError('Something went wrong. Please try again later');
         }
@@ -143,7 +153,7 @@ const Registration: React.FC = () => {
 return (
     <IonPage>
       <IonContent className='registration-page' fullscreen>
-        <div className='login-wrapper'>
+        <div className='registration-wrapper'>
             <div className='register-img-wrapper'>
                 <IonImg 
                     className='register-img'
@@ -159,22 +169,24 @@ return (
                         Sign Up
                     </IonText>
                     <IonText className='login-subtitle'>
-                        Fill in the details to create account
+                        Fill in the details to create an account
                     </IonText>
                 </div>
                 
                 <IonList>
                     <div className='register-input-wrapper'>
                         <IonItem className={`login-item ${isValidationError && firstNameError ? 'input-error' : ''}`} lines='none'>
+                            <IonLabel className="input-label" position="stacked">First Name</IonLabel>
                             <IonInput 
                                 className='login-input'
                                 type='text'
-                                placeholder='First Name'
+                                placeholder='Enter your first name'
                                 value={firstName}
                                 fill='outline'
                                 color={isValidationError && firstNameError ? 'danger' : 'primary'}
-                                onIonChange={(e) => setFirstName(e.detail.value ?? '')}
-                            />
+                                onIonChange={(e) => setFirstName(e.detail.value ?? '')}>
+                                <IonIcon icon={person} slot='start'></IonIcon>
+                            </IonInput>
                         </IonItem>
                         {firstNameError && (
                             <IonText color="danger" className="error-text">
@@ -183,14 +195,16 @@ return (
                         )}
 
                         <IonItem className={`login-item ${isValidationError && lastNameError ? 'input-error' : ''}`} lines='none'>
+                        <IonLabel className="input-label" position="stacked">Last Name</IonLabel>
                             <IonInput 
                                 className='login-input'
                                 type='text'
-                                placeholder='Last Name'
+                                placeholder='Enter your last name'
                                 value={lastName}
                                 fill='outline'
-                                onIonChange={(e) => setLastName(e.detail.value ?? '')}
-                            />
+                                onIonChange={(e) => setLastName(e.detail.value ?? '')}>
+                                <IonIcon icon={person} slot='start'></IonIcon>
+                            </IonInput>
                         </IonItem>
                         {lastNameError && (
                             <IonText color="danger" className="error-text">
@@ -199,14 +213,16 @@ return (
                         )}
 
                         <IonItem className={`login-item ${isValidationError && emailError ? 'input-error' : ''}`} lines='none'>
+                            <IonLabel className="input-label" position="stacked">Email Address</IonLabel>
                             <IonInput 
                                 className='login-input'
                                 type='email'
-                                placeholder='Email Address'
+                                placeholder='Enter your email address'
                                 value={email}
                                 fill='outline'
-                                onIonChange={(e) => setEmail(e.detail.value ?? '')}
-                            />
+                                onIonChange={(e) => setEmail(e.detail.value ?? '')}>
+                                <IonIcon icon={mail} slot='start'></IonIcon>
+                            </IonInput>
                         </IonItem>
 
                         {emailError && (
@@ -216,10 +232,11 @@ return (
                         )}
 
                         <IonItem className={`login-item ${isValidationError && passwordError ? 'input-error' : ''}`} lines='none'>
+                            <IonLabel className="input-label" position="stacked">Password</IonLabel>
                             <IonInput 
                                 className='login-input'
                                 type={showPassword ? 'text' : 'password'}
-                                placeholder='Password'
+                                placeholder='Enter your password'
                                 value={password}
                                 fill='outline'
                                 onIonChange={(e) => setPassword(e.detail.value ?? '')}
@@ -229,8 +246,9 @@ return (
                                     slot='end' 
                                     onClick={togglePasswordVisibility}
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                    style={{cursor : 'pointer', fontSize: '1.2rem'}}>
+                                    style={{cursor : 'pointer', fontSize: '0.9rem'}}>
                                 </IonIcon>
+                                <IonIcon className="lock-icon" icon={lockClosed} slot='start'></IonIcon>
                             </IonInput>
                         </IonItem>
 
@@ -247,7 +265,7 @@ return (
                         onClick={handleRegistration}>
                             REGISTER
                     </IonButton>
-                    <div className='register-text-wrapper'>
+                    <div className='login-text-wrapper'>
                         <IonText className='no-account-label'>Already have an account?</IonText>
                         <IonRouterLink routerLink='/login'>
                             <IonButton 

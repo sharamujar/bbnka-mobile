@@ -1,10 +1,30 @@
+.registration-wrapper {
+    display: flex;
+    flex-direction: column;
+    /* justify-content: center;
+    align-items: center; */
+    /* min-height: 100vh; */
+    height: 100vh;
+    /* max-height: 115vh; */
+    width: 100%;
+}
+
+/* .register-img {
+    width: 100%;
+} */
+
 .register-container {
     width: 100%;
+    height: 100vh;
     background-color: #fdfdfd;
-    padding: 1.5rem 0.5rem 0 0.5rem;
-    border-radius: 30px 30px 0 0;
+    padding: 2rem 0.5rem 0 0.5rem;
+    border-radius: 15px 15px 0 0;
     margin-top: -10px;
-    position: relative;
+    /* position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch; */
     /* min-height: 200px; */
 }
 
@@ -12,33 +32,44 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
-    margin-bottom: 20px;
+    /* margin-bottom: 20px; */
     padding: 0 1rem 0 1rem;
 }
 
 .register-input-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    /* gap: 15px; */
 }
 
 .register-button {
     --background: #BF5906;
     font-weight: bold;
     font-size: 14px;
-    margin-top: 3vh;
-    padding: 0 1rem 0 1rem;
+    padding: 1rem 1rem 0 1rem;
+}
+
+.login-text-wrapper {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 2rem;
 }
 
 @media (min-width: 768px) {  /* Tablets & Web */ 
+    .registration-wrapper {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+    }
+    
     .register-container {
         width: 50%;
-        height: auto;
+        padding: 0 1.5rem 0 1.5rem;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        text-align: left;
-        padding: 0 2rem 0 2rem;
     }
 
     .register-img-wrapper {
@@ -47,6 +78,10 @@
         /* border-radius: 50px; */
         overflow: hidden;
         /* padding: 20px; */
+    }
+
+    .register-title-wrapper {
+        padding: 2rem 0 0 1rem;
     }
 
     .register-img {
@@ -58,17 +93,17 @@
     .register-input-wrapper {
         display: flex;
         flex-direction: column;
-        gap: 15px;
+        /* gap: 15px; */
     }
 }
 
 /* mobile view */
-@media (max-width: 767px) { 
+/* @media (max-width: 767px) { 
     .register-img {
         width: 100%;
         padding-top: 50px;
     }
-} 
+}  */
 
 /* .success-modal {
     display: flex;

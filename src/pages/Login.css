@@ -1,16 +1,14 @@
 ion-content {
-    --background: #E8D56F;
+    /* --background: #BF5906; */
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    height: 100%;
 }
 
 .login-wrapper {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     width: 100%;
     height: 100vh;
 }
@@ -23,11 +21,17 @@ ion-content {
 
 .login-container {
     width: 100%;
+    height: 100%;
     background-color: #fdfdfd;
-    padding: 2.5rem 0.5rem 1.6rem 0.5rem;
-    border-radius: 30px 30px 0 0;
+    /* padding: 3rem 0.5rem 0 0.5rem; */
+    padding: 2rem 0.5rem 0 0.5rem;
+    border-radius: 15px 15px 0 0;
     margin-top: -10px;
-    position: relative;
+    /* position: relative; */
+    /* display: flex;
+    flex-direction: column;
+    justify-content: center; */
+    /* align-items: stretch; */
     /* min-height: 200px; */
 }
 
@@ -35,7 +39,7 @@ ion-content {
     display: flex;
     flex-direction: column;
     gap: 3px;
-    margin-bottom: 20px;
+    /* margin-bottom: 20px; */
     padding: 0 1rem 0 1rem;
 }
 
@@ -51,7 +55,6 @@ ion-content {
 
 .login-title {
     font-weight: 700;
-    color: black;
     font-size: 2rem;
     color: #4F1F0D;
     font-size: 30px;
@@ -66,11 +69,24 @@ ion-content {
 .login-input-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    /* gap: 10px; */
+}
+
+.input-label {
+    padding: 0 0 15px 20px;
 }
 
 .login-item {
+    display: flex;
+    flex-direction: row;
+}
+
+.login-input {
     font-size: 12px;
+}
+
+.lock-icon {
+    padding-right: 15px;
 }
 
 /* ion-item {
@@ -131,6 +147,7 @@ ion-content {
     display: flex;
     justify-content: center;
     align-items: center;
+    padding-top: 2rem;
 }
 
 .no-account-label {
@@ -158,7 +175,6 @@ ion-content {
         flex-direction: row;
         justify-content: center;
         align-items: center;
-        
     }
 
     .login-img-wrapper {
@@ -177,12 +193,13 @@ ion-content {
 
     .login-container {
         width: 50%;
-        height: auto;
+        padding: 0 1.5rem 0 1.5rem;
+        /* height: auto; */
         display: flex;
         flex-direction: column;
         justify-content: center;
-        text-align: left;
-        padding: 0 2rem 0 2rem;
+        /* text-align: left;
+        padding: 0 2rem 0 2rem; */
     }
 
     .login-header {
@@ -194,7 +211,7 @@ ion-content {
     }
 
     .login-item {
-        font-size: 12px;
+        font-size: 16px;
     }
 
     .forgot-password .no-account-label {

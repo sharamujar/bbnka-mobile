@@ -1,9 +1,10 @@
-import { IonContent, IonHeader, IonPage, IonImg, IonText, IonList, IonItem, IonInput, IonButton, IonIcon, IonRouterLink, useIonViewWillEnter, IonToast } from '@ionic/react';
-import { eye, eyeOff, eyeOutline, lockClosed, warningOutline } from 'ionicons/icons';
+import { IonContent, IonHeader, IonPage, IonImg, IonText, IonList, IonItem, IonInput, IonButton, IonIcon, IonRouterLink, useIonViewWillEnter, IonToast, IonLabel } from '@ionic/react';
+import { eye, eyeOff, eyeOutline, lockClosed, mail, warningOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { db, auth } from '../firebase-config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import './Login.css';
+import { Icon } from 'ionicons/dist/types/components/icon/icon';
 
 const Login: React.FC = () => {
 
@@ -48,8 +49,8 @@ const Login: React.FC = () => {
   const validatePassword = (password: string) => {
     if (!password) {
         return('Password is required');
-    } else if (password.length < 6) {
-        return('Password must be at least 6 characters');
+    } else if (password.length < 8) {
+        return('Password must be at least 8 characters');
     } else {
         return('');
     }
@@ -84,7 +85,8 @@ const Login: React.FC = () => {
         console.error('Login error:', error.code, error.message);
       
         if (error.code === 'auth/user-not-found') {
-          setEmailError('User not found');
+          setToastMessage('User not found');
+          setShowToast(true);
         } else if (error.code === 'auth/wrong-password') {
           setPasswordError('Incorrect password');
         } else if (error.code === 'auth/invalid-email') {
@@ -129,17 +131,19 @@ const Login: React.FC = () => {
                 <IonList>
                     <div className='login-input-wrapper'>
                         <IonItem className={`login-item ${isValidationError && emailError ? 'input-error' : ''}`} lines='none'>
-                            <IonInput 
-                                className='login-input'
-                                type='email'
-                                value={email}
-                                placeholder='Email Address'
-                                fill='outline'
-                                onIonChange={(e) => {
-                                    const value = e.detail.value ?? '';
-                                    setEmail(value);
-                                }}
-                            />
+                            <IonLabel className="input-label" position="stacked">Email Address</IonLabel>
+                              <IonInput 
+                                  className='login-input'
+                                  type='email'
+                                  value={email}
+                                  placeholder='Enter your email address'
+                                  fill='outline'
+                                  onIonChange={(e) => {
+                                      const value = e.detail.value ?? '';
+                                      setEmail(value);
+                                  }}>
+                                  <IonIcon icon={mail} slot='start'></IonIcon>
+                              </IonInput>
                         </IonItem>
 
                         {emailError && isValidationError && (
@@ -149,11 +153,12 @@ const Login: React.FC = () => {
                         )}
 
                         <IonItem className={`login-item ${isValidationError && passwordError ? 'input-error' : ''}`} lines='none'>
+                          <IonLabel className="input-label" position="stacked">Password</IonLabel>
                             <IonInput 
                                 className='login-input'
                                 type={showPassword ? 'text' : 'password'}
                                 value={password} 
-                                placeholder='Password'
+                                placeholder='Enter your password'
                                 fill='outline'
                                 onIonChange={(e) => 
                                     setPassword(e.detail.value ?? '')}
@@ -163,8 +168,9 @@ const Login: React.FC = () => {
                                     slot='end' 
                                     onClick={togglePasswordVisibility}
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                    style={{cursor : 'pointer', fontSize: '1.2rem'}}>
+                                    style={{cursor : 'pointer', fontSize: '0.9rem'}}>
                                 </IonIcon>
+                                <IonIcon className="lock-icon" icon={lockClosed} slot='start'></IonIcon>
                             </IonInput>
                             
                         </IonItem>
