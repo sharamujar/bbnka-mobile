@@ -42,11 +42,14 @@
     /* gap: 15px; */
 }
 
+.register-button-wrapper {
+    padding: 2rem 1rem 0 1rem;
+}
+
 .register-button {
     --background: #BF5906;
     font-weight: bold;
     font-size: 14px;
-    padding: 1rem 1rem 0 1rem;
 }
 
 .login-text-wrapper {

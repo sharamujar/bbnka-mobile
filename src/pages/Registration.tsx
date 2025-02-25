@@ -257,13 +257,15 @@ return (
                             </IonText>
                         )}
                     </div>
-
-                    <IonButton 
-                        className='register-button' 
-                        expand='block'
-                        onClick={handleRegistration}>
-                            REGISTER
-                    </IonButton>
+                    
+                    <div className='register-button-wrapper'>
+                        <IonButton 
+                            className='register-button' 
+                            expand='block'
+                            onClick={handleRegistration}>
+                                REGISTER
+                        </IonButton>
+                    </div>
                     <div className='login-text-wrapper'>
                         <IonText className='no-account-label'>Already have an account?</IonText>
                         <IonRouterLink routerLink='/login'>

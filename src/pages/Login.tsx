@@ -90,7 +90,7 @@ const Login: React.FC = () => {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        history.push('/home');
+        history.push('/home'); //naviage to home page
         // setToastMessage("Customer found!");
         // setIsSuccess(true);
         // setShowToast(true);

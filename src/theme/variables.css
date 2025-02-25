@@ -2,5 +2,8 @@
 http://ionicframework.com/docs/theming/ */
 :root {
     --ion-font-family: 'Poppins', sans-serif;
+    --button-color: #BF5906;
+    --header-color: #4F1F0D;
+    --primary-bg-color: #fdfdfd;
   }
   
