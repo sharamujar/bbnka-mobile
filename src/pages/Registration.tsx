@@ -3,7 +3,7 @@ import { checkmarkCircleOutline, eye, eyeOff, lockClosed, mail, person, warningO
 import { useState } from 'react';
 import { db, auth } from '../firebase-config';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDocs, setDoc, doc } from 'firebase/firestore';
 // import { useKeyboardState } from '@ionic/react-hooks/keyboard';
 import './Registration.css';
 
@@ -120,7 +120,8 @@ const Registration: React.FC = () => {
         setIsSuccess(true);
         setShowToast(true);
 
-        await addDoc(collection(db, 'customers'), {
+        const userRef = doc(db, 'customers', user.uid);
+        await setDoc(userRef, {
             firstName,
             lastName,
             email: user.email,

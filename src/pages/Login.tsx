@@ -1,18 +1,18 @@
-import { IonContent, IonHeader, IonPage, IonImg, IonText, IonList, IonItem, IonInput, IonButton, IonIcon, IonRouterLink, useIonViewWillEnter, IonToast, IonLabel } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonImg, IonText, IonList, IonItem, IonInput, IonButton, IonIcon, IonRouterLink, useIonViewWillEnter, IonToast, IonLabel, IonRoute } from '@ionic/react';
 import { eye, eyeOff, eyeOutline, lockClosed, mail, warningOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { useHistory } from 'react-router';
 import { db, auth } from '../firebase-config';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { browserLocalPersistence, setPersistence, signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { Storage } from "@capacitor/storage";
 import './Login.css';
 
 const Login: React.FC = () => {
 
-  const [showPassword, setShowPassword] = useState(false);
-  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // to display or hide password
   
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');  
@@ -39,6 +39,7 @@ const Login: React.FC = () => {
     setShowPassword(!showPassword);
   };
 
+  // function for validating email
   const validateEmail = (email: string) => {
     const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
     if (!email) {
@@ -50,6 +51,7 @@ const Login: React.FC = () => {
     }
   };
 
+  // function for validating password
   const validatePassword = (password: string) => {
     if (!password) {
         return('Password is required');
@@ -60,6 +62,7 @@ const Login: React.FC = () => {
     }
 };
 
+  // function to handle login
   const handleLogin = async () => {
     //clear login error message
     setEmailError('');
@@ -82,6 +85,9 @@ const Login: React.FC = () => {
       setEmailError('');
       setPasswordError('');
       setIsValidationError(false);
+
+      // keep users logged in even after restarting or closing the app
+      await setPersistence(auth, browserLocalPersistence);
       
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -90,10 +96,7 @@ const Login: React.FC = () => {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        history.push('/home'); //naviage to home page
-        // setToastMessage("Customer found!");
-        // setIsSuccess(true);
-        // setShowToast(true);
+        history.replace('/home'); //navigate to home page
       } else {
         setToastMessage("Access Denied: Only customers can log in to the mobile app");
         setIsSuccess(false);
@@ -230,7 +233,7 @@ const Login: React.FC = () => {
                                 fill='clear' 
                                 className='register-text-button'>REGISTER
                             </IonButton>
-                        </IonRouterLink>
+                  </IonRouterLink>
 
                         <IonToast
                             isOpen={showToast}
