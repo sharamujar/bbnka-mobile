@@ -7,6 +7,7 @@ import { browserLocalPersistence, setPersistence, signInWithEmailAndPassword } f
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Storage } from "@capacitor/storage";
 import './Login.css';
+import { Link } from 'react-router-dom';
 
 const Login: React.FC = () => {
 
@@ -228,12 +229,13 @@ const Login: React.FC = () => {
                     </div>
                     <div className='register-text-wrapper'>
                         <IonText className='no-account-label'>Don't have an account yet?</IonText>
-                        <IonRouterLink routerLink='/register'>
+                        <Link to='/register'>
                             <IonButton 
                                 fill='clear' 
-                                className='register-text-button'>REGISTER
+                                className='register-text-button'
+                                onClick={() => history.replace('/register')}>REGISTER
                             </IonButton>
-                  </IonRouterLink>
+                        </Link>
 
                         <IonToast
                             isOpen={showToast}

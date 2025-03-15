@@ -6,6 +6,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, addDoc, getDocs, setDoc, doc } from 'firebase/firestore';
 // import { useKeyboardState } from '@ionic/react-hooks/keyboard';
 import './Registration.css';
+import { Link, useHistory } from 'react-router-dom';
 
 const Registration: React.FC = () => {
 
@@ -26,6 +27,8 @@ const Registration: React.FC = () => {
     const [toastMessage, setToastMessage] = useState('');
     const [isSuccess, setIsSuccess] = useState(false); //for toast message color
     // const [ isSuccessModalOpen, setIsSuccessModalOpen ] = useState(false);
+
+    const history = useHistory(); //for navigation
 
     useIonViewWillEnter(() => {
         setFirstName(''); //clear input fields
@@ -269,12 +272,13 @@ return (
                     </div>
                     <div className='login-text-wrapper'>
                         <IonText className='no-account-label'>Already have an account?</IonText>
-                        <IonRouterLink routerLink='/login'>
+                        <Link to='/login'>
                             <IonButton 
                                 fill='clear' 
-                                className='register-text-button'>LOGIN
+                                className='register-text-button'
+                                onClick={() => history.replace('/login')}>LOGIN
                             </IonButton>
-                        </IonRouterLink>
+                        </Link>
 
                         <IonToast
                             isOpen={showToast}

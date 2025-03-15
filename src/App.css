@@ -1,0 +1,26 @@
+/* Default icon color (inactive) */
+ion-tab-button ion-icon {
+    color: #b3b3b3;
+    font-size: 22px;
+}
+
+ion-tab-button.tab-selected ion-icon {
+    color: var(--button-color);
+  }
+
+/* ion-tab-button[tab="home"].tab-selected ion-icon {
+    color: #4caf50;
+}
+  
+ion-tab-button[tab="orders"].tab-selected ion-icon {
+    color: #f44336;
+}
+  
+ion-tab-button[tab="account"].tab-selected ion-icon {
+    color: #2196f3;
+} */
+  
+/* hover effect */
+ion-tab-button:active ion-icon {
+    transform: scale(1.1);
+}

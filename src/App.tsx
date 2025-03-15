@@ -4,9 +4,10 @@ import { IonReactRouter } from '@ionic/react-router';
 import { bag, cart, home, library, notifications, person, radio } from 'ionicons/icons';
 import Login from './pages/Login';
 import Registration from './pages/Registration';
-import Home from './pages/tabs/Home';
-import Account from './pages/tabs/Account';
-import Orders from './pages/tabs/Orders';
+import Home from './tabs/Home';
+import Account from './tabs/Account';
+import Notifications from './tabs/Notifications';
+import Orders from './tabs/Orders';
 import Cart from './pages/Cart';
 import Product from './pages/Product';
 import AuthHandler from './components/AuthHandler';
@@ -18,6 +19,7 @@ import '@ionic/react/css/structure.css';
 /* Theme variables */
 import './theme/variables.css';
 import './theme/global.css';
+import './App.css';
 
 setupIonicReact();
 
@@ -40,14 +42,17 @@ const App: React.FC = () => {
             <Route exact path="/">
                 <Redirect to="/login" />
             </Route>
+
             <IonTabs>
               <IonRouterOutlet>
                 <Route exact path="/home">
                   <Home /> 
                 </Route>
-                
                 <Route exact path="/orders">
                   <Orders />
+                </Route>
+                <Route exact path="/notifications">
+                  <Notifications />
                 </Route>
                 <Route exact path="/account">
                   <Account />

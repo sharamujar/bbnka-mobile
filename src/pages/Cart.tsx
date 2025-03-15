@@ -1,7 +1,8 @@
-import { IonContent, IonImg, IonItem, IonList, IonPage } from '@ionic/react'
+import { IonBadge, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCol, IonContent, IonFooter, IonGrid, IonHeader, IonIcon, IonImg, IonItem, IonItemOption, IonItemOptions, IonItemSliding, IonLabel, IonList, IonPage, IonRow, IonText, IonThumbnail, IonTitle, IonToolbar } from '@ionic/react'
 import React, { useEffect, useState } from 'react'
 import { auth, db } from '../firebase-config'
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { add, arrowForward, cart, remove, trash } from 'ionicons/icons';
 
 const Cart: React.FC = () => {
   const user = auth.currentUser;
@@ -38,28 +39,100 @@ const Cart: React.FC = () => {
 
   return (
     <IonPage>
-      <IonContent fullscreen>
-        <h1>Cart</h1>
-          {loading ? (
-            <p>Loading...</p>
-          ) : cartItems.length === 0 ? (
-            <p>No items in your cart.</p>
-          ) : (
-            <ul>
-              {cartItems.map((item, index) => (
-                <IonList key={index}>
-                  <IonItem>
-                    <IonImg src={item.imageURL} />
-                    <h3>{item.name}</h3>
-                    <p>Stock: {item.stock}</p>
-                    <p>Unit: {item.unit}</p>
-                    <p>Price: {item.price}</p>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle className='title-toolbar'>Cart</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      
+      <IonContent>
+        {cartItems.length === 0 ? (
+          <div className="empty-cart-container">
+            <IonIcon icon={cart} className="empty-cart-icon" />
+            <h2>Your cart is empty</h2>
+            <p>Looks like you haven't added any items yet.</p>
+            <IonButton expand="block" color="primary">
+              Start Shopping
+            </IonButton>
+          </div>
+        ) : (
+          <>
+            <IonList>
+              {cartItems.map(item => (
+                <IonItemSliding key={item.id}>
+                  <IonItem lines="full">
+                    <IonThumbnail slot="start">
+                      <IonImg src={item.imageURL} />
+                    </IonThumbnail>
+                    <IonLabel>
+                      <h2>{item.name}</h2>
+                      <p>{item.size}</p>
+                      <p className="varieties-text"></p>
+                      <p className="price-text">₱</p>
+                    </IonLabel>
+                    <div className="quantity-control">
+                      <IonButton 
+                        fill="clear" 
+                        size="small"
+                      >
+                        <IonIcon icon={remove} />
+                      </IonButton>
+                      <IonBadge color="light" className="quantity-badge">
+                        <IonText color="dark">{item.quantity}</IonText>
+                      </IonBadge>
+                      <IonButton 
+                        fill="clear" 
+                        size="small"
+                      >
+                        <IonIcon icon={add} />
+                      </IonButton>
+                    </div>
                   </IonItem>
-                </IonList>
+                  
+                  <IonItemOptions side="end">
+                    <IonItemOption color="danger">
+                      <IonIcon slot="icon-only" icon={trash} />
+                    </IonItemOption>
+                  </IonItemOptions>
+                </IonItemSliding>
               ))}
-            </ul>
-          )}
+            </IonList>
+            
+            <IonCard>
+              <IonCardHeader>
+                <IonCardTitle>Order Summary</IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <IonGrid>
+                  <IonRow>
+                    <IonCol>Subtotal</IonCol>
+                    <IonCol className="ion-text-right">₱</IonCol>
+                  </IonRow>
+                  <IonRow>
+                    <IonCol>Delivery Fee</IonCol>
+                    <IonCol className="ion-text-right">₱</IonCol>
+                  </IonRow>
+                  <IonRow className="total-row">
+                    <IonCol><strong>Total</strong></IonCol>
+                    <IonCol className="ion-text-right"><strong>₱</strong></IonCol>
+                  </IonRow>
+                </IonGrid>
+              </IonCardContent>
+            </IonCard>
+          </>
+        )}
       </IonContent>
+      
+      {cartItems.length > 0 && (
+        <IonFooter>
+          <IonToolbar>
+            <IonButton expand="block" className="checkout-button">
+              Proceed to Checkout
+              <IonIcon slot="end" icon={arrowForward} />
+            </IonButton>
+          </IonToolbar>
+        </IonFooter>
+      )}
     </IonPage>
   )
 }
