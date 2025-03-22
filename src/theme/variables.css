@@ -1,8 +1,13 @@
 /* For information on how to create your own theme, please see:
 http://ionicframework.com/docs/theming/ */
 :root {
-    --ion-font-family: 'Poppins', sans-serif;
-    --button-color: #BF5906;
-    --header-color: #4F1F0D;
-    --primary-bg-color: #FFFDF6;
+  --ion-font-family: "Poppins", sans-serif;
+  --logo-font-family: "Bebas Neue", sans-serif;
+  --secondary-logo-font-family: "Source Sans 3", sans-serif;
+  --button-color: #bf5906;
+  --light-button-color: #f4e3d6;
+  --header-color: #4f1f0d;
+  --light-header-color: #c4b4ae;
+  --primary-bg-color: #fffdf6;
+  --secondary-bg-color: #fff9af;
 }

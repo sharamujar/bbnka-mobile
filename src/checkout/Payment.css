@@ -1,0 +1,158 @@
+/* Step Progress Bar Styles */
+.step-progress-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 8px 24px;
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  z-index: 1;
+}
+
+.step-circle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f4f4f4;
+  border: 2px solid #dedede;
+  color: #888;
+  font-weight: bold;
+  margin-bottom: 6px;
+  z-index: 2;
+}
+
+.step-circle.completed {
+  background-color: var(--ion-color-success);
+  border-color: var(--ion-color-success);
+  color: white;
+}
+
+.step-circle.active {
+  background-color: var(--ion-color-primary);
+  border-color: var(--ion-color-primary);
+  color: white;
+}
+
+.step-name {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
+.step-line {
+  position: absolute;
+  top: 16px;
+  height: 2px;
+  background-color: #dedede;
+  width: 100%;
+  left: 50%;
+  z-index: 0;
+}
+
+.step-line.completed {
+  background-color: var(--ion-color-success);
+}
+
+/* Add this to your existing CSS */
+.step-circle ion-icon {
+  font-size: 18px;
+}
+
+/* Make sure the step items are properly spaced */
+.step-item:not(:last-child) .step-line {
+  width: calc(100% - 16px);
+}
+
+/* General Styles */
+/* ion-content {
+  --background: #f5f5f5;
+} */
+
+ion-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Order Summary */
+.total-item {
+  margin-top: 8px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 8px;
+}
+
+.total-item ion-note {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Payment Methods */
+.payment-method-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  margin-bottom: 8px;
+}
+
+.payment-method-item ion-radio {
+  --color-checked: var(--ion-color-primary);
+}
+
+.payment-icon {
+  width: 32px;
+  height: 32px;
+}
+
+/* Credit Card Form */
+.credit-card-form {
+  background-color: #fcfcfc;
+}
+
+.card-details-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.expiry-date {
+  width: 48%;
+}
+
+.cvv {
+  width: 48%;
+}
+
+.save-card-label {
+  font-size: 14px;
+}
+
+/* Footer */
+ion-footer ion-toolbar {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+}
+
+.total-amount {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.total-label {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
