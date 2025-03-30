@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "214639010070",
+    "project_id": "bbnka-mobile",
+    "storage_bucket": "bbnka-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:214639010070:android:c4ed4be8179fa58ae3f037",
+        "android_client_info": {
+          "package_name": "bbnka.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "214639010070-ukg4a3c95t0tlhov4hpinrcdcbgn829s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0pLRoEb43Ivnoin5GDUHk3iOr7ExVodI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "214639010070-ukg4a3c95t0tlhov4hpinrcdcbgn829s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
