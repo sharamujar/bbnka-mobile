@@ -28,62 +28,68 @@ import {
   IonCol,
 } from "@ionic/react";
 import {
+  arrowBackCircle,
+  arrowBackCircleSharp,
   cardOutline,
   checkmarkCircle,
+  checkmarkCircleSharp,
+  checkmarkDoneCircleSharp,
+  chevronBackCircle,
+  chevronBackCircleOutline,
+  chevronForwardCircle,
   createOutline,
+  documentTextSharp,
   helpCircleOutline,
   lockClosed,
 } from "ionicons/icons";
 import React, { useState } from "react";
 import axios from "axios";
 import "./Payment.css";
+import CheckoutStepProgress from "../components/CheckoutStepProgress";
+import { useHistory } from "react-router";
 
 const Payment: React.FC = () => {
-  const [paymentMethod, setPaymentMethod] = useState("gcash");
+  const history = useHistory();
+
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+
+  // const [currentStep, setCurrentStep] = useState(1);
+
+  const steps = [
+    "/home/cart/schedule",
+    "/home/cart/schedule/payment",
+    "/home/cart/schedule/payment/review",
+  ];
+
+  const [currentStep, setCurrentStep] = useState(
+    steps.indexOf(history.location.pathname)
+  );
+
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      const nextRoute = steps[currentStep + 1];
+      setCurrentStep(currentStep + 1);
+      history.replace(nextRoute);
+    }
+  };
 
   const handlePayment = async () => {
     if (paymentMethod === "gcash") {
-      await handleGCashPayment();
-    } else if (paymentMethod === "maya") {
-      await handleMayaPayment();
+      console.log("Gcash selected");
     } else {
-      console.log("Cash on Delivery selected");
-    }
-  };
-
-  const handleGCashPayment = async () => {
-    try {
-      // Replace with your GCash API endpoint and payload
-      const response = await axios.post("GCASH_API_ENDPOINT", {
-        // Include necessary payment details
-      });
-      console.log("GCash Payment Successful:", response.data);
-    } catch (error) {
-      console.error("GCash Payment Error:", error);
-    }
-  };
-
-  const handleMayaPayment = async () => {
-    try {
-      // Replace with your Maya API endpoint and payload
-      const response = await axios.post("MAYA_API_ENDPOINT", {
-        // Include necessary payment details
-      });
-      console.log("Maya Payment Successful:", response.data);
-    } catch (error) {
-      console.error("Maya Payment Error:", error);
+      console.log("Cash selected");
     }
   };
 
   return (
     <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle className="title-toolbar">Payment</IonTitle>
+        </IonToolbar>
+      </IonHeader>
       <IonContent fullscreen>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle className="title-toolbar">Payment</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-
+        <CheckoutStepProgress currentStep={currentStep} />
         {/* Payment Methods */}
         <IonCard>
           <IonCardContent>
@@ -91,13 +97,13 @@ const Payment: React.FC = () => {
               value={paymentMethod}
               onIonChange={(e) => setPaymentMethod(e.detail.value)}
             >
-              {/* Cash on Delivery Option */}
+              {/* Cash Option */}
               <IonItem className="payment-method-item">
                 <IonLabel>
                   <h2>Cash</h2>
                   <p>Pay when you receive your items</p>
                 </IonLabel>
-                <IonRadio slot="start" value="cod" />
+                <IonRadio slot="start" value="cash" />
                 <IonThumbnail slot="end" className="payment-icon">
                   <IonImg src="assets/icons/cash-icon.svg" alt="Cash" />
                 </IonThumbnail>
@@ -119,16 +125,29 @@ const Payment: React.FC = () => {
         </IonCard>
       </IonContent>
 
-      {/* Footer with Payment Button */}
       <IonFooter>
         <IonToolbar className="product-footer">
           <div className="footer-content">
-            <div className="action-button-container">
+            <div className="footer-back-action-button-container">
+              {/* Back to Cart Button */}
               <IonButton
-                className="action-button pay-button"
-                onClick={handlePayment}
+                className="footer-back-action-button"
+                routerLink="/home/cart/schedule"
+                fill="outline"
               >
-                <IonIcon icon={lockClosed} slot="start" />
+                <IonIcon icon={chevronBackCircleOutline} slot="start" />
+                Back to Schedule
+              </IonButton>
+            </div>
+            <div className="footer-action-button-container">
+              {/* Payment Button */}
+              <IonButton
+                className="footer-action-button"
+                onClick={nextStep}
+                routerLink="/home/cart/schedule/payment/review"
+              >
+                <IonIcon icon={documentTextSharp} slot="start" />
+                <IonIcon icon={chevronForwardCircle} slot="end" />
                 Review
               </IonButton>
             </div>

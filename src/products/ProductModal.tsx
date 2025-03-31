@@ -19,6 +19,8 @@ import {
   IonRow,
   IonCol,
   IonChip,
+  IonHeader,
+  IonButtons,
 } from "@ionic/react";
 import {
   chevronBack,
@@ -45,147 +47,102 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { auth, db } from "../firebase-config";
-import { Size } from "../interfaces/interfaces";
+// import { Variety } from "../interfaces/interfaces";
 import "../products/ProductModal.css";
-
-// interface Size {
-//   id: string;
-//   name: string;
-//   dimensions: string;
-//   shape: string;
-//   slices: string;
-//   varieties: string[];
-// }
-
-interface ProductModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  product: any;
-  showToastMessage: (message: string, success: boolean) => void;
-}
+import { ProductModalProps } from "../interfaces/interfaces";
 
 const ProductModal: React.FC<ProductModalProps> = ({
   isOpen,
   onClose,
   product,
-  showToastMessage,
+  // showToastMessage,
 }) => {
-  // const [sizes, setSizes] = useState<any[]>([]);
+  const [sizes, setSizes] = useState<any[]>([]);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedVarieties, setSelectedVarieties] = useState<string[]>([]);
 
-  // useEffect(() => {
-  //   const fetchSizes = onSnapshot(collection(db, "sizes"), (snapshot) => {
-  //     const sizesList = snapshot.docs.map((doc) => ({
-  //       id: doc.id,
-  //       ...doc.data(),
-  //     }));
-  //     setSizes(sizesList);
-  //   });
+  useEffect(() => {
+    const fetchSizes = onSnapshot(collection(db, "sizes"), (snapshot) => {
+      const sizesList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setSizes(sizesList);
+    });
 
-  //   return () => {
-  //     fetchSizes();
-  //   };
-  // }, []);
+    return () => {
+      fetchSizes();
+    };
+  }, []);
 
-  // Sizes and Varieties
-  const sizes: Size[] = [
-    {
-      id: "big-bilao",
-      name: "Big Bilao",
-      shape: "Round",
-      dimensions: "16",
-      slices: "60",
-      varieties: ["Bibingka", "Sapin-Sapin", "Kutsinta", "Kalamay"],
-      price: 520,
-    },
-    {
-      id: "tray",
-      name: "Tray",
-      shape: "Rectangle",
-      dimensions: "12x16",
-      slices: "48",
-      varieties: ["Bibingka", "Sapin-Sapin", "Kutsinta", "Kalamay", "Cassava"],
-      price: 420,
-    },
-    {
-      id: "small",
-      name: "Small",
-      shape: "Round",
-      dimensions: "10",
-      slices: "30",
-      varieties: ["Bibingka"],
-      price: 280,
-    },
-    {
-      id: "half-tray",
-      name: "Half-Tray",
-      shape: "Rectangle",
-      dimensions: "12x8",
-      slices: "24",
-      varieties: ["Bibingka", "Sapin-Sapin", "Kutsinta", "Kalamay", "Cassava"],
-      price: 240,
-    },
-    {
-      id: "solo",
-      name: "Solo",
-      shape: "Round",
-      dimensions: "8",
-      slices: "20",
-      varieties: ["Bibingka"],
-      price: 200,
-    },
-    {
-      id: "slice",
-      name: "1/4 Slice",
-      shape: "Rectangle",
-      dimensions: "6x8",
-      slices: "12",
-      varieties: ["Bibingka", "Sapin-Sapin", "Kutsinta", "Kalamay", "Cassava"],
-      price: 120,
-    },
-  ];
+  const getSizeImage = (sizeName: string): string => {
+    const sizeImages: Record<string, string> = {
+      "Big Bilao": "/assets/bilao.webp",
+      Tray: "/assets/rectangle.webp",
+      Small: "/assets/round.webp",
+      "Half-Tray": "/assets/rectangle.webp",
+      Solo: "/assets/round.webp",
+      "1/4 Slice": "/assets/slice1.webp",
+    };
 
-  // Find selected size object to access its varieties
-  const selectedSizeObj = sizes.find((size) => size.id === selectedSize);
-
-  const handleSize = (sizeId: string) => {
-    if (selectedSize === sizeId) {
-      setSelectedSize(null);
-      setSelectedVarieties([]);
-    } else {
-      setSelectedSize(sizeId);
-
-      // if the product name matches the variety, set the selected varieties to the product name
-      const sizeDetails = sizes.find((size) => size.id === sizeId);
-
-      if (
-        sizeDetails &&
-        product &&
-        sizeDetails.varieties.includes(product.name)
-      ) {
-        setSelectedVarieties([product.name]);
-      } else {
-        setSelectedVarieties([]);
-      }
-    }
+    return sizeImages[sizeName] ?? "/assets/default.png";
   };
 
-  const handleVariety = (variety: string) => {
-    if (!product) return;
+  // Sizes and Varieties
+  // const varieties: Variety[] = [
+  //   {
+  //     id: "big-bilao",
+  //     varieties: ["Bibingka", "Sapin-Sapin", "Kutsinta", "Kalamay"],
+  //   },
+  //   {
+  //     id: "tray",
+  //     varieties: ["Bibingka", "Sapin-Sapin", "Kutsinta", "Kalamay", "Cassava"],
+  //   },
+  //   {
+  //     id: "small",
+  //     varieties: ["Bibingka"],
+  //   },
+  //   {
+  //     id: "half-tray",
+  //     varieties: ["Bibingka", "Sapin-Sapin", "Kutsinta", "Kalamay", "Cassava"],
+  //   },
+  //   {
+  //     id: "solo",
+  //     varieties: ["Bibingka"],
+  //   },
+  //   {
+  //     id: "slice",
+  //     varieties: ["Bibingka", "Sapin-Sapin", "Kutsinta", "Kalamay", "Cassava"],
+  //   },
+  // ];
 
-    // prevent deselecting the variety if it's the same as the product name
-    if (variety === product.name && selectedVarieties.includes(variety)) {
+  const handleSize = (sizeId: string | null) => {
+    console.log("handleSize Triggered:", sizeId);
+
+    if (sizeId === null) {
+      setSelectedSize(null);
+      setSelectedVarieties([]);
       return;
     }
 
-    setSelectedVarieties((prev) =>
-      prev.includes(variety)
-        ? prev.filter((v) => v !== variety)
-        : [...prev, variety]
-    );
+    setSelectedSize(sizeId);
   };
+
+  // const handleVariety = (variety: string) => {
+  //   if (!product) return;
+
+  //   // prevent deselecting the variety if it's the same as the product name
+  //   if (variety === product.name && selectedVarieties.includes(variety)) {
+  //     return;
+  //   }
+
+  //   setSelectedVarieties((prev) =>
+  //     prev.includes(variety)
+  //       ? prev.filter((v) => v !== variety)
+  //       : [...prev, variety]
+  //   );
+  // };
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -195,7 +152,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       console.log("User is not logged in.");
       return;
     } else if (!selectedSize) {
-      showToastMessage("Please select a size first", false);
+      // showToastMessage("Please select a size first", false);
       return;
     }
 
@@ -211,7 +168,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       const q = query(
         cartCollectionRef,
         where("productName", "==", product.name),
-        where("productSize.name", "==", selectedSizeObj?.name || selectedSize),
+        where("productSize.name", "==", selectedSize),
         where("productVarieties", "==", selectedVarieties)
       );
 
@@ -226,7 +183,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         await updateDoc(existingDoc.ref, { productQuantity: newQuantity });
 
         console.log("Quantity updated in cart!");
-        showToastMessage("Added to cart successfully!", true);
+        // showToastMessage("Added to cart successfully!", true);
       } else {
         // **Item does not exist, add as new**
         const cartId = doc(cartCollectionRef).id;
@@ -238,7 +195,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           productImg: product.imageURL,
           productPrice: product.price,
           cartId,
-          productSize: { name: selectedSizeObj?.name || selectedSize },
+          productSize: selectedSize,
           productVarieties: selectedVarieties,
           productQuantity: 1,
         };
@@ -246,11 +203,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
         await setDoc(cartRef, cartItem, { merge: true });
 
         console.log("Product added to the cart!");
-        showToastMessage("Added to cart successfully!", true);
+        // showToastMessage("Added to cart successfully!", true);
       }
     } catch (error) {
       console.error("Error adding/updating product in the cart:", error);
-      showToastMessage("Failed to add to cart", false);
+      // showToastMessage("Failed to add to cart", false);
     }
   };
 
@@ -272,13 +229,27 @@ const ProductModal: React.FC<ProductModalProps> = ({
       }}
     >
       <IonContent fullscreen>
-        {product && (
-          <div className="product-details-container">
-            <div className="back-button-container">
+        <IonHeader className="home-header">
+          <IonToolbar>
+            <IonButtons slot="start">
               <IonButton className="back-button" onClick={handleClose}>
                 <IonIcon className="back-icon" icon={chevronBack} />
               </IonButton>
-            </div>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        {/* <div className="back-button-container">
+          <IonButton className="back-button" onClick={handleClose}>
+            <IonIcon className="back-icon" icon={chevronBack} />
+          </IonButton>
+        </div> */}
+        {product && (
+          <div className="product-details-container">
+            {/* <div className="back-button-container">
+              <IonButton className="back-button" onClick={handleClose}>
+                <IonIcon className="back-icon" icon={chevronBack} />
+              </IonButton>
+            </div> */}
             <div className="product-details-img">
               <IonImg src={product.imageURL} />
             </div>
@@ -293,59 +264,63 @@ const ProductModal: React.FC<ProductModalProps> = ({
         )}
 
         <div>
-          <IonTitle className="categories-title">Choose Size</IonTitle>
+          <IonTitle className="product-title">Choose Size</IonTitle>
         </div>
         {/* Sizes and Varieties */}
         <IonGrid className="size-grid">
           <IonRow className="size-selection-row">
-            {sizes.map((size) => (
-              <IonCol size="6" key={size.id} className="size-col">
-                <IonCard
-                  className={`size-card ${
-                    selectedSize === size.id ? "selected-size" : ""
-                  }`}
-                  onClick={() =>
-                    setSelectedSize(selectedSize === size.id ? null : size.id)
-                  }
-                >
-                  <IonCardContent className="size-card-content">
-                    {/* <IonImg
-                      src={
-                        size.shape === "Round"
-                          ? "./assets/round.svg"
-                          : "./assets/rectangle.svg"
-                      }
-                      style={{
-                        width: size.shape === "Round" ? "40px" : "60px",
-                        height: "40px",
-                      }}
-                    ></IonImg> */}
-                    <IonIcon
-                      icon={
-                        size.shape === "Round" ? ellipseOutline : squareOutline
-                      }
-                      className="shape-icon"
-                    />
-
-                    {/* Size Details */}
-                    <div className="size-details">
-                      <IonText className="size-name">{size.name}</IonText>
-                      <IonText className="size-dimension">
-                        {size.dimensions} inches
-                      </IonText>
-                      <IonText className="size-slices">
-                        {size.slices} slices
-                      </IonText>
-                    </div>
-                  </IonCardContent>
-                </IonCard>
-              </IonCol>
-            ))}
+            {[...sizes]
+              .sort((a, b) => b.price - a.price)
+              .map((size) => (
+                <IonCol size="6" key={size.id} className="size-col">
+                  <IonCard
+                    className={`size-card ${
+                      selectedSize === size.id ? "selected-size" : ""
+                    }`}
+                    onClick={() => {
+                      handleSize(selectedSize === size.id ? null : size.id);
+                    }}
+                  >
+                    <IonCardContent className="size-card-content">
+                      {/* Size Details */}
+                      <IonImg
+                        src={getSizeImage(size.name)}
+                        className="size-image"
+                        alt={size.name}
+                      />
+                      <div className="size-details">
+                        <IonText className="size-name">{size.name}</IonText>
+                        <IonText className="size-dimension">
+                          {size.dimensions}
+                        </IonText>
+                        <IonText className="size-slices">
+                          {size.slices} slices
+                        </IonText>
+                      </div>
+                    </IonCardContent>
+                  </IonCard>
+                </IonCol>
+              ))}
           </IonRow>
         </IonGrid>
 
+        {selectedSize && (
+          <>
+            <IonTitle className="product-title">Available Varieties</IonTitle>
+            <IonGrid>
+              <IonRow>
+                {selectedVarieties.map((variety) => (
+                  <IonCol key={variety} size="6">
+                    <IonChip>{variety}</IonChip>
+                  </IonCol>
+                ))}
+              </IonRow>
+            </IonGrid>
+          </>
+        )}
+
         {/* Show varieties only if a size is selected */}
-        {selectedSizeObj && (
+        {/* {selectedSizeObj && (
           <div className="varieties-section">
             <IonTitle className="categories-title">Choose Varieties</IonTitle>
             <div className="varieties-container">
@@ -368,7 +343,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               })}
             </div>
           </div>
-        )}
+        )} */}
       </IonContent>
 
       <IonFooter>
@@ -394,7 +369,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </IonButton>
             </div>
             <IonButton
-              className="action-button add-to-cart-button"
+              className="footer-action-button add-to-cart-button"
               onClick={handleAddToCart}
             >
               <IonIcon icon={cart} slot="start" />

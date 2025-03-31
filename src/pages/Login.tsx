@@ -23,27 +23,40 @@ import {
   eyeOff,
   eyeOutline,
   lockClosed,
+  logInOutline,
   logoGoogle,
   mail,
   warningOutline,
 } from "ionicons/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useHistory } from "react-router";
 import { db, auth } from "../firebase-config";
 import {
   browserLocalPersistence,
+  getRedirectResult,
   GoogleAuthProvider,
+  onAuthStateChanged,
   setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
 } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { Storage } from "@capacitor/storage";
 import "./Login.css";
 import { Link } from "react-router-dom";
 
 const Login: React.FC = () => {
   const history = useHistory(); //for navigation
+  const [loading, setLoading] = useState(false);
 
   // State variables for email and password
   const [email, setEmail] = useState("");
@@ -67,7 +80,7 @@ const Login: React.FC = () => {
     setEmailError("");
     setPasswordError("");
     setIsValidationError(false);
-  });
+  }, []);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -95,10 +108,7 @@ const Login: React.FC = () => {
   };
 
   const handleLogin = async () => {
-    setEmailError("");
-    setPasswordError("");
-    setIsValidationError(false);
-
+    // Validate email and password before proceeding
     const emailValidationError = validateEmail(email);
     const passwordValidationError = validatePassword(password);
 
@@ -110,12 +120,12 @@ const Login: React.FC = () => {
     }
 
     try {
-      //clear login error message after successful login
+      // Clear previous errors
       setEmailError("");
       setPasswordError("");
       setIsValidationError(false);
 
-      // keep users logged in even after restarting or closing the app
+      // Keep users logged in even after restarting or closing the app
       await setPersistence(auth, browserLocalPersistence);
 
       const userCredential = await signInWithEmailAndPassword(
@@ -123,14 +133,13 @@ const Login: React.FC = () => {
         email,
         password
       );
-
       const user = userCredential.user;
 
       const q = query(collection(db, "customers"), where("email", "==", email));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        history.replace("/home"); //navigate to home page
+        history.replace("/home"); // Navigate to home page
       } else {
         setToastMessage(
           "Access Denied: Only customers can log in to the mobile app"
@@ -151,7 +160,6 @@ const Login: React.FC = () => {
       } else if (error.code === "auth/invalid-email") {
         setEmailError("Invalid email format");
       } else if (error.code === "auth/too-many-requests") {
-        //   setLoginError('Too many failed login attempts. Please try again later.');
         setToastMessage(
           "Too many failed login attempts. Please try again later."
         );
@@ -167,69 +175,64 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleLogin = async () => {
+    setLoading(true);
+
     try {
-      // Clear any previous error messages
       setEmailError("");
       setPasswordError("");
       setIsValidationError(false);
 
-      // Keep users logged in even after restarting or closing the app
       await setPersistence(auth, browserLocalPersistence);
 
-      // Use the defined googleProvider
-      const result = await signInWithPopup(auth, googleProvider);
-
-      // Get the user from result
-      const user = result.user;
-
-      // Log success message
-      console.log("User signed in:", user);
-
-      // Check if user exists in customers collection (similar to your email login)
-      const q = query(
-        collection(db, "customers"),
-        where("email", "==", user.email)
-      );
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        // Navigate to home page on successful login
-        history.replace("/home");
-      } else {
-        setToastMessage(
-          "Access Denied: Only customers can log in to the mobile app"
-        );
-        setIsSuccess(false);
-        setShowToast(true);
-        // Sign out if not a customer
-        await auth.signOut();
-      }
-
-      return user;
+      // Use redirect for mobile authentication
+      await signInWithRedirect(auth, googleProvider);
     } catch (error: any) {
-      // Enhanced error handling
       console.error("Google login failed:", error.code, error.message);
-
-      // Handle specific error cases
-      if (error.code === "auth/popup-closed-by-user") {
-        setToastMessage("Google Login canceled");
-      } else if (
-        error.code === "auth/account-exists-with-different-credential"
-      ) {
-        setToastMessage(
-          "An account already exists with the same email address"
-        );
-      } else {
-        setToastMessage("Google login failed. Please try again.");
-      }
-
+      setToastMessage("Google login failed. Please try again.");
       setIsSuccess(false);
       setShowToast(true);
       setIsValidationError(true);
-
-      return null;
+      setLoading(false);
     }
   };
+
+  // Check authentication state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log("User signed in:", user.email);
+
+        // Check if the user exists in Firestore
+        const q = query(
+          collection(db, "customers"),
+          where("email", "==", user.email)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          console.log("User found in customers collection. Logging in...");
+          history.replace("/home");
+        } else {
+          console.warn("User not found in customers collection:", user.email);
+          console.log("New user detected. Creating account...");
+
+          await setDoc(doc(db, "customers", user.uid), {
+            email: user.email,
+            name: user.displayName || "New User",
+            createdAt: serverTimestamp(),
+          });
+
+          setToastMessage("Welcome! Your account has been created.");
+          setIsSuccess(true);
+          setShowToast(true);
+
+          history.replace("/home"); // Redirect after registration
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <IonPage>
@@ -272,9 +275,10 @@ const Login: React.FC = () => {
                       value={email}
                       placeholder="Enter your email address"
                       fill="outline"
-                      onIonChange={(e) => {
+                      onIonInput={(e) => {
                         const value = e.detail.value ?? "";
                         setEmail(value);
+                        setEmailError(validateEmail(value)); // Validate email immediately
                       }}
                     >
                       <IonIcon icon={mail} slot="start"></IonIcon>
@@ -302,7 +306,11 @@ const Login: React.FC = () => {
                       value={password}
                       placeholder="Enter your password"
                       fill="outline"
-                      onIonChange={(e) => setPassword(e.detail.value ?? "")}
+                      onIonInput={(e) => {
+                        const value = e.detail.value ?? "";
+                        setPassword(value);
+                        setPasswordError(validatePassword(value)); // Validate password immediately
+                      }}
                     >
                       <IonIcon
                         icon={showPassword ? eye : eyeOff}
@@ -329,8 +337,10 @@ const Login: React.FC = () => {
                 </div>
 
                 <div className="forgot-password-wrapper">
-                  <IonButton fill="clear" className="forgot-password">
-                    Forgot Password?
+                  <IonButton fill="clear">
+                    <IonRouterLink className="forgot-password">
+                      Forgot Password?
+                    </IonRouterLink>
                   </IonButton>
                 </div>
                 <div className="login-button-wrapper">
@@ -339,7 +349,7 @@ const Login: React.FC = () => {
                     expand="block"
                     onClick={handleLogin}
                   >
-                    LOGIN
+                    Login
                   </IonButton>
                   {/* Google Login Button */}
                   <div className="social-login-divider">
@@ -354,8 +364,17 @@ const Login: React.FC = () => {
                     onClick={handleGoogleLogin}
                     color="light"
                   >
-                    <IonIcon icon={logoGoogle} slot="start"></IonIcon>
-                    CONTINUE WITH GOOGLE
+                    {loading ? (
+                      <>
+                        <IonIcon icon={logoGoogle} className="google-spinner" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <IonIcon icon={logoGoogle} />
+                        Continue with Google
+                      </>
+                    )}
                   </IonButton>
                 </div>
               </IonList>

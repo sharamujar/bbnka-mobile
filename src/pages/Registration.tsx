@@ -25,14 +25,19 @@ import {
   logoGoogle,
   mail,
   person,
+  personAddOutline,
   warningOutline,
 } from "ionicons/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { db, auth } from "../firebase-config";
 import {
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
+  getRedirectResult,
   GoogleAuthProvider,
+  setPersistence,
   signInWithPopup,
+  signInWithRedirect,
 } from "firebase/auth";
 import {
   collection,
@@ -41,6 +46,8 @@ import {
   setDoc,
   doc,
   getDoc,
+  query,
+  where,
 } from "firebase/firestore";
 // import { useKeyboardState } from '@ionic/react-hooks/keyboard';
 import "./Registration.css";
@@ -68,6 +75,7 @@ const Registration: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false); //for toast message color
 
   const history = useHistory(); //for navigation
+  const [loading, setLoading] = useState(false);
 
   useIonViewWillEnter(() => {
     setFirstName("");
@@ -163,10 +171,6 @@ const Registration: React.FC = () => {
         password
       );
       const user = userCredential.user;
-      console.log("Registration Success!:", user);
-      setToastMessage("Registration Success!");
-      setIsSuccess(true);
-      setShowToast(true);
 
       const userRef = doc(db, "customers", user.uid);
       await setDoc(userRef, {
@@ -177,10 +181,17 @@ const Registration: React.FC = () => {
         createdAt: new Date(),
       });
 
+      console.log("Registration Success!:", user);
+      setToastMessage("Registration Success!");
+      setIsSuccess(true);
+      setShowToast(true);
+
       setFirstName("");
       setLastName("");
       setEmail("");
       setPassword("");
+
+      history.replace("/home");
     } catch (error: any) {
       console.error("Registration Error", error.message);
 
@@ -196,91 +207,82 @@ const Registration: React.FC = () => {
   };
 
   const handleGoogleRegistration = async () => {
+    setLoading(true);
+
     try {
-      // Clear any previous error messages
-      setFirstNameError("");
-      setLastNameError("");
       setEmailError("");
       setPasswordError("");
       setIsValidationError(false);
 
-      // Use the defined googleProvider
-      const result = await signInWithPopup(auth, googleProvider);
+      await setPersistence(auth, browserLocalPersistence);
 
-      // Get the user from result
-      const user = result.user;
+      // Redirect the user to Google sign-in
+      await signInWithRedirect(auth, googleProvider);
 
-      // Check if user already exists
-      const userRef = doc(db, "customers", user.uid);
-      const userDoc = await getDoc(userRef);
-
-      if (userDoc.exists()) {
-        // User already exists
-        console.log("User already exists:", user.email);
-        setToastMessage("Account already exists! Redirecting...");
-        setIsSuccess(true);
-        setShowToast(true);
-
-        // Navigate to home after a short delay
-        setTimeout(() => {
-          history.replace("/home");
-        }, 2000);
-      } else {
-        // New user - create customer record
-        // Split display name into first and last name if available
-        let firstName = "";
-        let lastName = "";
-
-        if (user.displayName) {
-          const nameParts = user.displayName.split(" ");
-          firstName = nameParts[0] || "";
-          lastName = nameParts.slice(1).join(" ") || "";
-        }
-
-        // Create user document
-        await setDoc(userRef, {
-          firstName,
-          lastName,
-          email: user.email,
-          uid: user.uid,
-          createdAt: new Date(),
-        });
-
-        console.log("Registration Success with Google:", user);
-        setToastMessage("Registration Success!");
-        setIsSuccess(true);
-        setShowToast(true);
-
-        // Navigate to home after a short delay
-        setTimeout(() => {
-          history.replace("/home");
-        }, 2000);
-      }
-
-      return user;
+      // No need to process user here; it will be handled after redirect
     } catch (error: any) {
-      console.error("Google Registration Error:", error.code, error.message);
+      console.error("Google login failed:", error.code, error.message);
 
-      // Handle specific error cases
       if (error.code === "auth/popup-closed-by-user") {
-        setToastMessage("Registration canceled");
+        setToastMessage("Google Login canceled.");
       } else if (
         error.code === "auth/account-exists-with-different-credential"
       ) {
-        setEmailError(
-          "An account already exists with this email using a different sign-in method"
-        );
-        setIsValidationError(true);
+        setToastMessage("An account already exists with this email.");
       } else {
-        setToastMessage("Registration failed. Please try again.");
+        setToastMessage("Google login failed. Please try again.");
       }
 
       setIsSuccess(false);
       setShowToast(true);
-
-      return null;
+      setIsValidationError(true);
+      setLoading(false);
     }
   };
+
+  // Handle redirect result after returning to the app
+  useEffect(() => {
+    const checkGoogleSignIn = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+
+        if (result && result.user) {
+          const user = result.user;
+          console.log("User signed in:", user.email);
+
+          // Query Firestore to check if the user exists in "customers"
+          const q = query(
+            collection(db, "customers"),
+            where("email", "==", user.email)
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            console.log("Existing customer found. Logging in...");
+          } else {
+            console.log("New user detected. Creating a customer record...");
+
+            // Create a new customer document
+            const customerRef = doc(db, "customers", user.uid);
+            await setDoc(customerRef, {
+              email: user.email,
+              name: user.displayName || "New Customer",
+              createdAt: new Date(),
+            });
+
+            console.log("New customer registered.");
+          }
+
+          setLoading(false);
+          history.replace("/home");
+        }
+      } catch (error: any) {
+        console.error("Error handling Google Redirect:", error);
+      }
+    };
+
+    checkGoogleSignIn();
+  }, []);
 
   return (
     <IonPage>
@@ -299,7 +301,7 @@ const Registration: React.FC = () => {
                 <IonText className="login-header">
                   Welcome to <strong>BBNKA</strong>
                 </IonText>
-                <IonText className="login-title">Sign Up</IonText>
+                <IonText className="login-title">Register</IonText>
                 <IonText className="login-subtitle">
                   Fill in the details to create an account
                 </IonText>
@@ -327,7 +329,7 @@ const Registration: React.FC = () => {
                           ? "danger"
                           : "primary"
                       }
-                      onIonChange={(e) => setFirstName(e.detail.value ?? "")}
+                      onIonInput={(e) => setFirstName(e.detail.value ?? "")}
                     >
                       <IonIcon icon={person} slot="start"></IonIcon>
                     </IonInput>
@@ -353,7 +355,7 @@ const Registration: React.FC = () => {
                       placeholder="Enter your last name"
                       value={lastName}
                       fill="outline"
-                      onIonChange={(e) => setLastName(e.detail.value ?? "")}
+                      onIonInput={(e) => setLastName(e.detail.value ?? "")}
                     >
                       <IonIcon icon={person} slot="start"></IonIcon>
                     </IonInput>
@@ -379,7 +381,7 @@ const Registration: React.FC = () => {
                       placeholder="Enter your email address"
                       value={email}
                       fill="outline"
-                      onIonChange={(e) => setEmail(e.detail.value ?? "")}
+                      onIonInput={(e) => setEmail(e.detail.value ?? "")}
                     >
                       <IonIcon icon={mail} slot="start"></IonIcon>
                     </IonInput>
@@ -406,7 +408,7 @@ const Registration: React.FC = () => {
                       placeholder="Enter your password"
                       value={password}
                       fill="outline"
-                      onIonChange={(e) => setPassword(e.detail.value ?? "")}
+                      onIonInput={(e) => setPassword(e.detail.value ?? "")}
                     >
                       <IonIcon
                         icon={showPassword ? eye : eyeOff}
@@ -438,7 +440,7 @@ const Registration: React.FC = () => {
                     expand="block"
                     onClick={handleRegistration}
                   >
-                    REGISTER
+                    Register
                   </IonButton>
 
                   {/* Google Registration Button */}
@@ -454,8 +456,17 @@ const Registration: React.FC = () => {
                     onClick={handleGoogleRegistration}
                     color="light"
                   >
-                    <IonIcon icon={logoGoogle} slot="start"></IonIcon>
-                    REGISTER WITH GOOGLE
+                    {loading ? (
+                      <>
+                        <IonIcon icon={logoGoogle} className="google-spinner" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <IonIcon icon={logoGoogle} />
+                        Continue with Google
+                      </>
+                    )}
                   </IonButton>
                 </div>
               </IonList>
@@ -468,7 +479,11 @@ const Registration: React.FC = () => {
                     Already have an account?
                   </IonText>
                   <Link to="/login">
-                    <IonButton fill="clear" className="register-text-button">
+                    <IonButton
+                      fill="clear"
+                      className="register-text-button"
+                      disabled={loading}
+                    >
                       LOGIN
                     </IonButton>
                   </Link>
@@ -478,6 +493,14 @@ const Registration: React.FC = () => {
           </div>
         </div>
       </IonContent>
+
+      <IonToast
+        isOpen={showToast}
+        onDidDismiss={() => setShowToast(false)}
+        message={toastMessage}
+        duration={3000} // 3 seconds
+        color={isSuccess ? "success" : "danger"} // Green for success, red for errors
+      />
     </IonPage>
   );
 };

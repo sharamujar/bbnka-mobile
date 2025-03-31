@@ -1,0 +1,9 @@
+.footer-back-action-button-container {
+  margin-right: auto;
+}
+
+.footer-back-action-button {
+  font-size: 12px;
+  --border-color: var(--button-color);
+  --color: var(--button-color);
+}

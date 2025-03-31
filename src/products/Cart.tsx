@@ -1,6 +1,7 @@
 import {
   IonBadge,
   IonButton,
+  IonButtons,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -20,6 +21,7 @@ import {
   IonLabel,
   IonList,
   IonPage,
+  IonRouterLink,
   IonRow,
   IonText,
   IonThumbnail,
@@ -43,8 +45,11 @@ import {
   add,
   addCircle,
   arrowForward,
+  bag,
   cardOutline,
   cart,
+  chevronForwardCircle,
+  close,
   remove,
   removeCircle,
   timeOutline,
@@ -151,6 +156,13 @@ const Cart: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+          <IonButtons slot="end">
+            <IonRouterLink routerLink="/home" routerDirection="back">
+              <IonButton>
+                <IonIcon icon={close}></IonIcon>
+              </IonButton>
+            </IonRouterLink>
+          </IonButtons>
           <IonTitle className="title-toolbar">Cart</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -283,11 +295,12 @@ const Cart: React.FC = () => {
                   ₱{total.toLocaleString()}
                 </IonText>
               </div>
-              <div className="action-button-container">
+              <div className="footer-action-button-container">
                 <Link to="/home/cart/schedule" className="checkout-button-link">
-                  <IonButton className="action-button schedule-button">
-                    Schedule Pickup
-                    <IonIcon slot="start" icon={timeOutline} />
+                  <IonButton className="footer-action-button schedule-button">
+                    Checkout
+                    <IonIcon slot="start" icon={bag} />
+                    <IonIcon slot="end" icon={chevronForwardCircle} />
                   </IonButton>
                 </Link>
               </div>

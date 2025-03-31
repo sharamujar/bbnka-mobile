@@ -162,21 +162,9 @@
   align-items: center;
 }
 
-.shape-icon {
-  width: 50px;
-  height: 50px;
-  color: #bf5906;
-  margin-bottom: 5px;
-}
-
-.round-shape {
-  border-radius: 50%;
-}
-
-.rectangle-shape {
-  border-radius: 8px;
-  width: 60px;
-  height: 50px;
+.size-image {
+  width: 90px;
+  height: 60px;
 }
 
 .size-details {
@@ -186,6 +174,7 @@
 }
 
 .size-name {
+  margin-top: 5px;
   font-weight: bold;
   font-size: 12px;
   color: #333;
@@ -275,11 +264,11 @@
   background-color: var(--light-button-color);
 }
 
-.action-button-container {
+.footer-action-button-container {
   margin-left: auto;
 }
 
-.action-button {
+.footer-action-button {
   --background: var(--button-color);
   font-size: 12px;
 }

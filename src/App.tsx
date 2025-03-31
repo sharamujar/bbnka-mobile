@@ -32,6 +32,7 @@ import "./App.css";
 import { StatusBar } from "@capacitor/status-bar";
 import AuthHandler from "./components/AuthHandler";
 import Schedule from "./checkout/Schedule";
+import Review from "./checkout/Review";
 
 setupIonicReact();
 
@@ -42,22 +43,41 @@ const App: React.FC = () => {
     <IonApp>
       <IonReactRouter>
         <IonRouterOutlet>
-          <Route exact path="/" component={Login} />
-          <Route exact path="/register" component={Registration} />
-          <Route exact path="/login" component={Login} />
+          <Route exact path="/">
+            <Login />
+          </Route>
+          <Route exact path="/register">
+            <Registration />
+          </Route>
+          <Route exact path="/login">
+            <Login />
+          </Route>
           <IonTabs>
             <IonRouterOutlet>
-              <Route exact path="/home" component={Home} />
-              <Route exact path="/orders" component={Orders} />
-              <Route exact path="/notifications" component={Notifications} />
-              <Route exact path="/account" component={Account} />
-              <Route exact path="/home/cart" component={Cart} />
-              <Route exact path="/home/cart/schedule" component={Schedule} />
-              <Route
-                exact
-                path="/home/cart/schedule/payment"
-                component={Payment}
-              />
+              <Route exact path="/home">
+                <Home />
+              </Route>
+              <Route exact path="/orders">
+                <Orders />
+              </Route>
+              <Route exact path="/notifications">
+                <Notifications />
+              </Route>
+              <Route exact path="/account">
+                <Account />
+              </Route>
+              <Route exact path="/home/cart">
+                <Cart />
+              </Route>
+              <Route exact path="/home/cart/schedule">
+                <Schedule />
+              </Route>
+              <Route exact path="/home/cart/schedule/payment">
+                <Payment />
+              </Route>
+              <Route exact path="/home/cart/schedule/payment/review">
+                <Review />
+              </Route>
               <Redirect from="/" to="/home" exact />
             </IonRouterOutlet>
             <IonTabBar slot="bottom">

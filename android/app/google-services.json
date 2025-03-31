@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "214639010070-5h3dknrlhtttek4rcm3d67qmdcrrprr9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "bbnka.mobile",
+            "certificate_hash": "003a85edeffb22817f2bc12e88f654ce9e809a86"
+          }
+        },
+        {
           "client_id": "214639010070-ukg4a3c95t0tlhov4hpinrcdcbgn829s.apps.googleusercontent.com",
           "client_type": 3
         }

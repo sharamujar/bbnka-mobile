@@ -6,7 +6,7 @@ export interface Product {
   size: string;
   varieties: string;
   price: number;
-  imageUrl: string;
+  imageURL: string;
 }
 
 export interface Category {
@@ -28,6 +28,14 @@ export interface Size {
   slices: string;
   varieties: string[];
   price: number;
+  maxVarieties: number;
+}
+
+export interface Varieties {
+  id: string;
+  name: string;
+  price: number;
+  sizeId: string;
 }
 
 export interface CartItem {
@@ -47,5 +55,11 @@ export interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: any;
+  // showToastMessage: (message: string, success: boolean) => void;
+}
+
+export interface BuildYourOwnModalProps {
+  isOpen: boolean;
+  onClose: () => void;
   showToastMessage: (message: string, success: boolean) => void;
 }

@@ -42,12 +42,16 @@
 }
 
 .register-button-wrapper {
-  padding: 2rem 1rem 0 1rem;
+  padding: 1rem 1rem 0 1rem;
+}
+
+.register-button-wrapper ion-button {
+  text-transform: capitalize;
 }
 
 .register-button {
   --background: #bf5906;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 12px;
 }
 
@@ -94,4 +98,20 @@
     flex-direction: column;
     /* gap: 15px; */
   }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.google-spinner {
+  animation: spin 1s linear infinite;
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
 }

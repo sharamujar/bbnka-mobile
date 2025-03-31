@@ -15,15 +15,15 @@
 ion-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 5px;
 }
 
 .cart-product-card,
 ion-item-sliding {
   border-radius: 15px;
   --ion-item-background: #fff;
-  border: 1px solid #ddd; /* Add a border to make it visible */
-  overflow: hidden; /* Ensure content doesn't overflow the rounded corners */
+  border: 1px solid #ddd;
+  overflow: hidden;
 }
 
 .cart-product-item-container {
@@ -243,6 +243,7 @@ ion-item-sliding {
 }
 
 .total-container {
+  padding-left: 10px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -271,6 +272,43 @@ ion-item-sliding ion-item-options {
 
 ion-item-sliding.active ion-item-options {
   transform: translateX(0);
+}
+
+.product-footer {
+  display: flex;
+  /* justify-content: space-between; */
+  align-items: center;
+}
+
+.footer-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.product-quantity-control {
+  display: flex;
+  align-items: center;
+}
+
+.product-quantity-button {
+  font-size: 18px;
+  --color: var(--button-color);
+}
+
+.product-quantity-badge {
+  margin: 0 2px;
+  background-color: var(--light-button-color);
+}
+
+.footer-action-button-container {
+  margin-left: auto;
+}
+
+.footer-action-button {
+  --background: var(--button-color);
+  font-size: 12px;
 }
 
 /* @media (min-width: 768px) {

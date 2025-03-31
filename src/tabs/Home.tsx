@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useHistory } from "react-router-dom";
 import {
   IonPage,
@@ -20,14 +20,34 @@ import {
   IonCol,
   IonCardSubtitle,
   IonToast,
+  IonList,
+  IonLabel,
+  IonFab,
+  IonFabButton,
+  useIonViewDidEnter,
+  useIonViewWillLeave,
 } from "@ionic/react";
-import { cart, searchOutline, add } from "ionicons/icons";
+import {
+  cart,
+  searchOutline,
+  add,
+  cartOutline,
+  storefrontOutline,
+  storefront,
+  arrowForwardSharp,
+  fastFood,
+} from "ionicons/icons";
 import { collection, doc, onSnapshot } from "firebase/firestore";
 import ProductModal from "../products/ProductModal";
 import "../tabs/Home.css";
 import { Product, Category, Promotion } from "../interfaces/interfaces";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../firebase-config";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css"; // Basic Swiper styles
+import "swiper/css/pagination"; // Optional: Pagination styles
+import { Pagination, Navigation, Autoplay } from "swiper/modules"; // Import modules
+import BuildYourOwnModal from "../components/BuildYourOwnModal";
 
 const Home: React.FC = () => {
   const history = useHistory();
@@ -43,9 +63,25 @@ const Home: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
   // Toast state
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
+  // const [showToast, setShowToast] = useState(false);
+  // const [toastMessage, setToastMessage] = useState("");
+  // const [isSuccess, setIsSuccess] = useState(false);
+
+  // FAB button state
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollTop = useRef(0);
+  const scrollListener = useRef<((ev: CustomEvent) => void) | null>(null);
+
+  const [showBYOKModal, setBYOKShowModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{
+    message: string;
+    success: boolean;
+    show: boolean;
+  }>({
+    message: "",
+    success: false,
+    show: false,
+  });
 
   // Check if user is logged in
   useEffect(() => {
@@ -60,7 +96,6 @@ const Home: React.FC = () => {
       }
     });
 
-    // Automatically fetches products from Firestore Database
     const fetchProducts = onSnapshot(collection(db, "products"), (snapshot) => {
       const productList = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -100,34 +135,85 @@ const Home: React.FC = () => {
   }, []);
 
   // Set the first category as active when categories are loaded
-  useEffect(() => {
-    if (categories.length > 0 && !activeCategory) {
-      setActiveCategory(categories[0]);
-      handleCategorySelect(categories[0]);
-    }
-  }, [categories, activeCategory]);
+  // useEffect(() => {
+  //   if (categories.length > 0 && !activeCategory) {
+  //     setActiveCategory(categories[0]);
+  //     handleCategorySelect(categories[0]);
+  //   }
+  // }, [categories, activeCategory]);
 
-  const handleCategorySelect = (category: string) => {
-    setActiveCategory(category);
-    console.log("Selected Category:", category);
-  };
+  // const handleCategorySelect = (category: string) => {
+  //   setActiveCategory(category);
+  //   console.log("Selected Category:", category);
+  // };
 
   const openProductModal = (product: any) => {
     setSelectedProduct(product);
     setProductDetailsModal(true);
   };
 
-  const showToastMessage = (message: string, success: boolean) => {
-    setToastMessage(message);
-    setIsSuccess(success);
-    setShowToast(true);
+  // const showToastMessage = (message: string, success: boolean) => {
+  //   setToastMessage(message);
+  //   setIsSuccess(success);
+  //   setShowToast(true);
+  // };
+
+  // Scroll event listener to hide/show the FAB button
+  useIonViewDidEnter(() => {
+    const content = document.querySelector("ion-content");
+
+    if (content) {
+      content.scrollEvents = true;
+
+      const handleScroll = (ev: any) => {
+        const scrollTop = ev.detail.scrollTop;
+
+        if (scrollTop > lastScrollTop.current) {
+          setIsVisible(false);
+        } else {
+          setIsVisible(true);
+        }
+
+        lastScrollTop.current = scrollTop;
+      };
+
+      scrollListener.current = handleScroll;
+
+      content.addEventListener("ionScroll", handleScroll);
+    }
+  });
+
+  useIonViewWillLeave(() => {
+    const content = document.querySelector("ion-content");
+
+    if (content && scrollListener.current) {
+      content.removeEventListener("ionScroll", scrollListener.current);
+    }
+  });
+
+  useEffect(() => {
+    return () => {
+      const content = document.querySelector("ion-content");
+
+      if (content && scrollListener.current) {
+        content.removeEventListener("ionScroll", scrollListener.current);
+      }
+    };
+  }, []);
+
+  const handleShowToastMessage = (message: string, success: boolean) => {
+    setToastMessage({
+      message,
+      success,
+      show: true,
+    });
   };
 
   return (
     <IonPage className="home-page">
       <IonHeader className="home-header">
         <IonToolbar>
-          <IonTitle className="title-toolbar">BBNKA</IonTitle>
+          <IonTitle className="home-title">BBNKA</IonTitle>
           <IonButtons slot="end">
             <IonButton
               className="cart-button"
@@ -144,7 +230,115 @@ const Home: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="home-content">
-        <div className="search-bar-container">
+        <IonCard className="banner-container">
+          {promotions.length > 0 && (
+            <Swiper
+              modules={[Pagination, Navigation, Autoplay]}
+              pagination={{ clickable: true }}
+              autoplay={{ delay: 3000, disableOnInteraction: false }}
+              loop={true}
+              slidesPerView={1}
+              centeredSlides={true}
+            >
+              {promotions.map((promo, index) => (
+                <SwiperSlide key={index}>
+                  <IonImg src={promo.imageUrl} className="banner-img" />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          )}
+        </IonCard>
+
+        <IonCard className="byok-cta-card">
+          <div className="byok-content">
+            <div className="byok-text">
+              <IonCardTitle>Build Your Own Bibingka</IonCardTitle>
+              <IonCardSubtitle>
+                Customize your kakanin with your favorite flavors!
+              </IonCardSubtitle>
+              <div className="byok-btn-container">
+                <IonButton
+                  className="byok-btn"
+                  onClick={() => setBYOKShowModal(true)}
+                >
+                  Order Now
+                  <IonIcon icon={fastFood} className="byok-icon"></IonIcon>
+                </IonButton>
+              </div>
+            </div>
+          </div>
+        </IonCard>
+
+        <BuildYourOwnModal
+          isOpen={showBYOKModal}
+          onClose={() => setBYOKShowModal(false)}
+          showToastMessage={handleShowToastMessage}
+        />
+
+        <div>
+          <IonTitle className="product-title">Our Products</IonTitle>
+        </div>
+
+        <IonGrid className="product-grid">
+          <IonRow>
+            {products.length > 0 ? (
+              [...products]
+                .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
+                .map((product) => (
+                  <IonCol key={product.id} size="12">
+                    <IonCard
+                      className="product-card"
+                      // button
+                    >
+                      <div className="product-item">
+                        {/* Product Image */}
+                        <IonImg
+                          className="product-img"
+                          src={product.imageURL}
+                        />
+                        {/* Product Details */}
+                        <IonLabel className="product-details">
+                          <IonCardHeader className="product-header">
+                            <IonCardTitle className="home-product-name">
+                              {product.name}
+                            </IonCardTitle>
+                            <IonCardSubtitle className="home-product-description">
+                              {product.description}
+                            </IonCardSubtitle>
+                          </IonCardHeader>
+                        </IonLabel>
+                      </div>
+                    </IonCard>
+                  </IonCol>
+                ))
+            ) : (
+              <IonCol size="12">
+                <div className="no-products-container">
+                  <p className="no-products-text">No products available</p>
+                </div>
+              </IonCol>
+            )}
+          </IonRow>
+        </IonGrid>
+
+        {/* <IonFab
+          vertical="bottom"
+          horizontal="end"
+          slot="fixed"
+          className={`order-now-fab ${!isVisible ? "hidden" : ""}`}
+        >
+          <IonButton
+            className="order-now-btn"
+            onClick={() => openProductModal(null)}
+          >
+            <div className="order-now-content">
+              <IonIcon icon={storefront} className="order-icon" />
+              <IonLabel className="order-label">Order Now</IonLabel>
+            </div>
+          </IonButton>
+        </IonFab> */}
+
+        {/* <div className="search-bar-container">
           <IonItem className="search-bar" lines="none">
             <IonInput
               className="search-input"
@@ -217,22 +411,22 @@ const Home: React.FC = () => {
               </div>
             )}
           </IonRow>
-        </IonGrid>
+        </IonGrid> */}
 
-        <ProductModal
+        {/* <ProductModal
           isOpen={productDetailsModal}
           onClose={() => setProductDetailsModal(false)}
           product={selectedProduct}
           showToastMessage={showToastMessage}
-        />
+        /> */}
 
-        <IonToast
+        {/* <IonToast
           isOpen={showToast}
           onDidDismiss={() => setShowToast(false)}
           message={toastMessage}
           duration={2000}
           color={isSuccess ? "success" : "danger"}
-        />
+        /> */}
       </IonContent>
     </IonPage>
   );
