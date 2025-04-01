@@ -35,7 +35,9 @@ import {
   createUserWithEmailAndPassword,
   getRedirectResult,
   GoogleAuthProvider,
+  onAuthStateChanged,
   setPersistence,
+  signInWithCredential,
   signInWithPopup,
   signInWithRedirect,
 } from "firebase/auth";
@@ -48,10 +50,12 @@ import {
   getDoc,
   query,
   where,
+  serverTimestamp,
 } from "firebase/firestore";
 // import { useKeyboardState } from '@ionic/react-hooks/keyboard';
 import "./Registration.css";
 import { Link, useHistory } from "react-router-dom";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 
 const Registration: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -206,7 +210,7 @@ const Registration: React.FC = () => {
     }
   };
 
-  const handleGoogleRegistration = async () => {
+  const handleGoogleLogin = async () => {
     setLoading(true);
 
     try {
@@ -214,25 +218,20 @@ const Registration: React.FC = () => {
       setPasswordError("");
       setIsValidationError(false);
 
-      await setPersistence(auth, browserLocalPersistence);
+      // Simple Firebase auth with popup
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      console.log("User signed in:", result.user);
 
-      // Redirect the user to Google sign-in
-      await signInWithRedirect(auth, googleProvider);
-
-      // No need to process user here; it will be handled after redirect
-    } catch (error: any) {
-      console.error("Google login failed:", error.code, error.message);
-
-      if (error.code === "auth/popup-closed-by-user") {
-        setToastMessage("Google Login canceled.");
-      } else if (
-        error.code === "auth/account-exists-with-different-credential"
-      ) {
-        setToastMessage("An account already exists with this email.");
-      } else {
-        setToastMessage("Google login failed. Please try again.");
+      if (result.credential) {
+        const credential = GoogleAuthProvider.credential(
+          result.credential.idToken,
+          result.credential.accessToken
+        );
+        await signInWithCredential(auth, credential);
       }
-
+    } catch (error) {
+      console.error("Google login failed:", error);
+      setToastMessage("Google login failed. Please try again.");
       setIsSuccess(false);
       setShowToast(true);
       setIsValidationError(true);
@@ -240,48 +239,42 @@ const Registration: React.FC = () => {
     }
   };
 
-  // Handle redirect result after returning to the app
+  // Check authentication state
   useEffect(() => {
-    const checkGoogleSignIn = async () => {
-      try {
-        const result = await getRedirectResult(auth);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log("User signed in:", user.email);
 
-        if (result && result.user) {
-          const user = result.user;
-          console.log("User signed in:", user.email);
+        // Check if the user exists in Firestore
+        const q = query(
+          collection(db, "customers"),
+          where("email", "==", user.email)
+        );
+        const querySnapshot = await getDocs(q);
 
-          // Query Firestore to check if the user exists in "customers"
-          const q = query(
-            collection(db, "customers"),
-            where("email", "==", user.email)
-          );
-          const querySnapshot = await getDocs(q);
-
-          if (!querySnapshot.empty) {
-            console.log("Existing customer found. Logging in...");
-          } else {
-            console.log("New user detected. Creating a customer record...");
-
-            // Create a new customer document
-            const customerRef = doc(db, "customers", user.uid);
-            await setDoc(customerRef, {
-              email: user.email,
-              name: user.displayName || "New Customer",
-              createdAt: new Date(),
-            });
-
-            console.log("New customer registered.");
-          }
-
-          setLoading(false);
+        if (!querySnapshot.empty) {
+          console.log("User found in customers collection. Logging in...");
           history.replace("/home");
-        }
-      } catch (error: any) {
-        console.error("Error handling Google Redirect:", error);
-      }
-    };
+        } else {
+          console.warn("User not found in customers collection:", user.email);
+          console.log("New user detected. Creating account...");
 
-    checkGoogleSignIn();
+          await setDoc(doc(db, "customers", user.uid), {
+            email: user.email,
+            name: user.displayName || "New User",
+            createdAt: serverTimestamp(),
+          });
+
+          setToastMessage("Welcome! Your account has been created.");
+          setIsSuccess(true);
+          setShowToast(true);
+
+          history.replace("/home"); // Redirect after registration
+        }
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -453,7 +446,7 @@ const Registration: React.FC = () => {
                   <IonButton
                     className="google-login-button"
                     expand="block"
-                    onClick={handleGoogleRegistration}
+                    onClick={handleGoogleLogin}
                     color="light"
                   >
                     {loading ? (

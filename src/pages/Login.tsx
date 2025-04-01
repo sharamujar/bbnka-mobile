@@ -37,6 +37,7 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   setPersistence,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -53,6 +54,8 @@ import {
 import { Storage } from "@capacitor/storage";
 import "./Login.css";
 import { Link } from "react-router-dom";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 
 const Login: React.FC = () => {
   const history = useHistory(); //for navigation
@@ -182,12 +185,19 @@ const Login: React.FC = () => {
       setPasswordError("");
       setIsValidationError(false);
 
-      await setPersistence(auth, browserLocalPersistence);
+      // Simple Firebase auth with popup
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      console.log("User signed in:", result.user);
 
-      // Use redirect for mobile authentication
-      await signInWithRedirect(auth, googleProvider);
-    } catch (error: any) {
-      console.error("Google login failed:", error.code, error.message);
+      if (result.credential) {
+        const credential = GoogleAuthProvider.credential(
+          result.credential.idToken,
+          result.credential.accessToken
+        );
+        await signInWithCredential(auth, credential);
+      }
+    } catch (error) {
+      console.error("Google login failed:", error);
       setToastMessage("Google login failed. Please try again.");
       setIsSuccess(false);
       setShowToast(true);

@@ -1,3 +1,168 @@
+/* Schedule.css */
+
+/* Step Progress Bar Styles */
+.step-progress-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 8px 24px;
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  z-index: 1;
+}
+
+.step-circle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f4f4f4;
+  border: 2px solid #dedede;
+  color: #888;
+  font-weight: bold;
+  margin-bottom: 6px;
+  z-index: 2;
+}
+
+.step-circle.completed {
+  background-color: var(--ion-color-success);
+  border-color: var(--ion-color-success);
+  color: white;
+}
+
+.step-circle.active {
+  background-color: var(--ion-color-primary);
+  border-color: var(--ion-color-primary);
+  color: white;
+}
+
+.step-name {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
+.step-line {
+  position: absolute;
+  top: 16px;
+  height: 2px;
+  background-color: #dedede;
+  width: 100%;
+  left: 50%;
+  z-index: 0;
+}
+
+.step-line.completed {
+  background-color: var(--ion-color-success);
+}
+
+/* Add this to your existing CSS */
+.step-circle ion-icon {
+  font-size: 18px;
+}
+
+/* Make sure the step items are properly spaced */
+.step-item:not(:last-child) .step-line {
+  width: calc(100% - 16px);
+}
+
+/* Footer */
+ion-footer ion-toolbar {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+}
+
+/* Checkout Progress */
+.checkout-progress-container {
+  margin-bottom: 24px;
+}
+
+/* Form Container */
+.schedule-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 20px;
+}
+
+/* Date Selection */
+.date-selection-item {
+  --border-radius: 8px;
+  --background: #fff;
+  --border-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.date-select {
+  width: 100%;
+  max-width: 100%;
+  --padding-end: 0;
+}
+
+.date-option {
+  font-size: 14px;
+}
+
+/* Time Selection */
+.time-selection-item {
+  --border-radius: 8px;
+  --background: #fff;
+  --border-color: #fff;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.time-select {
+  width: 100%;
+  max-width: 100%;
+  --padding-end: 0;
+}
+
+.time-select[disabled] {
+  opacity: 0.6;
+}
+
+.time-option {
+  font-size: 14px;
+}
+
+/* Selection Labels */
+.selection-label {
+  font-weight: 500;
+  color: var(--header-color) !important;
+  font-size: 16px;
+}
+
+/* No Time Slots Message */
+.no-slots-container {
+  padding: 14px;
+  border-radius: 8px;
+  background-color: #fff8e1;
+  border: 1px solid #ffd54f;
+  margin-top: 8px;
+}
+
+.no-slots-message {
+  text-align: center;
+  color: #e65100;
+  font-size: 14px;
+  display: block;
+  font-weight: 500;
+}
+
+/* Footer Styling */
 .footer-back-action-button-container {
   margin-right: auto;
 }
@@ -6,4 +171,38 @@
   font-size: 12px;
   --border-color: var(--button-color);
   --color: var(--button-color);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.schedule-form-container {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .selection-label {
+    font-size: 14px;
+  }
+
+  .footer-back-action-button,
+  .footer-action-button {
+    font-size: 12px;
+  }
+}
+
+/* Improve tap targets for mobile */
+.date-select,
+.time-select {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --padding-start: 6px;
 }

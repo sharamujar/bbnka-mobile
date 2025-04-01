@@ -15,6 +15,12 @@ const config: CapacitorConfig = {
       skipNativeAuth: false,
       providers: ["google.com"],
     },
+    GoogleAuth: {
+      scopes: ["profile", "email"],
+      serverClientId:
+        "214639010070-ukg4a3c95t0tlhov4hpinrcdcbgn829s.apps.googleusercontent.com",
+      forceCodeForRefreshToken: true,
+    },
   },
 };
 

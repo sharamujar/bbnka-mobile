@@ -188,8 +188,8 @@ const Cart: React.FC = () => {
     const hue = ((Math.abs(hash * 47) % 360) + 360) % 360;
 
     // More balanced contrast in saturation and lightness
-    const saturation = 55 + (Math.abs(hash * 29) % 35); // Between 55% and 90%
-    const lightness = 35 + (Math.abs(hash * 17) % 30); // Between 35% and 65%
+    const saturation = 35 + (Math.abs(hash * 12) % 35); // Between 55% and 90%
+    const lightness = 35 + (Math.abs(hash * 42) % 30); // Between 35% and 65%
 
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
   };
