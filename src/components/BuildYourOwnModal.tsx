@@ -36,6 +36,8 @@ import {
   arrowBackCircle,
   chevronForwardCircle,
   chevronBackCircleOutline,
+  removeCircle,
+  addCircle,
 } from "ionicons/icons";
 import {
   collection,
@@ -44,8 +46,10 @@ import {
   getDoc,
   query,
   where,
+  setDoc,
+  updateDoc,
 } from "firebase/firestore";
-import { db } from "../firebase-config";
+import { auth, db } from "../firebase-config";
 import "./BuildYourOwnModal.css";
 import { Size } from "../interfaces/interfaces";
 import { Varieties } from "../interfaces/interfaces";
@@ -209,26 +213,98 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
     });
   };
 
-  const handleAddToCart = () => {
-    const customItem = {
-      sizeId: selectedSize,
-      varietyId: selectedVarieties,
-      quantity,
-      totalPrice,
-      specialInstructions,
-    };
+  const handleAddToCart = async () => {
+    if (!selectedSize || selectedVarieties.length === 0) {
+      showToastMessage("Please select a size and at least one variety.", false);
+      return;
+    }
 
-    console.log("Adding to cart:", customItem);
-    showToastMessage("Your custom Kakanin has been added to cart!", true);
-    resetForm();
-    onClose();
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.log("User is not logged in.");
+      return;
+    }
+
+    const cartCollectionRef = collection(
+      db,
+      "customers",
+      currentUser.uid,
+      "cart"
+    );
+
+    try {
+      // Get the size name
+      const selectedSizeObj = sizes.find((size) => size.id === selectedSize);
+      const sizeName = selectedSizeObj ? selectedSizeObj.name : "";
+
+      // Get the variety names
+      const varietyNames = selectedVarieties
+        .map((varietyId) => {
+          const variety = filteredVarieties.find((v) => v.id === varietyId);
+          return variety ? variety.name : "";
+        })
+        .filter((name) => name !== "");
+
+      // Check if an item with the same size and varieties exists
+      const q = query(
+        cartCollectionRef,
+        where("productName", "==", "Build Your Own Bibingka"),
+        where("productSize.id", "==", selectedSize)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      const existingCartItem = querySnapshot.docs.find((doc) => {
+        const data = doc.data();
+        return (
+          JSON.stringify(data.productVarieties.sort()) ===
+          JSON.stringify(selectedVarieties.sort())
+        );
+      });
+
+      if (existingCartItem) {
+        const newQuantity =
+          (existingCartItem.data().productQuantity || 1) + quantity; // Use current quantity instead of +1
+        await updateDoc(existingCartItem.ref, { productQuantity: newQuantity });
+        showToastMessage(`Updated cart: ${newQuantity} items`, true);
+      } else {
+        const cartId = doc(cartCollectionRef).id;
+        await setDoc(doc(cartCollectionRef, cartId), {
+          createdAt: new Date().toISOString(),
+          productName: "Build Your Own Bibingka",
+          productSize: { id: selectedSize, name: sizeName },
+          productVarieties: selectedVarieties,
+          productVarietiesNames: varietyNames,
+          productQuantity: quantity, // Use selected quantity
+          productPrice: totalPrice,
+          originalPrice: totalPrice, // Store the original price
+          specialInstructions,
+          cartId,
+        });
+
+        showToastMessage("Added to cart successfully!", true);
+      }
+
+      // Reset form after adding to cart
+      resetForm();
+      onClose();
+    } catch (error) {
+      console.error("Error adding/updating product in the cart:", error);
+      showToastMessage("Failed to add to cart", false);
+    }
   };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setQuantity(1);
+    }
+  }, [isOpen]);
 
   const resetForm = () => {
     setStep(1);
     setSelectedSize("");
     setSelectedVarieties([]);
-    setQuantity(1);
+    // setQuantity(1);
     setSpecialInstructions("");
   };
 
@@ -332,13 +408,13 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                 )
               </IonTitle>
               <IonText className="step-description">
-                Select variety/varieties of kakanin
+                Select your favorite kakanin
               </IonText>
             </div>
 
             {selectedSize ? (
-              <IonGrid className="variety-grid">
-                <IonRow className="variety-selection-row">
+              <IonGrid className="byok-variety-grid">
+                <IonRow className="byok-variety-selection-row">
                   {filteredVarieties.map((variety) => {
                     const selectedSizeObj = sizes.find(
                       (size) => size.id === selectedSize
@@ -346,17 +422,17 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                     const maxVarieties = selectedSizeObj?.maxVarieties || 1;
 
                     return (
-                      <IonCol key={variety.id} size="6" size-md="4">
+                      <IonCol key={variety.id} size="6">
                         <IonCard
-                          className={`variety-card ${
+                          className={`byok-variety-card ${
                             selectedVarieties.includes(variety.id)
                               ? "selected-variety"
                               : ""
                           }`}
                           onClick={() => toggleVarietySelection(variety.id)}
                         >
-                          <div className="variety-checkbox-container">
-                            <IonCheckbox
+                          <div className="byok-variety-checkbox-container">
+                            {/* <IonCheckbox
                               className="custom-checkbox"
                               slot="start"
                               checked={selectedVarieties.includes(variety.id)}
@@ -367,22 +443,24 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                                 selectedVarieties.length >= maxVarieties &&
                                 !selectedVarieties.includes(variety.id)
                               }
-                            />
+                            /> */}
                           </div>
-                          <IonCardContent className="variety-card-content">
-                            <div className="variety-image-container">
+                          <IonCardContent className="byok-variety-card-content">
+                            <div className="byok-variety-image-container">
                               <IonImg
                                 src={
                                   products.find(
                                     (product) => product.name === variety.name
                                   )?.imageURL || "default-image-url.jpg"
                                 }
-                                className="variety-image"
+                                className="byok-variety-image"
                               />
                             </div>
-                            <IonText className="variety-name">
-                              {variety.name}
-                            </IonText>
+                            <div className="variety-details">
+                              <IonText className="byok-variety-name">
+                                {variety.name}
+                              </IonText>
+                            </div>
                           </IonCardContent>
                         </IonCard>
                       </IonCol>
@@ -401,14 +479,16 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
       case 3:
         return (
           <div className="step-content">
-            <h3 className="step-title">Review & Finalize</h3>
-            <p className="step-description">
+            <IonTitle className="step-title product-title">
+              Review & Finalize
+            </IonTitle>
+            <IonText className="step-description">
               Review your selection and add to cart
-            </p>
+            </IonText>
 
             <div className="review-section">
               <div className="review-summary">
-                <h4>Your Custom Kakanin</h4>
+                <IonTitle>Your Custom Kakanin</IonTitle>
 
                 <div className="review-detail">
                   <span className="review-label">Size:</span>
@@ -420,8 +500,10 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                 </div>
 
                 <div className="review-detail">
-                  <span className="review-label">Varieties:</span>
-                  <span className="review-value">
+                  <span className="review-label review-label-variety">
+                    Varieties:
+                  </span>
+                  <span className="review-value review-value-varieties">
                     {selectedVarieties.length > 0
                       ? selectedVarieties
                           .map(
@@ -436,8 +518,8 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                 </div>
               </div>
 
-              <div className="quantity-section">
-                <h4>Quantity</h4>
+              {/* <div className="quantity-section">
+                <IonTitle>Quantity</IonTitle>
                 <div className="quantity-control">
                   <IonButton
                     fill="clear"
@@ -468,23 +550,62 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                     <IonIcon icon={addCircleOutline} />
                   </IonButton>
                 </div>
-              </div>
+              </div> */}
 
               <div className="special-instructions">
-                <h4>Special Instructions (Optional)</h4>
+                <IonTitle className="special-instructions-text">
+                  Special Instructions (Optional)
+                </IonTitle>
                 <IonTextarea
+                  className="special-instructions-textarea"
+                  label="Note:"
+                  labelPlacement="stacked"
+                  fill="outline"
                   placeholder="Add any special requests or instructions here..."
                   value={specialInstructions}
                   onIonChange={(e) => setSpecialInstructions(e.detail.value!)}
-                  rows={3}
                 />
               </div>
 
               <div className="price-summary">
                 <div className="total-price">
-                  <span className="total-label">Total Price</span>
-                  <span className="total-value">₱{totalPrice.toFixed(2)}</span>
+                  <span className="total-label">Total: </span>
+                  <span className="total-value">
+                    ₱{totalPrice.toLocaleString()}
+                  </span>
                 </div>
+                {/* <div className="quantity-control">
+                  <IonButton
+                    className="byok-quantity-button"
+                    fill="clear"
+                    onClick={() => quantity > 1 && setQuantity(quantity - 1)}
+                    disabled={quantity <= 1}
+                  >
+                    <IonIcon icon={removeCircle} />
+                  </IonButton>
+
+                  <IonInput
+                    type="number"
+                    value={quantity}
+                    min={1}
+                    max={99}
+                    onIonChange={(e) => {
+                      const value = parseInt(e.detail.value!, 10);
+                      if (!isNaN(value) && value > 0) {
+                        setQuantity(value);
+                      }
+                    }}
+                    className="quantity-input"
+                  />
+
+                  <IonButton
+                    className="byok-quantity-button"
+                    fill="clear"
+                    onClick={() => setQuantity(quantity + 1)}
+                  >
+                    <IonIcon icon={addCircle} />
+                  </IonButton>
+                </div> */}
               </div>
             </div>
           </div>
@@ -570,7 +691,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
 
             {step === 3 && (
               <IonButton
-                color="success"
+                className="footer-action-button add-next-button"
                 disabled={!isStepComplete()}
                 onClick={handleAddToCart}
               >

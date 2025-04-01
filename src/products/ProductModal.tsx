@@ -255,7 +255,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
             <IonCardHeader className="product-details-header">
               <IonCardSubtitle>{product.name}</IonCardSubtitle>
-              <IonCardTitle>₱{product.price}</IonCardTitle>
+              {/* <IonCardTitle>₱{product.price}</IonCardTitle> */}
             </IonCardHeader>
             <IonCardContent className="product-details-description">
               {product.description}
@@ -263,11 +263,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
           </div>
         )}
 
-        <div>
+        {/* <div>
           <IonTitle className="product-title">Choose Size</IonTitle>
-        </div>
+        </div> */}
         {/* Sizes and Varieties */}
-        <IonGrid className="size-grid">
+        {/* <IonGrid className="size-grid">
           <IonRow className="size-selection-row">
             {[...sizes]
               .sort((a, b) => b.price - a.price)
@@ -282,7 +282,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     }}
                   >
                     <IonCardContent className="size-card-content">
-                      {/* Size Details */}
+                      
                       <IonImg
                         src={getSizeImage(size.name)}
                         className="size-image"
@@ -302,9 +302,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 </IonCol>
               ))}
           </IonRow>
-        </IonGrid>
+        </IonGrid> */}
 
-        {selectedSize && (
+        {/* {selectedSize && (
           <>
             <IonTitle className="product-title">Available Varieties</IonTitle>
             <IonGrid>
@@ -317,7 +317,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </IonRow>
             </IonGrid>
           </>
-        )}
+        )} */}
 
         {/* Show varieties only if a size is selected */}
         {/* {selectedSizeObj && (
@@ -346,7 +346,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         )} */}
       </IonContent>
 
-      <IonFooter>
+      {/* <IonFooter>
         <IonToolbar className="product-footer">
           <div className="footer-content">
             <div className="product-quantity-control">
@@ -377,7 +377,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </IonButton>
           </div>
         </IonToolbar>
-      </IonFooter>
+      </IonFooter> */}
     </IonModal>
   );
 };

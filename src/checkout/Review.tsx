@@ -41,7 +41,7 @@ const Review: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle className="title-toolbar">Payment</IonTitle>
+          <IonTitle className="title-toolbar">Review</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>

@@ -233,15 +233,15 @@ const Home: React.FC = () => {
         <IonCard className="banner-container">
           {promotions.length > 0 && (
             <Swiper
-              modules={[Pagination, Navigation, Autoplay]}
-              pagination={{ clickable: true }}
-              autoplay={{ delay: 3000, disableOnInteraction: false }}
+              className="banner-scroll"
+              modules={[Autoplay]}
+              autoplay={{ delay: 20000, disableOnInteraction: false }}
               loop={true}
-              slidesPerView={1}
+              slidesPerView={1.2} // Show part of next/prev banners
               centeredSlides={true}
             >
               {promotions.map((promo, index) => (
-                <SwiperSlide key={index}>
+                <SwiperSlide key={index} className="banner-card">
                   <IonImg src={promo.imageUrl} className="banner-img" />
                 </SwiperSlide>
               ))}
@@ -249,17 +249,23 @@ const Home: React.FC = () => {
           )}
         </IonCard>
 
-        <IonCard className="byok-cta-card">
+        <IonCard
+          className="byok-cta-card"
+          onClick={() => setBYOKShowModal(true)}
+        >
           <div className="byok-content">
             <div className="byok-text">
-              <IonCardTitle>Build Your Own Bibingka</IonCardTitle>
+              <IonCardTitle>Build Your Own Kakanin</IonCardTitle>
               <IonCardSubtitle>
                 Customize your kakanin with your favorite flavors!
               </IonCardSubtitle>
               <div className="byok-btn-container">
                 <IonButton
                   className="byok-btn"
-                  onClick={() => setBYOKShowModal(true)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBYOKShowModal(true);
+                  }}
                 >
                   Order Now
                   <IonIcon icon={fastFood} className="byok-icon"></IonIcon>
@@ -280,24 +286,28 @@ const Home: React.FC = () => {
         </div>
 
         <IonGrid className="product-grid">
-          <IonRow>
+          <IonRow className="product-row">
             {products.length > 0 ? (
               [...products]
                 .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
                 .map((product) => (
-                  <IonCol key={product.id} size="12">
+                  <IonCol key={product.id} size="6">
                     <IonCard
                       className="product-card"
-                      // button
+                      onClick={() => openProductModal(product)}
+                      button
                     >
                       <div className="product-item">
                         {/* Product Image */}
-                        <IonImg
+                        {/* <IonImg
                           className="product-img"
                           src={product.imageURL}
-                        />
+                        /> */}
+                        <div className="product-img">
+                          <IonImg src={product.imageURL} />
+                        </div>
                         {/* Product Details */}
-                        <IonLabel className="product-details">
+                        {/* <IonLabel className="product-details">
                           <IonCardHeader className="product-header">
                             <IonCardTitle className="home-product-name">
                               {product.name}
@@ -306,7 +316,7 @@ const Home: React.FC = () => {
                               {product.description}
                             </IonCardSubtitle>
                           </IonCardHeader>
-                        </IonLabel>
+                        </IonLabel> */}
                       </div>
                     </IonCard>
                   </IonCol>
@@ -413,12 +423,11 @@ const Home: React.FC = () => {
           </IonRow>
         </IonGrid> */}
 
-        {/* <ProductModal
+        <ProductModal
           isOpen={productDetailsModal}
           onClose={() => setProductDetailsModal(false)}
           product={selectedProduct}
-          showToastMessage={showToastMessage}
-        /> */}
+        />
 
         {/* <IonToast
           isOpen={showToast}

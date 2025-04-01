@@ -51,11 +51,14 @@ export interface CartItem {
   productQuantity: number;
 }
 
+export interface StepProgressProps {
+  currentStep: number;
+}
+
 export interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: any;
-  // showToastMessage: (message: string, success: boolean) => void;
 }
 
 export interface BuildYourOwnModalProps {

@@ -14,6 +14,7 @@ import {
   IonHeader,
   IonIcon,
   IonImg,
+  IonInput,
   IonItem,
   IonItemOption,
   IonItemOptions,
@@ -35,6 +36,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -54,6 +56,9 @@ import {
   removeCircle,
   timeOutline,
   trash,
+  trashBin,
+  trashBinOutline,
+  trashSharp,
 } from "ionicons/icons";
 import { useHistory } from "react-router";
 import { Link } from "react-router-dom";
@@ -65,6 +70,8 @@ const Cart: React.FC = () => {
 
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (!user) {
@@ -91,7 +98,7 @@ const Cart: React.FC = () => {
 
   // Calculate cart totals
   const subtotal = cartItems.reduce(
-    (total, item) => total + item.productPrice * item.productQuantity,
+    (total, item) => total + item.productPrice,
     0
   );
   const discountPercentage = 0;
@@ -107,12 +114,30 @@ const Cart: React.FC = () => {
     const cartRef = doc(db, "customers", currentUser.uid, "cart", cartId);
 
     try {
-      await updateDoc(cartRef, { productQuantity: newQuantity });
+      const cartDoc = await getDoc(cartRef);
+      if (!cartDoc.exists()) return;
 
-      setCartItems((prevCart) =>
-        prevCart.map((item) =>
-          item.id === cartId ? { ...item, productQuantity: newQuantity } : item
-        )
+      const cartData = cartDoc.data();
+
+      // Ensure originalPrice is always the base price
+      const originalPrice = cartData.originalPrice; // Do not use productPrice as a fallback
+
+      if (!originalPrice) {
+        console.error("Original price is missing in cart data.");
+        return;
+      }
+
+      // Calculate updated price
+      const updatedPrice =
+        newQuantity === 1 ? originalPrice : originalPrice * newQuantity;
+
+      await updateDoc(cartRef, {
+        productQuantity: newQuantity,
+        productPrice: updatedPrice,
+      });
+
+      console.log(
+        `Updated cart item ${cartId}: quantity = ${newQuantity}, price = ${updatedPrice}`
       );
     } catch (error) {
       console.error("Error updating quantity:", error);
@@ -152,6 +177,32 @@ const Cart: React.FC = () => {
     return timeB - timeA;
   });
 
+  // badge color
+  const getSizeColor = (sizeName: string) => {
+    let hash = 0;
+    for (let i = 0; i < sizeName.length; i++) {
+      hash = sizeName.charCodeAt(i) + ((hash << 5) - hash); // More bit shifts for distribution
+    }
+
+    // Use prime numbers to distribute hue more evenly
+    const hue = ((Math.abs(hash * 47) % 360) + 360) % 360;
+
+    // More balanced contrast in saturation and lightness
+    const saturation = 55 + (Math.abs(hash * 29) % 35); // Between 55% and 90%
+    const lightness = 35 + (Math.abs(hash * 17) % 30); // Between 35% and 65%
+
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+
+  // badge initials
+  const getSizeAbbreviation = (sizeName: string): string => {
+    return sizeName
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase();
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -190,37 +241,58 @@ const Cart: React.FC = () => {
                         className="cart-product-item-container"
                         lines="full"
                       >
-                        <div className="cart-image-container" slot="start">
+                        {/* <div className="cart-image-container" slot="start">
                           <IonThumbnail className="cart-product-thumbnail">
                             <IonImg
                               className="cart-product-img"
                               src={item.productImg}
                             />
                           </IonThumbnail>
+                        </div> */}
+                        <div className="cart-badge-container">
+                          <IonBadge
+                            className="size-badge"
+                            style={{
+                              backgroundColor: getSizeColor(
+                                item.productSize.name
+                              ),
+                            }}
+                          >
+                            {getSizeAbbreviation(item.productSize.name)}
+                          </IonBadge>
                         </div>
 
                         <div className="cart-content-container">
                           <div className="cart-bottom-row">
                             <div className="product-name-container">
                               <IonText className="cart-name-text">
-                                {item.productName}
+                                {item.productSize.name}
                               </IonText>
                             </div>
+                            <IonButton
+                              className="cart-delete-icon"
+                              fill="clear"
+                              onClick={() => removeItem(item.id)}
+                            >
+                              <IonIcon icon={trashSharp} color="danger" />
+                            </IonButton>
                           </div>
 
                           <div className="cart-size-container">
-                            <IonText className="cart-size-text">
+                            {/* Display size name from new structure */}
+                            {/* <IonText className="cart-size-text">
                               {item.productSize && item.productSize.name
-                                ? ` ${item.productSize.name}`
+                                ? `${item.productSize.name}`
                                 : ""}
-                            </IonText>
+                            </IonText> */}
 
                             <div className="cart-varieties-container">
-                              {Array.isArray(item.productVarieties) &&
-                                item.productVarieties.length > 0 && (
+                              {/* Display variety names from new field */}
+                              {Array.isArray(item.productVarietiesNames) &&
+                                item.productVarietiesNames.length > 0 && (
                                   <div className="cart-varieties-text">
                                     <IonText>
-                                      {item.productVarieties.join(", ")}
+                                      {item.productVarietiesNames.join(", ")}
                                     </IonText>
                                   </div>
                                 )}
@@ -232,7 +304,7 @@ const Cart: React.FC = () => {
                               </IonText>
                               <div className="cart-quantity-control">
                                 <IonButton
-                                  className="cart-quantity-button"
+                                  className="byok-quantity-button"
                                   fill="clear"
                                   size="small"
                                   onClick={() =>
@@ -244,13 +316,26 @@ const Cart: React.FC = () => {
                                 >
                                   <IonIcon icon={removeCircle} />
                                 </IonButton>
-                                <IonBadge className="cart-quantity-badge">
+                                {/* <IonBadge className="cart-quantity-badge">
                                   <IonText color="dark">
                                     {item.productQuantity}
                                   </IonText>
-                                </IonBadge>
+                                </IonBadge> */}
+                                <IonInput
+                                  type="number"
+                                  value={item.productQuantity}
+                                  min={1}
+                                  max={99}
+                                  onIonChange={(e) => {
+                                    const value = parseInt(e.detail.value!, 10);
+                                    if (!isNaN(value) && value > 0) {
+                                      setQuantity(value);
+                                    }
+                                  }}
+                                  className="quantity-input"
+                                />
                                 <IonButton
-                                  className="cart-quantity-button"
+                                  className="byok-quantity-button"
                                   fill="clear"
                                   size="small"
                                   onClick={() =>
