@@ -10,7 +10,7 @@ interface CheckoutStepProgressProps {
 const CheckoutStepProgress: React.FC<CheckoutStepProgressProps> = ({
   currentStep,
 }) => {
-  const steps = ["Schedule", "Payment", "Confirmation"];
+  const steps = ["Schedule", "Payment", "Review"];
 
   return (
     <IonGrid className="step-progress">

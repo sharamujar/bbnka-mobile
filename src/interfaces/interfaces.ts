@@ -21,7 +21,7 @@ export interface Promotion {
 }
 
 export interface Size {
-  id: string;
+  sizeId: string;
   name: string;
   dimensions: string;
   shape: string;
@@ -34,7 +34,6 @@ export interface Size {
 export interface Varieties {
   id: string;
   name: string;
-  price: number;
   sizeId: string;
 }
 

@@ -98,7 +98,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
       try {
         const sizesSnapshot = await getDocs(collection(db, "sizes"));
         const sizesData = sizesSnapshot.docs.map((doc) => ({
-          id: doc.id,
+          sizeId: doc.id,
           ...doc.data(),
         })) as Size[];
         setSizes(sizesData);
@@ -145,7 +145,9 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
 
   useEffect(() => {
     if (selectedSize) {
-      const selectedSizeObj = sizes.find((size) => size.id === selectedSize);
+      const selectedSizeObj = sizes.find(
+        (size) => size.sizeId === selectedSize
+      );
 
       if (selectedSizeObj && selectedSizeObj.varieties) {
         const varietiesForDisplay = selectedSizeObj.varieties.map(
@@ -173,14 +175,13 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
 
     // Add size price
     if (selectedSize) {
-      const size = sizes.find((s) => s.id === selectedSize);
+      const size = sizes.find((s) => s.sizeId === selectedSize);
       if (size) total += size.price;
     }
 
     // Add variety price if applicable
     selectedVarieties.forEach((varietyId) => {
       const variety = varieties.find((v) => v.id === varietyId);
-      if (variety) total += variety.price;
     });
 
     // Multiply by quantity
@@ -198,7 +199,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
   };
 
   const toggleVarietySelection = (varietyId: string) => {
-    const selectedSizeObj = sizes.find((size) => size.id === selectedSize);
+    const selectedSizeObj = sizes.find((size) => size.sizeId === selectedSize);
     const maxVarieties = selectedSizeObj?.maxVarieties || 1;
 
     setSelectedVarieties((prev) => {
@@ -233,23 +234,26 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
     );
 
     try {
-      // Get the size name
-      const selectedSizeObj = sizes.find((size) => size.id === selectedSize);
-      const sizeName = selectedSizeObj ? selectedSizeObj.name : "";
+      // Get the size object
+      const selectedSizeObj = sizes.find(
+        (size) => size.sizeId === selectedSize
+      );
+      if (!selectedSizeObj) {
+        throw new Error("Selected size not found");
+      }
 
       // Get the variety names
       const varietyNames = selectedVarieties
         .map((varietyId) => {
           const variety = filteredVarieties.find((v) => v.id === varietyId);
-          return variety ? variety.name : "";
+          return variety ? variety.name : null;
         })
-        .filter((name) => name !== "");
+        .filter(Boolean);
 
       // Check if an item with the same size and varieties exists
       const q = query(
         cartCollectionRef,
-        where("productName", "==", "Build Your Own Bibingka"),
-        where("productSize.id", "==", selectedSize)
+        where("productSize", "==", selectedSizeObj.name)
       );
 
       const querySnapshot = await getDocs(q);
@@ -258,28 +262,32 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
         const data = doc.data();
         return (
           JSON.stringify(data.productVarieties.sort()) ===
-          JSON.stringify(selectedVarieties.sort())
+          JSON.stringify(varietyNames.sort())
         );
       });
 
       if (existingCartItem) {
-        const newQuantity =
-          (existingCartItem.data().productQuantity || 1) + quantity; // Use current quantity instead of +1
-        await updateDoc(existingCartItem.ref, { productQuantity: newQuantity });
+        const newQuantity = existingCartItem.data().productQuantity + quantity;
+        await updateDoc(existingCartItem.ref, {
+          productQuantity: newQuantity,
+          productPrice: selectedSizeObj.price * newQuantity,
+          originalPrice: selectedSizeObj.price,
+          updatedAt: new Date().toISOString(),
+        });
         showToastMessage(`Updated cart: ${newQuantity} items`, true);
       } else {
         const cartId = doc(cartCollectionRef).id;
         await setDoc(doc(cartCollectionRef, cartId), {
           createdAt: new Date().toISOString(),
-          productName: "Build Your Own Bibingka",
-          productSize: { id: selectedSize, name: sizeName },
-          productVarieties: selectedVarieties,
-          productVarietiesNames: varietyNames,
-          productQuantity: quantity, // Use selected quantity
-          productPrice: totalPrice,
-          originalPrice: totalPrice, // Store the original price
-          specialInstructions,
+          updatedAt: new Date().toISOString(),
+          productSize: selectedSizeObj.name,
+          productVarieties: varietyNames,
+          productQuantity: quantity,
+          productPrice: selectedSizeObj.price * quantity,
+          originalPrice: selectedSizeObj.price,
+          specialInstructions: specialInstructions || null,
           cartId,
+          userId: currentUser.uid,
         });
 
         showToastMessage("Added to cart successfully!", true);
@@ -354,16 +362,16 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                   {[...sizes]
                     .sort((a, b) => b.price - a.price)
                     .map((size) => (
-                      <IonCol key={size.id} size="6" size-md="4">
+                      <IonCol key={size.sizeId} size="6" size-md="4">
                         <IonCard
                           className={`size-card ${
-                            selectedSize === size.id ? "selected-size" : ""
+                            selectedSize === size.sizeId ? "selected-size" : ""
                           }`}
-                          onClick={() => setSelectedSize(size.id)}
+                          onClick={() => setSelectedSize(size.sizeId)}
                         >
                           <div className="size-radio-container">
                             <IonRadio
-                              value={size.id}
+                              value={size.sizeId}
                               className="custom-radio"
                             />
                           </div>
@@ -403,8 +411,8 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
             <div className="step-header">
               <IonTitle className="step-title product-title">
                 Choose Variety (Up to{" "}
-                {sizes.find((size) => size.id === selectedSize)?.maxVarieties ||
-                  1}
+                {sizes.find((size) => size.sizeId === selectedSize)
+                  ?.maxVarieties || 1}
                 )
               </IonTitle>
               <IonText className="step-description">
@@ -417,7 +425,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                 <IonRow className="byok-variety-selection-row">
                   {filteredVarieties.map((variety) => {
                     const selectedSizeObj = sizes.find(
-                      (size) => size.id === selectedSize
+                      (size) => size.sizeId === selectedSize
                     );
                     const maxVarieties = selectedSizeObj?.maxVarieties || 1;
 
@@ -494,7 +502,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                   <span className="review-label">Size:</span>
                   <span className="review-value">
                     {selectedSize
-                      ? sizes.find((s) => s.id === selectedSize)?.name
+                      ? sizes.find((s) => s.sizeId === selectedSize)?.name
                       : "None selected"}
                   </span>
                 </div>
@@ -643,7 +651,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
         isOpen={showToast}
         onDidDismiss={() => setShowToast(false)}
         message={`You can select up to ${
-          sizes.find((size) => size.id === selectedSize)?.maxVarieties || 1
+          sizes.find((size) => size.sizeId === selectedSize)?.maxVarieties || 1
         } varieties only.`}
         duration={2000}
       />

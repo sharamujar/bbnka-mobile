@@ -249,7 +249,7 @@ ion-item-sliding {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 7px;
+  gap: 12px;
 }
 
 .total-price-text {

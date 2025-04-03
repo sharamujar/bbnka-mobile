@@ -52,7 +52,7 @@ import { db } from "../firebase-config";
 
 const Payment: React.FC = () => {
   const history = useHistory();
-
+  const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [showGcashModal, setShowGcashModal] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState("");
@@ -60,17 +60,6 @@ const Payment: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  // Steps for checkout process
-  const steps = [
-    "/home/cart/schedule",
-    "/home/cart/schedule/payment",
-    "/home/cart/schedule/payment/review",
-  ];
-
-  const [currentStep, setCurrentStep] = useState(
-    steps.indexOf(history.location.pathname)
-  );
 
   // Validate GCash reference number (basic validation)
   useEffect(() => {
@@ -82,6 +71,7 @@ const Payment: React.FC = () => {
   // Function to handle card click
   const handleCardClick = (value: any) => {
     setPaymentMethod(value);
+    localStorage.setItem("paymentMethod", value);
   };
 
   const nextStep = () => {
@@ -91,13 +81,11 @@ const Payment: React.FC = () => {
       return;
     }
 
-    if (currentStep < steps.length - 1) {
-      const nextRoute = steps[currentStep + 1];
-      setCurrentStep(currentStep + 1);
-      history.replace(nextRoute);
+    if (currentStep < 2) {
+      setCurrentStep((prevStep) => prevStep + 1);
+      history.replace("/home/cart/schedule/payment/review");
     }
   };
-
   const handlePayment = () => {
     if (paymentMethod === "gcash") {
       setShowGcashModal(true);
@@ -131,8 +119,14 @@ const Payment: React.FC = () => {
       setToastMessage("Payment submitted! Awaiting admin verification.");
       setShowToast(true);
 
-      // Optionally store in local storage
+      // Store in local storage
       localStorage.setItem("gcashReference", referenceNumber);
+      localStorage.setItem("paymentMethod", "gcash");
+
+      // Navigate to review step after a short delay
+      setTimeout(() => {
+        history.replace("/home/cart/schedule/payment/review");
+      }, 1500); // 1.5 second delay to show the success message
     } catch (error) {
       setIsLoading(false);
       setToastMessage("Failed to submit payment. Try again.");

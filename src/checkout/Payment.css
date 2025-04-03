@@ -187,11 +187,11 @@
 }
 
 /* Title toolbar */
-.title-toolbar {
+/* .title-toolbar {
   text-align: center;
   font-weight: 600;
   font-size: 18px;
-}
+} */
 
 /* Media queries for responsiveness */
 @media (min-width: 768px) {

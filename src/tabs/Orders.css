@@ -1,0 +1,167 @@
+.orders-container {
+  padding: 16px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.order-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(79, 31, 13, 0.1);
+  background-color: white;
+  border: 1px solid var(--light-header-color);
+  overflow: hidden;
+}
+
+.order-card ion-card-header {
+  padding: 16px;
+  background-color: var(--header-color);
+  border-bottom: 2px solid var(--button-color);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.order-title ion-card-title {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.order-arrow {
+  color: white;
+  font-size: 1.5rem;
+}
+
+.order-card ion-card-content {
+  padding: 16px;
+}
+
+.order-card ion-list {
+  padding: 0;
+}
+
+.order-card ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --background: transparent;
+  --border-color: var(--light-header-color);
+  --border-style: dashed;
+  --border-width: 0 0 1px 0;
+}
+
+.order-card ion-item:last-child {
+  --border-width: 0;
+}
+
+.order-card ion-icon {
+  color: var(--button-color);
+  font-size: 1.5rem;
+}
+
+.order-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.detail-label {
+  color: var(--header-color);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: var(--button-color);
+  font-weight: 600;
+}
+
+.order-total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 2px dashed var(--light-header-color) !important;
+}
+
+.order-total .detail-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.total-amount {
+  font-size: 1.3rem;
+  color: var(--button-color);
+  font-weight: 700;
+}
+
+.no-orders {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.no-orders-icon {
+  font-size: 4rem;
+  color: var(--light-header-color);
+  margin-bottom: 16px;
+}
+
+.no-orders p {
+  color: var(--header-color);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Loading Skeleton Styles */
+ion-skeleton-text {
+  --background: var(--light-header-color);
+  --background-rgb: 79, 31, 13;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+  .orders-container {
+    padding: 12px;
+  }
+
+  .order-card ion-card-header {
+    padding: 12px;
+  }
+
+  .order-title ion-card-title {
+    font-size: 1.1rem;
+  }
+
+  .order-card ion-card-content {
+    padding: 12px;
+  }
+
+  .order-card ion-icon {
+    font-size: 1.3rem;
+  }
+
+  .detail-label {
+    font-size: 0.85rem;
+  }
+
+  .detail-value {
+    font-size: 0.9rem;
+  }
+
+  .total-amount {
+    font-size: 1.2rem;
+  }
+}

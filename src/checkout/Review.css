@@ -1,0 +1,189 @@
+.review-container {
+  padding: 0 16px;
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: var(--primary-bg-color);
+}
+
+.review-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(79, 31, 13, 0.1);
+  background-color: white;
+  border: 1px solid var(--light-header-color);
+  position: relative;
+}
+
+.review-card ion-card-header {
+  background-color: var(--header-color);
+  border-radius: 8px 8px 0 0;
+  border-bottom: 2px solid var(--button-color);
+}
+
+.review-card ion-card-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Order Summary Styles */
+.review-card ion-list {
+  padding: 0;
+  background: white;
+}
+
+.review-card ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --background: transparent;
+}
+
+/* Review Item Styles */
+.review-item {
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--light-header-color);
+  background: white;
+}
+
+.review-item:last-child {
+  border-bottom: none;
+}
+
+.review-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: white;
+}
+
+.review-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.size-badge {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: white;
+  background-color: var(--button-color);
+  font-weight: 500;
+}
+
+.review-item-name {
+  font-weight: 600;
+  color: var(--header-color);
+  font-size: 1.1rem;
+}
+
+.review-varieties {
+  font-size: 0.9rem;
+  color: var(--button-color);
+  font-style: italic;
+}
+
+.review-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.review-quantity {
+  font-size: 0.9rem;
+  color: var(--header-color);
+  font-weight: 500;
+}
+
+.review-price {
+  font-weight: 600;
+  color: var(--header-color);
+  font-size: 1.1rem;
+}
+
+/* Total Content Styles */
+
+.total-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--header-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.total-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--button-color);
+  text-shadow: 1px 1px 2px rgba(79, 31, 13, 0.1);
+}
+
+.total-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--header-color);
+}
+
+.subtotal-line,
+.service-fee-line,
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-line {
+  font-weight: 600;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--light-header-color);
+}
+
+/* Detail Items Styles */
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--light-header-color);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-icon {
+  font-size: 1.5rem;
+  color: var(--button-color);
+  margin-right: 12px;
+  margin-top: 2px;
+}
+
+.detail-content {
+  flex: 1;
+}
+
+.detail-label {
+  font-size: 0.9rem;
+  color: var(--header-color);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.detail-value {
+  font-size: 1rem;
+  color: var(--button-color);
+  font-weight: 500;
+}

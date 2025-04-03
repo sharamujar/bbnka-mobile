@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useHistory } from "react-router-dom";
 import {
   IonPage,
   IonHeader,
   IonToolbar,
   IonTitle,
   IonContent,
+  IonFooter,
+  IonButton,
+  IonIcon,
   IonItem,
   IonLabel,
   IonSelect,
   IonSelectOption,
-  IonFooter,
-  IonButton,
-  IonIcon,
-  IonAlert,
   IonText,
+  IonAlert,
 } from "@ionic/react";
-import { useHistory } from "react-router-dom";
 import {
-  card,
   chevronBackCircleOutline,
+  card,
   chevronForwardCircle,
 } from "ionicons/icons";
 import dayjs from "dayjs";
@@ -28,21 +28,23 @@ import "./Schedule.css";
 const Schedule: React.FC = () => {
   const history = useHistory();
 
-  const [scheduleType, setScheduleType] = useState<"now" | "later">("later");
-  const [pickupDate, setPickupDate] = useState<string>("");
-  const [pickupTime, setPickupTime] = useState<string>("");
+  // Initialize state from localStorage if available
+  const [scheduleType, setScheduleType] = useState<"now" | "later">(() => {
+    const saved = localStorage.getItem("scheduleType");
+    return saved ? JSON.parse(saved) : "later";
+  });
+
+  const [pickupDate, setPickupDate] = useState<string>(() => {
+    return localStorage.getItem("pickupDate") || "";
+  });
+
+  const [pickupTime, setPickupTime] = useState<string>(() => {
+    return localStorage.getItem("pickupTime") || "";
+  });
+
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   const [showAlert, setShowAlert] = useState(false);
-
   const [currentStep, setCurrentStep] = useState(0);
-
-  const nextStep = () => {
-    if (currentStep < 2) {
-      setCurrentStep((prevStep) => prevStep + 1);
-      const routes = ["/home/cart/schedule", "/home/cart/schedule/payment"];
-      history.replace(routes[currentStep + 1]);
-    }
-  };
 
   // All possible time slots
   const allTimeSlots = [
@@ -55,6 +57,29 @@ const Schedule: React.FC = () => {
     "04:00 PM",
     "06:00 PM",
   ];
+
+  // Save to localStorage whenever values change
+  useEffect(() => {
+    localStorage.setItem("scheduleType", JSON.stringify(scheduleType));
+  }, [scheduleType]);
+
+  useEffect(() => {
+    localStorage.setItem("pickupDate", pickupDate);
+  }, [pickupDate]);
+
+  useEffect(() => {
+    if (pickupTime) {
+      localStorage.setItem("pickupTime", pickupTime);
+    }
+  }, [pickupTime]);
+
+  // Effect to load available time slots on initial mount
+  useEffect(() => {
+    if (pickupDate) {
+      // Initialize available time slots immediately on component mount
+      updateAvailableTimeSlots(pickupDate);
+    }
+  }, []); // Empty dependency array means this runs once on mount
 
   useEffect(() => {
     if (scheduleType === "now") {
@@ -71,9 +96,15 @@ const Schedule: React.FC = () => {
 
   // Clear pickup time when available time slots change
   useEffect(() => {
-    // Clear the selected time if it's no longer in the available time slots
-    if (pickupTime && !availableTimeSlots.includes(pickupTime)) {
+    // Only clear the selected time if it's no longer in the available time slots
+    // AND if there are available time slots (to prevent clearing on initial load)
+    if (
+      pickupTime &&
+      availableTimeSlots.length > 0 &&
+      !availableTimeSlots.includes(pickupTime)
+    ) {
       setPickupTime("");
+      localStorage.removeItem("pickupTime");
     }
   }, [availableTimeSlots, pickupTime]);
 
@@ -152,6 +183,14 @@ const Schedule: React.FC = () => {
     return dates;
   };
 
+  const nextStep = () => {
+    if (currentStep < 2) {
+      setCurrentStep((prevStep) => prevStep + 1);
+      const routes = ["/home/cart/schedule", "/home/cart/schedule/payment"];
+      history.replace(routes[currentStep + 1]);
+    }
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -193,7 +232,11 @@ const Schedule: React.FC = () => {
                 className="time-select"
                 placeholder="Select Time"
                 value={pickupTime}
-                onIonChange={(e) => setPickupTime(e.detail.value)}
+                onIonChange={(e) => {
+                  setPickupTime(e.detail.value);
+                  // Force immediate save to localStorage
+                  localStorage.setItem("pickupTime", e.detail.value);
+                }}
                 disabled={!pickupDate || availableTimeSlots.length === 0}
               >
                 {availableTimeSlots.map((time) => (
