@@ -1,0 +1,485 @@
+/* .order-detail-page {
+  --background: #f7f7f7;
+} */
+
+.order-detail-container {
+  background: var(--primary-bg-color);
+}
+
+.order-detail-container ion-card {
+  background: white;
+}
+
+.order-id h4 {
+  font-weight: bold;
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  text-align: center;
+  padding: 2rem;
+}
+
+.loading-container ion-spinner,
+.error-container ion-icon {
+  font-size: 48px;
+  margin-bottom: 1rem;
+}
+
+.error-container p {
+  margin-bottom: 1rem;
+  color: var(--ion-color-danger);
+}
+
+.order-detail-container {
+  padding: 1rem;
+  max-width: 100%;
+}
+
+/* Order Status Card */
+.order-detail-status-card {
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
+}
+
+.order-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-detail-id h2 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.order-detail-date {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.status-chip {
+  margin: 0;
+  font-weight: 500;
+  font-size: 13px;
+  height: auto;
+  padding: 6px 10px;
+}
+
+/* Order Items Card */
+.order-items-card {
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
+}
+
+.order-items-card ion-card-title,
+.pickup-details-card ion-card-title,
+.payment-details-card ion-card-title,
+.customer-card ion-card-title {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.order-items-card ion-card-title ion-icon,
+.pickup-details-card ion-card-title ion-icon,
+.payment-details-card ion-card-title ion-icon,
+.customer-card ion-card-title ion-icon {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.item-list {
+  margin-bottom: 1rem;
+  background: transparent;
+}
+
+.order-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --background: transparent;
+}
+
+.item-content {
+  width: 100%;
+  padding: 8px 0;
+}
+
+.item-main {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.size-badge-container {
+  margin-right: 10px;
+}
+
+.size-badge {
+  margin: 0;
+  font-size: 12px;
+  height: auto;
+  min-width: 30px;
+  --background: var(--ion-color-primary-tint);
+  --color: var(--ion-color-primary-contrast);
+}
+
+.item-details {
+  flex: 1;
+}
+
+.varieties {
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.quantity-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.quantity {
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.price {
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.total-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 12px;
+  margin-top: 5px;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.grand-total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* Pickup Details Card */
+.pickup-details-card,
+.payment-details-card {
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-row ion-icon {
+  margin-right: 10px;
+  color: var(--ion-color-medium);
+  font-size: 18px;
+}
+
+.detail-label {
+  width: 80px;
+  font-size: 14px;
+  color: var(--ion-color-medium);
+}
+
+.detail-value {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.detail-value.reference {
+  font-family: monospace;
+  letter-spacing: 0.5px;
+}
+
+.payment-status-chip {
+  margin: 0;
+  font-size: 12px;
+  height: auto;
+  padding: 4px 8px;
+}
+
+/* Customer Card */
+.customer-card {
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
+}
+
+.customer-info {
+  display: flex;
+  align-items: center;
+}
+
+.customer-avatar {
+  margin-right: 15px;
+  width: 50px;
+  height: 50px;
+}
+
+.initials-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: var(--ion-color-primary);
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.customer-details h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.customer-details p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ion-color-medium);
+}
+
+/* Cancel button */
+.action-container {
+  margin: 0 1rem 2rem;
+}
+
+.cancel-button {
+  --border-radius: 10px;
+}
+
+/* Order Tracking Progress - Vertical Layout */
+.order-detail-progress-container.vertical {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(79, 31, 13, 0.1);
+  position: relative;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.order-detail-steps-vertical {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 10px 0;
+  margin-left: 20px;
+}
+
+.order-detail-step-vertical {
+  position: relative;
+  padding-left: 50px;
+  margin-bottom: 35px;
+  z-index: 2;
+}
+
+.order-detail-step-vertical:last-child {
+  margin-bottom: 0;
+}
+
+.order-detail-step-content {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.order-detail-step-icon-vertical {
+  position: absolute;
+  left: -60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  color: #999;
+  transition: all 0.3s ease;
+  z-index: 2;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(191, 89, 6, 0.1);
+}
+
+.order-detail-step-vertical.active .order-detail-step-icon-vertical {
+  background-color: var(--button-color);
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(191, 89, 6, 0.2);
+}
+
+.order-detail-step-vertical.completed .order-detail-step-icon-vertical {
+  background-color: var(--button-color);
+  color: white;
+}
+
+.order-detail-step-vertical.cancelled .order-detail-step-icon-vertical {
+  background-color: #f0f0f0;
+  color: #999;
+  opacity: 0.7;
+}
+
+.order-detail-step-vertical.pending .order-detail-step-icon-vertical {
+  background-color: #ffb74d;
+  color: white;
+}
+
+.order-detail-step-icon-vertical ion-icon {
+  font-size: 18px;
+}
+
+.order-detail-step-info {
+  padding-left: 18px;
+}
+
+.order-detail-step-label-vertical {
+  font-size: 15px;
+  font-weight: 500;
+  color: #4f1f0d;
+  margin-bottom: 4px;
+  transition: color 0.3s ease;
+  font-family: var(--ion-font-family);
+}
+
+.order-detail-step-status {
+  font-size: 12px;
+  color: #888;
+  font-weight: 400;
+}
+
+.order-detail-step-vertical.active .order-detail-step-label-vertical {
+  color: var(--button-color);
+  font-weight: 600;
+}
+
+.order-detail-step-vertical.completed .order-detail-step-label-vertical {
+  color: var(--button-color);
+}
+
+.order-detail-step-vertical.cancelled .order-detail-step-label-vertical {
+  color: #999;
+}
+
+.order-detail-step-vertical.pending .order-detail-step-label-vertical {
+  color: #f57c00;
+  font-weight: 600;
+}
+
+.order-detail-step-line-vertical {
+  position: absolute;
+  top: 36px;
+  left: 5px;
+  width: 3px;
+  height: calc(100% + 18px);
+  background-color: rgba(191, 89, 6, 0.15);
+  z-index: 1;
+}
+
+.order-detail-step-line-vertical.completed {
+  background-color: var(--button-color);
+}
+
+.order-detail-step-line-vertical.cancelled {
+  background-color: #e0e0e0;
+}
+
+.order-detail-step-line-vertical.pending {
+  background-color: #ffb74d;
+}
+
+.order-detail-cancelled-badge {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.cancelled-chip {
+  font-weight: 600;
+  --background: rgba(var(--ion-color-danger-rgb), 0.1);
+  --color: var(--ion-color-danger);
+}
+
+.cancelled-chip ion-icon {
+  margin-right: 4px;
+}
+
+.pending-chip {
+  font-weight: 600;
+  --background: rgba(255, 152, 0, 0.2);
+  --color: #f57c00;
+}
+
+.pending-chip ion-icon {
+  margin-right: 4px;
+}
+
+/* Keep the existing horizontal styles for reference but hide them with display: none */
+.order-detail-progress-container:not(.vertical) .order-detail-steps,
+.order-detail-step,
+.order-detail-step-icon,
+.order-detail-step-number,
+.order-detail-step-label,
+.order-detail-step-line {
+  display: none;
+}
+
+.order-detail-step-desc {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.4;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  max-width: 200px;
+}
+
+.order-detail-step-date {
+  margin-left: 5px;
+  color: #bf5906;
+  font-weight: 500;
+}
+
+.order-detail-step-vertical.completed .order-detail-step-date {
+  color: #bf5906;
+}
+
+.order-detail-step-vertical.active .order-detail-step-desc {
+  color: #666;
+}
+
+/* Adjust card content padding to fit the tracking progress better */
+.order-status-card ion-card-content {
+  padding: 16px 12px 20px;
+}

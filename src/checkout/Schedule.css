@@ -1,5 +1,19 @@
 /* Schedule.css */
 
+/* Minimalist Schedule Page Styles with Brand Colors */
+
+:root {
+  --button-color: #bf5906;
+  --header-color: #4f1f0d;
+  --secondary-bg-color: #fff9af;
+}
+
+/* Main Container */
+.schedule-content {
+  background-color: #fafafa;
+  padding: 0 16px;
+}
+
 /* Step Progress Bar Styles */
 .step-progress-container {
   display: flex;
@@ -8,6 +22,7 @@
   padding: 16px 8px 24px;
   position: relative;
   margin-bottom: 16px;
+  background-color: white;
 }
 
 .step-item {
@@ -23,39 +38,39 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background-color: #f4f4f4;
-  border: 2px solid #dedede;
+  border: 1px solid #dedede;
   color: #888;
-  font-weight: bold;
+  font-weight: 500;
   margin-bottom: 6px;
   z-index: 2;
 }
 
 .step-circle.completed {
-  background-color: var(--ion-color-success);
-  border-color: var(--ion-color-success);
+  background-color: var(--button-color);
+  border-color: var(--button-color);
   color: white;
 }
 
 .step-circle.active {
-  background-color: var(--ion-color-primary);
-  border-color: var(--ion-color-primary);
+  background-color: var(--header-color);
+  border-color: var(--header-color);
   color: white;
 }
 
 .step-name {
-  font-size: 12px;
+  font-size: 11px;
   color: #666;
   text-align: center;
 }
 
 .step-line {
   position: absolute;
-  top: 16px;
-  height: 2px;
+  top: 14px;
+  height: 1px;
   background-color: #dedede;
   width: 100%;
   left: 50%;
@@ -63,12 +78,11 @@
 }
 
 .step-line.completed {
-  background-color: var(--ion-color-success);
+  background-color: var(--button-color);
 }
 
-/* Add this to your existing CSS */
 .step-circle ion-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* Make sure the step items are properly spaced */
@@ -76,58 +90,171 @@
   width: calc(100% - 16px);
 }
 
-/* Footer */
-ion-footer ion-toolbar {
-  --padding-top: 8px;
-  --padding-bottom: 8px;
-  --padding-start: 16px;
-  --padding-end: 16px;
-}
-
 /* Checkout Progress */
 .checkout-progress-container {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+}
+
+/* Schedule Container (Previously payment-container) */
+.schedule-container {
+  padding: 0 16px;
+  max-width: 800px;
+  background-color: #fafafa;
+}
+
+/* Option Card */
+.schedule-card {
+  margin: 0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(79, 31, 13, 0.08);
+  background: white;
+  border: none;
+  overflow: hidden;
+}
+
+.schedule-card ion-card-header {
+  padding: 12px 0 12px 16px;
+  background-color: white;
+  border-bottom: 1px solid rgba(191, 89, 6, 0.1);
+}
+
+.schedule-card ion-card-title {
+  font-size: 14px !important;
+  font-weight: 600;
+  color: var(--header-color);
+  letter-spacing: 1px;
+}
+
+/* Pickup Option Cards (Previously payment-methods-card) */
+.pickup-option-card {
+  background: white;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: none;
+  margin: 12px 0;
+}
+
+.pickup-option-card.selected {
+  border: 1px solid rgba(191, 89, 6, 0.1);
+  background-color: rgba(191, 89, 6, 0.05);
+}
+
+.clickable-card {
+  cursor: pointer;
+}
+
+.pickup-option-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --min-height: 72px;
+  --background: transparent;
+}
+
+.pickup-option-item ion-label {
+  margin: 0;
+}
+
+.pickup-option-item strong {
+  display: block;
+  font-size: 14px;
+  color: var(--header-color);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.pickup-option-item small {
+  font-size: 12px;
+  color: #666;
+}
+
+.pickup-icon {
+  font-size: 24px;
+  color: var(--button-color);
+  margin-right: 15px;
+  margin-left: -10px;
+}
+
+/* Pickup Now Info Card */
+.pickup-info-card {
+  margin: 0 0 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(79, 31, 13, 0.08);
+  background: white;
+  border: none;
+  overflow: hidden;
+  border-left: 3px solid var(--button-color);
+  margin: 15px;
+}
+
+.pickup-now-info {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+}
+
+.pickup-icon-large {
+  font-size: 24px;
+  color: var(--button-color);
+  margin-right: 16px;
+}
+
+.pickup-text h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--header-color);
+}
+
+.pickup-text p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
 }
 
 /* Form Container */
 .schedule-form-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 0 20px;
+  gap: 5px;
+  margin: 20px;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 /* Date Selection */
 .date-selection-item {
-  --border-radius: 8px;
-  --background: #fff;
-  --border-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --border-radius: 12px;
+  --background: white;
+  --border-color: transparent;
+  box-shadow: 0 2px 8px rgba(79, 31, 13, 0.08);
 }
 
 .date-select {
   width: 100%;
   max-width: 100%;
   --padding-end: 0;
+  text-align: right;
 }
 
 .date-option {
   font-size: 14px;
+  text-align: right;
 }
 
 /* Time Selection */
 .time-selection-item {
-  --border-radius: 8px;
-  --background: #fff;
-  --border-color: #fff;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --border-radius: 12px;
+  --background: white;
+  --border-color: transparent;
+  box-shadow: 0 2px 8px rgba(79, 31, 13, 0.08);
 }
 
 .time-select {
   width: 100%;
   max-width: 100%;
   --padding-end: 0;
+  text-align: right;
 }
 
 .time-select[disabled] {
@@ -136,61 +263,111 @@ ion-footer ion-toolbar {
 
 .time-option {
   font-size: 14px;
+  text-align: right;
 }
 
 /* Selection Labels */
 .selection-label {
   font-weight: 500;
   color: var(--header-color) !important;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 /* No Time Slots Message */
 .no-slots-container {
-  padding: 14px;
-  border-radius: 8px;
-  background-color: #fff8e1;
-  border: 1px solid #ffd54f;
+  display: flex;
+  justify-content: center;
+  background-color: rgba(191, 89, 6, 0.05);
+  border-radius: 12px;
+  padding: 16px;
   margin-top: 8px;
 }
 
 .no-slots-message {
-  text-align: center;
-  color: #e65100;
   font-size: 14px;
-  display: block;
-  font-weight: 500;
+  color: var(--header-color);
+  text-align: center;
 }
 
 /* Footer Styling */
+.product-footer {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
 .footer-back-action-button-container {
   margin-right: auto;
 }
 
 .footer-back-action-button {
-  font-size: 12px;
+  --border-radius: 8px;
+  font-size: 13px;
+  --border-width: 1px;
   --border-color: var(--button-color);
   --color: var(--button-color);
 }
 
-/* Animations */
+.footer-action-button {
+  --border-radius: 8px;
+  font-size: 13px;
+  --background: var(--button-color);
+}
+
 @keyframes fadeIn {
   from {
-    opacity: 0.8;
+    opacity: 0;
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.schedule-form-container {
-  animation: fadeIn 0.3s ease-in-out;
+.date-select,
+.time-select {
+  --padding-start: 16px;
+  --placeholder-color: #aaa;
 }
 
 /* Responsive adjustments */
 @media (max-width: 480px) {
+  .step-circle {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .step-name {
+    font-size: 10px;
+  }
+
+  .pickup-option-card {
+    margin: 8px 0;
+  }
+
+  .pickup-option-item strong {
+    font-size: 13px;
+  }
+
+  .pickup-option-item small {
+    font-size: 11px;
+  }
+
+  .schedule-card ion-card-title {
+    font-size: 13px;
+  }
+
   .selection-label {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .footer-back-action-button,
@@ -199,10 +376,35 @@ ion-footer ion-toolbar {
   }
 }
 
-/* Improve tap targets for mobile */
-.date-select,
-.time-select {
-  --padding-top: 8px;
-  --padding-bottom: 8px;
-  --padding-start: 6px;
+.disabled-option {
+  opacity: 0.8;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.disabled-option::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.05);
+  pointer-events: none;
+}
+
+/* Make disabled text more readable */
+.disabled-option .pickup-option-item {
+  --opacity: 1;
+}
+
+.disabled-option .pickup-option-item strong {
+  color: var(--header-color);
+  opacity: 0.9;
+}
+
+.disabled-option .pickup-option-item small {
+  color: #333;
+  opacity: 0.9;
+  font-weight: 500;
 }

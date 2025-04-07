@@ -1,12 +1,12 @@
 /* Default icon color (inactive) */
 ion-tab-button ion-icon {
-    color: #b3b3b3;
-    font-size: 22px;
+  color: #b3b3b3;
+  font-size: 22px;
 }
 
 ion-tab-button.tab-selected ion-icon {
-    color: var(--button-color);
-  }
+  color: var(--button-color);
+}
 
 /* ion-tab-button[tab="home"].tab-selected ion-icon {
     color: #4caf50;
@@ -19,8 +19,23 @@ ion-tab-button[tab="orders"].tab-selected ion-icon {
 ion-tab-button[tab="account"].tab-selected ion-icon {
     color: #2196f3;
 } */
-  
+
 /* hover effect */
 ion-tab-button:active ion-icon {
-    transform: scale(1.1);
+  transform: scale(1.1);
+}
+
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 10px;
+  padding: 2px 4px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+}
+
+ion-tab-button {
+  position: relative;
 }

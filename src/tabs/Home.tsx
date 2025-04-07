@@ -234,15 +234,20 @@ const Home: React.FC = () => {
           {promotions.length > 0 && (
             <Swiper
               className="banner-scroll"
-              modules={[Autoplay]}
-              autoplay={{ delay: 20000, disableOnInteraction: false }}
+              modules={[Pagination, Autoplay]}
+              autoplay={{ delay: 5000, disableOnInteraction: false }}
+              pagination={{ clickable: true }}
               loop={true}
-              slidesPerView={1.2} // Show part of next/prev banners
+              slidesPerView={1}
               centeredSlides={true}
             >
               {promotions.map((promo, index) => (
                 <SwiperSlide key={index} className="banner-card">
-                  <IonImg src={promo.imageUrl} className="banner-img" />
+                  <IonImg
+                    src={promo.imageUrl}
+                    className="banner-img"
+                    alt="Promotion"
+                  />
                 </SwiperSlide>
               ))}
             </Swiper>
@@ -297,26 +302,18 @@ const Home: React.FC = () => {
                       onClick={() => openProductModal(product)}
                       button
                     >
-                      <div className="product-item">
-                        {/* Product Image */}
-                        {/* <IonImg
-                          className="product-img"
-                          src={product.imageURL}
-                        /> */}
-                        <div className="product-img">
-                          <IonImg src={product.imageURL} />
-                        </div>
-                        {/* Product Details */}
-                        {/* <IonLabel className="product-details">
-                          <IonCardHeader className="product-header">
-                            <IonCardTitle className="home-product-name">
-                              {product.name}
-                            </IonCardTitle>
-                            <IonCardSubtitle className="home-product-description">
-                              {product.description}
-                            </IonCardSubtitle>
-                          </IonCardHeader>
-                        </IonLabel> */}
+                      <div className="product-img">
+                        <IonImg src={product.imageURL} alt={product.name} />
+                      </div>
+                      <div className="home-product-details">
+                        <h3 className="home-product-name">{product.name}</h3>
+                        {product.description && (
+                          <p className="home-product-description">
+                            {product.description.length > 35
+                              ? `${product.description.substring(0, 35)}...`
+                              : product.description}
+                          </p>
+                        )}
                       </div>
                     </IonCard>
                   </IonCol>
@@ -324,7 +321,11 @@ const Home: React.FC = () => {
             ) : (
               <IonCol size="12">
                 <div className="no-products-container">
-                  <p className="no-products-text">No products available</p>
+                  <IonIcon
+                    icon={storefrontOutline}
+                    style={{ fontSize: "48px", color: "#8a7e75", opacity: 0.6 }}
+                  />
+                  <p className="no-products-text">No products available yet</p>
                 </div>
               </IonCol>
             )}

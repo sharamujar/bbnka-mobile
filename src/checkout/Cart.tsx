@@ -78,6 +78,14 @@ const Cart: React.FC = () => {
     console.log("Cart component mounted");
     console.log("Auth state:", user ? "Logged in" : "Not logged in");
 
+    // Clear any existing checkout data in localStorage
+    localStorage.removeItem("pickupDate");
+    localStorage.removeItem("pickupTime");
+    localStorage.removeItem("paymentMethod");
+    localStorage.removeItem("gcashReference");
+    localStorage.removeItem("pickupOption");
+    localStorage.removeItem("status");
+
     if (!user) {
       console.log("No user found, redirecting to login...");
       setLoading(false);
@@ -293,14 +301,14 @@ const Cart: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonButtons slot="end">
-            <IonRouterLink routerLink="/home" routerDirection="back">
-              <IonButton>
-                <IonIcon icon={close}></IonIcon>
-              </IonButton>
-            </IonRouterLink>
+          <IonButtons slot="start">
+            <IonButton>
+              <IonRouterLink routerLink="/home" routerDirection="back">
+                <IonIcon className="close-btn" icon={close}></IonIcon>
+              </IonRouterLink>
+            </IonButton>
           </IonButtons>
-          <IonTitle className="title-toolbar">Cart</IonTitle>
+          <IonTitle>Cart</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -335,7 +343,7 @@ const Cart: React.FC = () => {
                         >
                           <div className="cart-badge-container">
                             <IonBadge
-                              className="size-badge"
+                              className="cart-size-badge"
                               style={{
                                 backgroundColor: getSizeColor(
                                   item.productSize || "Default"

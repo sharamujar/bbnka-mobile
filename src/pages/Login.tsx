@@ -228,7 +228,11 @@ const Login: React.FC = () => {
 
           await setDoc(doc(db, "customers", user.uid), {
             email: user.email,
-            name: user.displayName || "New User",
+            firstName: user.displayName ? user.displayName.split(" ")[0] : "",
+            lastName: user.displayName
+              ? user.displayName.split(" ").slice(1).join(" ")
+              : "",
+            name: user.displayName || "",
             createdAt: serverTimestamp(),
           });
 

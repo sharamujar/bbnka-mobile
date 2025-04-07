@@ -180,6 +180,7 @@ const Registration: React.FC = () => {
       await setDoc(userRef, {
         firstName,
         lastName,
+        name: `${firstName} ${lastName}`,
         email: user.email,
         uid: user.uid,
         createdAt: new Date(),
@@ -261,7 +262,11 @@ const Registration: React.FC = () => {
 
           await setDoc(doc(db, "customers", user.uid), {
             email: user.email,
-            name: user.displayName || "New User",
+            firstName: user.displayName ? user.displayName.split(" ")[0] : "",
+            lastName: user.displayName
+              ? user.displayName.split(" ").slice(1).join(" ")
+              : "",
+            name: user.displayName || "",
             createdAt: serverTimestamp(),
           });
 

@@ -51,17 +51,15 @@
   border-color: var(--ion-color-success);
 }
 
-.step-header {
+.byok-step-header {
+  display: flex;
+  flex-direction: column;
   margin-bottom: 10px;
 }
 
-.step-title {
-  margin-bottom: 0;
-}
-
-.step-description {
+.byok-step-description {
   color: #666;
-  font-size: 0.8rem;
+  font-size: 12px;
   padding: 0 20px;
 }
 

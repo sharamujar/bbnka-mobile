@@ -1,58 +1,168 @@
-.order-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.notification-count-badge {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.mark-all-read-button {
+  margin-right: 8px;
+}
+
+.notifications-loading {
   padding: 10px;
 }
 
-.order-image {
-  width: 50px;
-  height: 50px;
-  border-radius: 5px;
+.empty-notifications {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px 20px;
+  text-align: center;
 }
 
-.order-product-name {
+.empty-icon {
+  font-size: 80px;
+  color: var(--ion-color-medium);
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.empty-text {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ion-color-dark);
+  margin-bottom: 10px;
+}
+
+.empty-subtext {
   font-size: 14px;
-  font-weight: bold;
-  color: #333;
-  display: block;
+  color: var(--ion-color-medium);
+  max-width: 260px;
+  line-height: 1.4;
 }
 
-.order-product-varieties {
-  font-size: 12px;
-  color: #666;
-  display: block;
+.notifications-list {
+  padding: 12px;
 }
 
-.order-product-price {
-  font-size: 12px;
-  font-weight: bold;
-  color: #007bff;
-  display: block;
+.notification-card {
+  margin: 10px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
 
-.order-subtotal {
-  font-size: 12px;
-  font-weight: bold;
-  color: #28a745;
-  display: block;
+.notification-card.unread {
+  border-left: 4px solid var(--ion-color-primary);
+  background-color: rgba(56, 128, 255, 0.05);
 }
 
-.order-quantity-container {
+.notification-card.read {
+  opacity: 0.8;
+}
+
+.notification-card.skeleton {
+  border-left: none;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.notification-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
   display: flex;
   align-items: center;
 }
 
-.order-quantity-button {
-  --color: #007bff;
+.notification-icon {
+  margin-right: 8px;
+  font-size: 20px;
 }
 
-.order-quantity-badge {
-  margin: 0 5px;
+.unread-chip {
+  font-size: 10px;
+  font-weight: 500;
+  height: 22px;
+  padding: 0 8px;
+}
+
+.notification-message {
+  margin: 8px 0;
+  color: var(--ion-color-dark);
   font-size: 14px;
-  font-weight: bold;
-  background-color: #f8f9fa;
-  color: #333;
-  padding: 5px 10px;
-  border-radius: 5px;
+  line-height: 1.4;
+}
+
+.notification-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.notification-time {
+  display: flex;
+  align-items: center;
+}
+
+.time-icon {
+  margin-right: 4px;
+  font-size: 14px;
+}
+
+.view-order-btn {
+  font-size: 12px;
+  font-weight: 500;
+  height: 28px;
+}
+
+.view-icon {
+  font-size: 14px;
+  margin-left: 4px;
+}
+
+/* Special styling for different notification types */
+.notification-card[data-type="success"] {
+  border-left: 4px solid var(--ion-color-success);
+}
+
+.notification-card[data-type="error"] {
+  border-left: 4px solid var(--ion-color-danger);
+}
+
+.notification-card[data-type="info"] {
+  border-left: 4px solid var(--ion-color-primary);
+}
+
+/* Order status specific styles */
+.notification-card[data-status="completed"],
+.notification-card[data-status="ready"] {
+  border-left: 4px solid var(--ion-color-success);
+}
+
+.notification-card[data-status="cancelled"] {
+  border-left: 4px solid var(--ion-color-danger);
+}
+
+.notification-card[data-status="preparing"] {
+  border-left: 4px solid var(--ion-color-warning);
+}
+
+.notification-card[data-status="confirmed"] {
+  border-left: 4px solid var(--ion-color-primary);
+}
+
+/* Payment notification styles */
+.notification-card[data-payment="approved"] {
+  border-left: 4px solid var(--ion-color-success);
+  background-color: rgba(45, 211, 111, 0.05);
 }

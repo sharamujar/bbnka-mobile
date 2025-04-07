@@ -1,31 +1,38 @@
+/* Minimalist Review Page Styles with Brand Colors */
+
+:root {
+  --button-color: #bf5906;
+  --header-color: #4f1f0d;
+  --secondary-bg-color: #fff9af;
+}
+
 .review-container {
   padding: 0 16px;
   max-width: 800px;
   margin: 0 auto;
-  background-color: var(--primary-bg-color);
+  background-color: #fafafa;
 }
 
 .review-card {
-  margin-bottom: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(79, 31, 13, 0.1);
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(79, 31, 13, 0.08);
   background-color: white;
-  border: 1px solid var(--light-header-color);
+  overflow: hidden;
   position: relative;
+  border: none;
 }
 
 .review-card ion-card-header {
-  background-color: var(--header-color);
-  border-radius: 8px 8px 0 0;
-  border-bottom: 2px solid var(--button-color);
+  padding: 16px;
+  background-color: white;
+  border-bottom: 1px solid rgba(191, 89, 6, 0.1);
 }
 
 .review-card ion-card-title {
-  font-size: 1.2rem;
+  font-size: 14px;
   font-weight: 600;
-  color: white;
-  text-align: center;
-  text-transform: uppercase;
+  color: var(--header-color);
   letter-spacing: 1px;
 }
 
@@ -35,16 +42,21 @@
   background: white;
 }
 
+.clean-list {
+  margin: 0;
+  padding: 0;
+}
+
 .review-card ion-item {
-  --padding-start: 0;
-  --inner-padding-end: 0;
+  --padding-start: 16px;
+  --inner-padding-end: 16px;
   --background: transparent;
 }
 
 /* Review Item Styles */
 .review-item {
-  padding: 7px 0;
-  border-bottom: 1px dashed var(--light-header-color);
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(191, 89, 6, 0.05);
   background: white;
 }
 
@@ -62,92 +74,96 @@
 .review-item-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .size-badge {
-  font-size: 0.8rem;
+  font-size: 10px;
   padding: 4px 8px;
   border-radius: 4px;
   color: white;
-  background-color: var(--button-color);
   font-weight: 500;
+  text-transform: uppercase;
+  background-color: var(--button-color);
 }
 
 .review-item-name {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--header-color);
-  font-size: 1.1rem;
+  font-size: 14px;
 }
 
 .review-varieties {
-  font-size: 0.9rem;
+  font-size: 12px;
   color: var(--button-color);
-  font-style: italic;
+  font-style: normal;
 }
 
 .review-item-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 4px;
 }
 
 .review-quantity {
-  font-size: 0.9rem;
-  color: var(--header-color);
-  font-weight: 500;
+  font-size: 12px;
+  color: #666;
+  font-weight: 400;
 }
 
 .review-price {
   font-weight: 600;
   color: var(--header-color);
-  font-size: 1.1rem;
+  font-size: 14px;
 }
 
 /* Total Content Styles */
+.total-item {
+  background-color: rgba(255, 249, 175, 0.2);
+  margin-top: 4px;
+  border-top: 1px solid rgba(191, 89, 6, 0.1);
+}
 
 .total-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 12px 0;
 }
 
 .total-label {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--header-color);
-  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .total-amount {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--button-color);
-  text-shadow: 1px 1px 2px rgba(79, 31, 13, 0.1);
-}
-
-.total-breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: var(--header-color);
-}
-
-.subtotal-line,
-.service-fee-line,
-.total-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.total-line {
+  font-size: 16px;
   font-weight: 600;
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px dashed var(--light-header-color);
+  color: var(--button-color);
+}
+
+/* Details Card Styles */
+.details-card {
+  background-color: white;
+}
+
+.details-section {
+  margin: 24px 0;
+}
+
+.details-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-subtitle {
+  font-size: 12px;
+  color: var(--button-color);
+  margin: 0 0 12px 0;
+  font-weight: 500;
+  letter-spacing: 0.3px;
 }
 
 /* Detail Items Styles */
@@ -155,7 +171,7 @@
   display: flex;
   align-items: flex-start;
   padding: 12px 0;
-  border-bottom: 1px dashed var(--light-header-color);
+  border-bottom: 1px solid rgba(191, 89, 6, 0.05);
 }
 
 .detail-item:last-child {
@@ -163,9 +179,9 @@
 }
 
 .detail-icon {
-  font-size: 1.5rem;
+  font-size: 18px;
   color: var(--button-color);
-  margin-right: 12px;
+  margin-right: 16px;
   margin-top: 2px;
 }
 
@@ -173,17 +189,410 @@
   flex: 1;
 }
 
-.detail-label {
-  font-size: 0.9rem;
-  color: var(--header-color);
+.review-detail-label {
+  font-size: 11px;
+  color: #666;
   margin-bottom: 4px;
-  text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .detail-value {
-  font-size: 1rem;
+  font-size: 14px;
+  color: var(--header-color);
+  font-weight: 400;
+}
+
+.ref-number {
+  font-family: monospace;
+  letter-spacing: 0.5px;
+}
+
+/* More compact confirmation modal */
+.review-confirmation-modal {
+  padding: 16px;
+  text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: var(--primary-bg-color);
+  animation: fadeSlideIn 0.4s ease-out;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.review-confirmation-header {
+  margin-bottom: 16px;
+}
+
+.review-result-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.review-success-icon {
+  font-size: 48px;
   color: var(--button-color);
+  background-color: rgba(175, 144, 76, 0.1);
+  padding: 12px;
+  border-radius: 50%;
+}
+
+.review-confirmation-header h2 {
+  margin: 0;
+  color: var(--header-color);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.review-confirmation-content {
+  background-color: white;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eeeeee;
+  text-align: left;
+}
+
+/* Compact order info */
+.compact-order-info {
+  margin-bottom: 12px;
+}
+
+.review-order-id {
+  font-size: 14px;
+  background-color: rgba(255, 249, 175, 0.3);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-left: 3px solid var(--button-color);
+}
+
+.order-id-value {
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--button-color);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.info-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f5f5f5;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+.info-item ion-icon {
+  font-size: 16px;
+  color: var(--button-color);
+}
+
+.info-item span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Compact pickup details */
+.compact-pickup-details {
+  margin-bottom: 12px;
+  border-bottom: 1px solid #eeeeee;
+  padding-bottom: 12px;
+}
+
+.pickup-row {
+  display: flex;
+  gap: 10px;
+}
+
+.pickup-date,
+.pickup-time {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(255, 249, 175, 0.3);
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 2px solid rgba(191, 89, 6, 0.4);
+}
+
+.pickup-date ion-icon,
+.pickup-time ion-icon {
+  font-size: 16px;
+  color: var(--button-color);
+}
+
+.pickup-date span,
+.pickup-time span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Payment instructions */
+.payment-instructions {
+  font-size: 13px;
+}
+
+.instruction-text {
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.instruction-note {
+  margin: 0;
+  font-style: italic;
+  color: #666;
+  font-size: 12px;
+  background-color: rgba(255, 249, 175, 0.2);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+/* Action button */
+.review-confirmation-actions {
+  padding: 0 8px;
+}
+
+.home-return-button {
+  margin-top: 0;
+  --background: var(--button-color);
+}
+
+.review-confirmation-actions ion-button.home-return-button {
+  --border-radius: 8px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  font-size: 14px;
+}
+
+@media (max-width: 320px) {
+  .review-confirmation-modal {
+    padding: 12px;
+  }
+
+  .review-confirmation-content {
+    padding: 12px;
+  }
+
+  .review-success-icon {
+    font-size: 40px;
+    padding: 10px;
+  }
+}
+
+/* Footer styling */
+.product-footer {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.footer-back-action-button {
+  --border-radius: 8px;
+  font-size: 13px;
+  --border-width: 1px;
+  --border-color: var(--button-color);
+  --color: var(--button-color);
+}
+
+.footer-action-button {
+  --border-radius: 8px;
+  font-size: 13px;
+  --background: var(--button-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .review-card {
+    margin-bottom: 16px;
+  }
+
+  .review-card ion-card-header {
+    padding: 12px 16px;
+  }
+
+  .detail-icon {
+    font-size: 16px;
+  }
+
+  .total-label {
+    font-size: 12px;
+  }
+
+  .total-amount {
+    font-size: 15px;
+  }
+
+  .section-subtitle {
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+
+  .review-confirmation-modal {
+    padding: 16px;
+  }
+
+  .review-success-icon {
+    font-size: 48px;
+    padding: 12px;
+  }
+
+  .review-confirmation-content {
+    padding: 16px;
+  }
+}
+
+/* Modal improvements */
+.review-order-confirmation-modal {
+  --backdrop-opacity: 0.85;
+  --box-shadow: 0 0 30px rgba(0, 0, 0, 0.15);
+  --border-radius: 16px;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Confirmation Modal Content Organization */
+.confirmation-section {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #eeeeee;
+  padding-bottom: 20px;
+}
+
+.confirmation-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.confirmation-section h4 {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  color: var(--header-color);
+  margin: 0 0 16px 0;
+  font-weight: 600;
+}
+
+.section-icon {
+  margin-right: 10px;
+  font-size: 18px;
+  color: var(--button-color);
+}
+
+/* Payment Section Styles */
+.payment-method-badge {
+  display: inline-block;
+  background-color: var(--button-color);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.review-gcash-message .payment-method-badge {
+  background-color: #00a6ed;
+}
+
+.payment-status p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+/* Pickup Detail Styles */
+.pickup-details {
+  background-color: rgba(255, 249, 175, 0.15);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(191, 89, 6, 0.1);
+}
+
+.pickup-detail-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.pickup-detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.pickup-detail-item ion-icon {
+  font-size: 18px;
+  color: var(--button-color);
+  margin-right: 12px;
+  margin-top: 3px;
+}
+
+.pickup-detail-item div {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.detail-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--header-color);
+}
+
+.pickup-instructions {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(191, 89, 6, 0.2);
+}
+
+.pickup-instructions p {
+  font-size: 14px;
+  color: #333;
+  font-style: italic;
+  margin: 0;
+}
+
+.pickup-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
   font-weight: 500;
 }

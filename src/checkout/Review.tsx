@@ -22,6 +22,7 @@ import {
   IonCol,
   IonBadge,
   IonToast,
+  IonModal,
 } from "@ionic/react";
 import {
   chevronBackCircleOutline,
@@ -31,6 +32,9 @@ import {
   calendarOutline,
   cardOutline,
   locationOutline,
+  closeCircleOutline,
+  storefront,
+  home,
 } from "ionicons/icons";
 import { auth, db } from "../firebase-config";
 import {
@@ -40,6 +44,8 @@ import {
   deleteDoc,
   doc,
   writeBatch,
+  serverTimestamp,
+  getDoc,
 } from "firebase/firestore";
 import CheckoutStepProgress from "../components/CheckoutStepProgress";
 import "./Review.css";
@@ -52,14 +58,80 @@ const Review: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isOrdering, setIsOrdering] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [orderId, setOrderId] = useState("");
 
   // Get data from localStorage
   const [orderDetails, setOrderDetails] = useState({
-    pickupDate: localStorage.getItem("pickupDate") || "",
-    pickupTime: localStorage.getItem("pickupTime") || "",
-    paymentMethod: localStorage.getItem("paymentMethod") || "cash",
-    gcashReference: localStorage.getItem("gcashReference") || "",
+    pickupDate: "",
+    pickupTime: "",
+    paymentMethod: "cash",
+    gcashReference: "",
+    pickupOption: "later",
   });
+
+  // Force update when component becomes active
+  useEffect(() => {
+    // Function to update order details from localStorage
+    const updateOrderDetails = () => {
+      const pickupOptionFromStorage = localStorage.getItem("pickupOption");
+
+      setOrderDetails({
+        pickupDate: localStorage.getItem("pickupDate") || "",
+        pickupTime: localStorage.getItem("pickupTime") || "",
+        paymentMethod: localStorage.getItem("paymentMethod") || "cash",
+        gcashReference: localStorage.getItem("gcashReference") || "",
+        pickupOption: pickupOptionFromStorage === "now" ? "now" : "later",
+      });
+    };
+
+    // Update initially
+    updateOrderDetails();
+
+    // Set up a polling interval to check for localStorage changes
+    // This ensures we catch changes when navigating between pages
+    const intervalId = setInterval(updateOrderDetails, 500);
+
+    // Create a custom event for localStorage changes (for other tabs)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (
+        e.key === "paymentMethod" ||
+        e.key === "gcashReference" ||
+        e.key === "pickupDate" ||
+        e.key === "pickupTime" ||
+        e.key === "pickupOption"
+      ) {
+        updateOrderDetails();
+      }
+    };
+
+    // Add event listener for storage changes
+    window.addEventListener("storage", handleStorageChange);
+
+    // Add event listener for when the component mounts/remounts
+    const handleRouteChange = () => {
+      updateOrderDetails();
+    };
+
+    // Use this to detect route changes (this is a hack but works)
+    const originalPushState = history.push;
+    history.push = (...args: Parameters<typeof originalPushState>) => {
+      handleRouteChange();
+      return originalPushState.apply(history, args);
+    };
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(intervalId);
+      history.push = originalPushState;
+    };
+  }, [history]);
+
+  // Add useEffect to log orderDetails changes for debugging
+  useEffect(() => {
+    console.log("Order Details updated:", orderDetails);
+  }, [orderDetails]);
 
   // Fetch cart items
   useEffect(() => {
@@ -94,61 +166,119 @@ const Review: React.FC = () => {
   const createOrder = async () => {
     const user = auth.currentUser;
     if (!user) {
-      console.log("No user found, cannot create order");
       setToastMessage("Please login to place an order");
       setShowToast(true);
       return;
     }
 
     if (cartItems.length === 0) {
-      console.log("Cart is empty, cannot create order");
       setToastMessage("Your cart is empty");
       setShowToast(true);
       return;
     }
 
     setIsOrdering(true);
+
     try {
-      // Calculate totals
-      const serviceFee = 50;
-      const totalAmount = subtotal;
+      // Get the customer data first
+      const customerDocRef = doc(db, "customers", user.uid);
+      const customerDoc = await getDoc(customerDocRef);
+      const customerData = customerDoc.data();
 
-      console.log("Creating order with data:", {
-        userId: user.uid,
-        items: cartItems,
-        orderDetails: {
-          pickupDate: orderDetails.pickupDate,
-          pickupTime: orderDetails.pickupTime,
-          paymentMethod: orderDetails.paymentMethod,
-          gcashReference: orderDetails.gcashReference || null,
-          totalAmount: totalAmount,
-          status: "pending",
-          createdAt: new Date().toISOString(),
-        },
-      });
+      // Extract customer name using various possible fields
+      const customerName =
+        customerData?.name ||
+        (customerData?.firstName && customerData?.lastName)
+          ? `${customerData.firstName} ${customerData.lastName}`
+          : customerData?.firstName || "Customer";
 
-      // Create order document with hybrid structure
+      // Add user details directly to order
+      const userDetails = {
+        firstName:
+          customerData?.firstName || customerData?.name?.split(" ")[0] || "New",
+        lastName:
+          customerData?.lastName ||
+          (customerData?.name
+            ? customerData.name.split(" ").slice(1).join(" ")
+            : "User"),
+        name:
+          customerData?.name ||
+          customerData?.name ||
+          `${customerData?.firstName || "New"} ${
+            customerData?.lastName || "User"
+          }`,
+        email: user.email || customerData?.email || "",
+      };
+
+      // Calculate total amount
+      const totalAmount = cartItems.reduce(
+        (sum, item) => sum + item.productPrice,
+        0
+      );
+
+      // Determine order status based on payment method only
+      let orderStatus = "scheduled"; // Default is "Order Placed"
+
+      // For GCash payments, we need payment verification
+      if (orderDetails.paymentMethod === "gcash") {
+        orderStatus = "awaiting_payment_verification";
+      }
+
+      const ordersRef = collection(db, "orders");
       const orderData = {
         userId: user.uid,
-        customerRef: `customers/${user.uid}`,
+        customerName: customerName,
+        status: orderStatus, // Changed from orderStatus to status
+        createdAt: serverTimestamp(),
         items: cartItems.map((item) => ({
           cartId: item.id,
           createdAt: item.createdAt,
+          productSize: item.productSize,
+          productVarieties: item.productVarieties || [],
+          productQuantity: item.productQuantity || 1,
+          productPrice: item.productPrice,
         })),
         orderDetails: {
-          pickupDate: orderDetails.pickupDate,
-          pickupTime: orderDetails.pickupTime,
-          paymentMethod: orderDetails.paymentMethod,
+          createdAt: new Date().toISOString(),
           gcashReference: orderDetails.gcashReference || null,
-          totalAmount: totalAmount,
+          paymentMethod: orderDetails.paymentMethod,
           paymentStatus:
             orderDetails.paymentMethod === "cash" ? "approved" : "pending",
-          createdAt: new Date().toISOString(),
+          pickupDate: orderDetails.pickupDate,
+          pickupTime: orderDetails.pickupTime,
+          pickupOption: orderDetails.pickupOption,
+          totalAmount: totalAmount,
         },
       };
 
-      console.log("Creating order with hybrid structure:", orderData);
-      const orderRef = await addDoc(collection(db, "orders"), orderData);
+      const orderRef = await addDoc(ordersRef, orderData);
+      setOrderId(orderRef.id);
+
+      // Create notification with appropriate message
+      let notificationMessage = `Your order #${orderRef.id} has been placed successfully. `;
+
+      if (orderDetails.paymentMethod === "cash") {
+        if (orderDetails.pickupOption === "now") {
+          notificationMessage +=
+            "Please wait at the store. Your order has been placed.";
+        } else {
+          notificationMessage +=
+            "Please prepare the exact amount when picking up your order.";
+        }
+      } else {
+        notificationMessage += "Your GCash payment is pending verification.";
+      }
+
+      const notificationsRef = collection(db, "notifications");
+      await addDoc(notificationsRef, {
+        userId: user.uid,
+        title: "Order Placed Successfully",
+        message: notificationMessage,
+        type: "success",
+        createdAt: serverTimestamp(),
+        isRead: false,
+        orderId: orderRef.id,
+      });
 
       // Clear cart items
       const batch = writeBatch(db);
@@ -157,23 +287,16 @@ const Review: React.FC = () => {
         batch.delete(cartItemRef);
       });
       await batch.commit();
-      console.log("Cart items cleared successfully");
 
-      // Clear localStorage
-      localStorage.removeItem("pickupDate");
-      localStorage.removeItem("pickupTime");
-      localStorage.removeItem("paymentMethod");
-      localStorage.removeItem("gcashReference");
-      console.log("LocalStorage cleared");
+      // Log pickup details for debugging
+      console.log("Order created with pickup details:", {
+        date: orderDetails.pickupDate,
+        time: orderDetails.pickupTime,
+        option: orderDetails.pickupOption,
+      });
 
-      // Show success message
-      setToastMessage("Order placed successfully!");
-      setShowToast(true);
-
-      // Redirect to orders page
-      setTimeout(() => {
-        history.push("/orders");
-      }, 1500);
+      // Show confirmation modal
+      setShowConfirmation(true);
     } catch (error) {
       console.error("Error creating order:", error);
       setToastMessage("Failed to place order. Please try again.");
@@ -191,6 +314,73 @@ const Review: React.FC = () => {
       createOrder();
     }
   };
+
+  const handleCloseConfirmation = () => {
+    setShowConfirmation(false);
+
+    // Only clear localStorage after confirmation is dismissed
+    localStorage.removeItem("pickupDate");
+    localStorage.removeItem("pickupTime");
+    localStorage.removeItem("paymentMethod");
+    localStorage.removeItem("gcashReference");
+    localStorage.removeItem("pickupOption");
+    localStorage.removeItem("status");
+
+    history.push("/home");
+  };
+
+  // Force refresh when coming back to this page
+  useEffect(() => {
+    // This will run when the component is focused
+    const refreshOnFocus = () => {
+      if (document.visibilityState === "visible") {
+        // Force refresh state from localStorage
+        const pickupOptionFromStorage = localStorage.getItem("pickupOption");
+
+        setOrderDetails({
+          pickupDate: localStorage.getItem("pickupDate") || "",
+          pickupTime: localStorage.getItem("pickupTime") || "",
+          paymentMethod: localStorage.getItem("paymentMethod") || "cash",
+          gcashReference: localStorage.getItem("gcashReference") || "",
+          pickupOption: pickupOptionFromStorage === "now" ? "now" : "later",
+        });
+      }
+    };
+
+    document.addEventListener("visibilitychange", refreshOnFocus);
+    window.addEventListener("focus", refreshOnFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", refreshOnFocus);
+      window.removeEventListener("focus", refreshOnFocus);
+    };
+  }, []);
+
+  // Load order details from localStorage on component mount
+  useEffect(() => {
+    const pickupDate = localStorage.getItem("pickupDate");
+    const pickupTime = localStorage.getItem("pickupTime");
+    const paymentMethod = localStorage.getItem("paymentMethod") || "cash";
+    const gcashReference = localStorage.getItem("gcashReference") || "";
+    const pickupOption =
+      localStorage.getItem("pickupOption") === "now" ? "now" : "later";
+
+    // Log the values we're loading to help with debugging
+    console.log("Loading order details from localStorage:", {
+      pickupDate,
+      pickupTime,
+      paymentMethod,
+      pickupOption,
+    });
+
+    setOrderDetails({
+      pickupDate: pickupDate || "",
+      pickupTime: pickupTime || "",
+      paymentMethod,
+      gcashReference,
+      pickupOption,
+    });
+  }, []);
 
   // badge color
   const getSizeColor = (sizeName: any): string => {
@@ -262,20 +452,22 @@ const Review: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle className="title-toolbar">Review Order</IonTitle>
+          <IonTitle>Review</IonTitle>
         </IonToolbar>
       </IonHeader>
 
       <IonContent fullscreen>
-        <CheckoutStepProgress currentStep={currentStep} />
+        <div className="checkout-progress-container">
+          <CheckoutStepProgress currentStep={currentStep} />
+        </div>
         <div className="review-container">
           {/* Order Summary Section */}
           <IonCard className="review-card">
             <IonCardHeader>
-              <IonCardTitle>ORDER SUMMARY</IonCardTitle>
+              <IonCardTitle>Items</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
-              <IonList lines="none">
+              <IonList lines="none" className="clean-list">
                 {cartItems.map((item) => (
                   <IonItem key={item.id} className="review-item">
                     <IonLabel>
@@ -303,7 +495,8 @@ const Review: React.FC = () => {
                           )}
                         <div className="review-item-footer">
                           <IonText className="review-quantity">
-                            Qty: {item.productQuantity}
+                            {item.productQuantity}{" "}
+                            {item.productQuantity > 1 ? "items" : "item"}
                           </IonText>
                           <IonText className="review-price">
                             ₱{item.productPrice.toLocaleString()}
@@ -318,7 +511,7 @@ const Review: React.FC = () => {
                   <IonLabel>
                     <div className="total-content">
                       <div className="total-header">
-                        <span className="total-label">TOTAL AMOUNT</span>
+                        <span className="total-label">Total</span>
                         <span className="total-amount">
                           ₱{total.toLocaleString()}
                         </span>
@@ -330,93 +523,87 @@ const Review: React.FC = () => {
             </IonCardContent>
           </IonCard>
 
-          {/* Pickup Details Section */}
-          <IonCard className="review-card">
+          {/* Pickup & Payment Details Combined Section */}
+          <IonCard className="review-card details-card">
             <IonCardHeader>
-              <IonCardTitle>PICKUP DETAILS</IonCardTitle>
+              <IonCardTitle>Order Details</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
-              <IonGrid>
-                <IonRow>
-                  <IonCol size="12">
-                    <div className="detail-item">
-                      <IonIcon icon={calendarOutline} className="detail-icon" />
-                      <div className="detail-content">
-                        <div className="detail-label">PICKUP DATE</div>
-                        <div className="detail-value">
-                          {orderDetails.pickupDate}
-                        </div>
-                      </div>
+              <div className="details-section">
+                <h4 className="section-subtitle">Pickup Information</h4>
+                <div className="detail-item">
+                  <IonIcon icon={calendarOutline} className="detail-icon" />
+                  <div className="detail-content">
+                    <div className="review-detail-label">Date</div>
+                    <div className="detail-value">
+                      {orderDetails.pickupDate}
                     </div>
-                  </IonCol>
-                </IonRow>
-                <IonRow>
-                  <IonCol size="12">
-                    <div className="detail-item">
-                      <IonIcon icon={timeOutline} className="detail-icon" />
-                      <div className="detail-content">
-                        <div className="detail-label">PICKUP TIME</div>
-                        <div className="detail-value">
-                          {orderDetails.pickupTime}
-                        </div>
-                      </div>
+                  </div>
+                </div>
+                <div className="detail-item">
+                  <IonIcon icon={timeOutline} className="detail-icon" />
+                  <div className="detail-content">
+                    <div className="review-detail-label">Time</div>
+                    <div className="detail-value">
+                      {orderDetails.pickupTime}
                     </div>
-                  </IonCol>
-                </IonRow>
-                <IonRow>
-                  <IonCol size="12">
-                    <div className="detail-item">
-                      <IonIcon icon={locationOutline} className="detail-icon" />
-                      <div className="detail-content">
-                        <div className="detail-label">PICKUP LOCATION</div>
-                        <div className="detail-value">
-                          Store Address, City, Philippines
-                        </div>
-                      </div>
+                  </div>
+                </div>
+                <div className="detail-item">
+                  <IonIcon icon={locationOutline} className="detail-icon" />
+                  <div className="detail-content">
+                    <div className="review-detail-label">Location</div>
+                    <div className="detail-value">
+                      Store Address, City, Philippines
                     </div>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            </IonCardContent>
-          </IonCard>
+                  </div>
+                </div>
+              </div>
 
-          {/* Payment Details Section */}
-          <IonCard className="review-card">
-            <IonCardHeader>
-              <IonCardTitle>PAYMENT DETAILS</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonGrid>
-                <IonRow>
-                  <IonCol size="12">
+              <div className="details-section">
+                <h4 className="section-subtitle">Payment Information</h4>
+                <div className="detail-item">
+                  <IonIcon icon={cardOutline} className="detail-icon" />
+                  <div className="detail-content">
+                    <div className="review-detail-label">Method</div>
+                    <div className="detail-value">
+                      {orderDetails.paymentMethod === "gcash"
+                        ? "GCash"
+                        : "Cash"}
+                    </div>
+                  </div>
+                </div>
+                {orderDetails.paymentMethod === "gcash" &&
+                  orderDetails.gcashReference && (
                     <div className="detail-item">
                       <IonIcon icon={cardOutline} className="detail-icon" />
                       <div className="detail-content">
-                        <div className="detail-label">PAYMENT METHOD</div>
-                        <div className="detail-value">
-                          {orderDetails.paymentMethod.toUpperCase()}
+                        <div className="review-detail-label">Reference #</div>
+                        <div className="detail-value ref-number">
+                          {orderDetails.gcashReference}
                         </div>
                       </div>
                     </div>
-                  </IonCol>
-                </IonRow>
-                {orderDetails.paymentMethod === "gcash" &&
-                  orderDetails.gcashReference && (
-                    <IonRow>
-                      <IonCol size="12">
-                        <div className="detail-item">
-                          <IonIcon icon={cardOutline} className="detail-icon" />
-                          <div className="detail-content">
-                            <div className="detail-label">GCASH REFERENCE</div>
-                            <div className="detail-value">
-                              {orderDetails.gcashReference}
-                            </div>
-                          </div>
-                        </div>
-                      </IonCol>
-                    </IonRow>
                   )}
-              </IonGrid>
+                <div className="detail-item">
+                  <IonIcon
+                    icon={
+                      orderDetails.pickupOption === "now"
+                        ? storefront
+                        : calendarOutline
+                    }
+                    className="detail-icon"
+                  />
+                  <div className="detail-content">
+                    <div className="review-detail-label">Pickup Option</div>
+                    <div className="detail-value">
+                      {orderDetails.pickupOption === "now"
+                        ? "Pickup Today (Walk-in)"
+                        : "Scheduled for Later"}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </IonCardContent>
           </IonCard>
         </div>
@@ -431,9 +618,12 @@ const Review: React.FC = () => {
                 routerLink="/home/cart/schedule/payment"
                 fill="outline"
                 disabled={isOrdering}
+                onClick={() => {
+                  // No review-specific data to clear, but could be added here if needed
+                }}
               >
                 <IonIcon icon={chevronBackCircleOutline} slot="start" />
-                Back to Payment
+                Back
               </IonButton>
             </div>
             <div className="footer-action-button-container">
@@ -443,7 +633,7 @@ const Review: React.FC = () => {
                 disabled={isOrdering}
               >
                 <IonIcon icon={checkmarkCircleSharp} slot="start" />
-                {isOrdering ? "Processing..." : "Confirm Order"}
+                {isOrdering ? "Processing..." : "Place Order"}
               </IonButton>
             </div>
           </div>
@@ -458,6 +648,103 @@ const Review: React.FC = () => {
         position="bottom"
         color={toastMessage.includes("successfully") ? "success" : "danger"}
       />
+
+      <IonModal
+        isOpen={showConfirmation}
+        onDidDismiss={handleCloseConfirmation}
+        className="review-order-confirmation-modal"
+      >
+        <div className="review-confirmation-modal">
+          <div className="review-confirmation-header">
+            <div className="review-result-icon">
+              <IonIcon
+                icon={checkmarkCircleSharp}
+                className="review-success-icon"
+              />
+            </div>
+            <h2>Order Placed Successfully</h2>
+          </div>
+
+          <div className="review-confirmation-content">
+            <div className="compact-order-info">
+              <p className="review-order-id">
+                <strong>Order #</strong>
+                <span className="order-id-value">{orderId}</span>
+              </p>
+
+              <div className="info-row">
+                <div className="info-item">
+                  <IonIcon icon={cardOutline} />
+                  <span>
+                    {orderDetails.paymentMethod === "gcash" ? "GCash" : "Cash"}
+                  </span>
+                </div>
+
+                <div className="info-item">
+                  <IonIcon
+                    icon={
+                      orderDetails.pickupOption === "now"
+                        ? storefront
+                        : calendarOutline
+                    }
+                  />
+                  <span>
+                    {orderDetails.pickupOption === "now"
+                      ? "Today"
+                      : "Scheduled"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="compact-pickup-details">
+              <div className="pickup-label">Pickup Details</div>
+              <div className="pickup-row">
+                <div className="pickup-date">
+                  <IonIcon icon={calendarOutline} />
+                  <span>{orderDetails.pickupDate}</span>
+                </div>
+                <div className="pickup-time">
+                  <IonIcon icon={timeOutline} />
+                  <span>{orderDetails.pickupTime}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="payment-instructions">
+              {orderDetails.paymentMethod === "gcash" ? (
+                <p className="instruction-text">
+                  Your GCash payment is pending verification. We'll notify you
+                  when confirmed.
+                </p>
+              ) : (
+                <p className="instruction-text">
+                  {orderDetails.pickupOption === "now"
+                    ? "Please pay at the store when your order is ready."
+                    : "Please prepare the exact amount for pickup."}
+                </p>
+              )}
+
+              {/* {orderDetails.pickupOption === "now" && (
+                <p className="instruction-note">
+                  Please wait at the store while your order is being prepared.
+                </p>
+              )} */}
+            </div>
+          </div>
+
+          <div className="review-confirmation-actions">
+            <IonButton
+              expand="block"
+              onClick={handleCloseConfirmation}
+              className="home-return-button"
+            >
+              <IonIcon icon={home} slot="start" />
+              Return to Home
+            </IonButton>
+          </div>
+        </div>
+      </IonModal>
     </IonPage>
   );
 };

@@ -5,26 +5,34 @@ import {
   IonToolbar,
   IonTitle,
   IonContent,
-  IonList,
-  IonItem,
+  IonSegment,
+  IonSegmentButton,
   IonLabel,
+  IonChip,
   IonCard,
-  IonCardHeader,
-  IonCardTitle,
   IonCardContent,
   IonIcon,
-  IonBadge,
   IonSkeletonText,
   IonRefresher,
   IonRefresherContent,
-  IonSpinner,
+  IonText,
+  IonSearchbar,
+  RefresherEventDetail,
+  IonBadge,
+  useIonToast,
+  IonButton,
+  IonRow,
+  IonCol,
+  IonGrid,
 } from "@ionic/react";
 import {
   timeOutline,
   calendarOutline,
-  cardOutline,
-  locationOutline,
+  refreshOutline,
+  documentTextOutline,
   chevronForwardOutline,
+  cashOutline,
+  cardOutline,
 } from "ionicons/icons";
 import { auth, db } from "../firebase-config";
 import {
@@ -34,166 +42,105 @@ import {
   orderBy,
   onSnapshot,
   getDocs,
-  doc,
-  getDoc,
 } from "firebase/firestore";
 import "./Orders.css";
+import { useHistory } from "react-router-dom";
+
+interface OrderItem {
+  productPrice: number;
+  productQuantity: number;
+  productSize: string | { name: string };
+  productVarieties: string[];
+}
 
 interface Order {
   id: string;
-  userId: string;
-  customerRef: string;
-  items: {
-    cartId: string;
-    createdAt: string;
-  }[];
+  status: string;
+  items: OrderItem[];
+  createdAt: any;
+  customerName: string;
   orderDetails: {
+    createdAt: string;
     pickupDate: string;
     pickupTime: string;
     paymentMethod: string;
-    gcashReference: string | null;
-    totalAmount: number;
     paymentStatus: string;
-    createdAt: string;
+    totalAmount: number;
+    pickupOption: string;
+    gcashReference?: string;
+    status?: string;
+  };
+  userDetails?: {
+    firstName: string;
+    lastName: string;
+    name?: string;
+    email?: string;
   };
 }
 
-interface CartItem {
-  originalPrice: number;
-  productPrice: number;
-  productQuantity: number;
-  productSize: string;
-  productVarieties: string[];
-  specialInstructions?: string;
-}
+// Tab interface for order status
+type OrderTab = "active" | "completed" | "cancelled";
 
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cartItems, setCartItems] = useState<{ [key: string]: CartItem }>({});
+  const [activeTab, setActiveTab] = useState<OrderTab>("active");
+  const [searchText, setSearchText] = useState("");
+  const history = useHistory();
+  const [present] = useIonToast();
 
-  // Function to fetch cart item details
-  const fetchCartItemDetails = async (userId: string, cartId: string) => {
-    try {
-      console.log(
-        "Fetching cart item details for user:",
-        userId,
-        "cartId:",
-        cartId
-      );
-      const cartItemRef = doc(db, "customers", userId, "cart", cartId);
-      const cartItemDoc = await getDoc(cartItemRef);
-      if (cartItemDoc.exists()) {
-        const data = cartItemDoc.data();
-        console.log("Cart item data found:", data);
-        return data as CartItem;
-      }
-      console.log("No cart item found for cartId:", cartId);
-      return null;
-    } catch (error) {
-      console.error("Error fetching cart item:", error);
-      return null;
-    }
-  };
-
+  // Fetch orders for the logged-in user
   useEffect(() => {
-    console.log("Orders component mounted");
     const user = auth.currentUser;
     if (!user) {
-      console.log("No user found, setting loading to false");
       setLoading(false);
       return;
     }
 
-    console.log("Setting up orders listener for user:", user.uid);
     const ordersRef = collection(db, "orders");
-
-    // Set up the listener with the correct query
     const q = query(
       ordersRef,
       where("userId", "==", user.uid),
       orderBy("orderDetails.createdAt", "desc")
     );
 
-    console.log("Setting up listener with query:", q);
     const unsubscribe = onSnapshot(
       q,
-      async (querySnapshot) => {
-        console.log("Orders snapshot received");
-        console.log("Snapshot size:", querySnapshot.size);
-
+      (snapshot) => {
         const ordersList: Order[] = [];
-        const cartItemsMap: { [key: string]: CartItem } = {};
-
-        // Process each order
-        for (const doc of querySnapshot.docs) {
-          const data = doc.data();
-          console.log("Processing order document:", doc.id);
-          console.log("Order data:", JSON.stringify(data, null, 2));
-
-          // Only process orders that match our expected structure
-          if (data.orderDetails && data.items && Array.isArray(data.items)) {
-            console.log("Valid order structure found");
-            console.log("Items array:", data.items);
-
-            // Fetch cart item details for each item
-            for (const item of data.items) {
-              console.log("Processing cart item:", item.cartId);
-              if (!cartItemsMap[item.cartId]) {
-                console.log("Fetching cart item details for:", item.cartId);
-                const cartItemDetails = await fetchCartItemDetails(
-                  user.uid,
-                  item.cartId
-                );
-                console.log("Cart item details:", cartItemDetails);
-                if (cartItemDetails) {
-                  cartItemsMap[item.cartId] = cartItemDetails;
-                }
-              } else {
-                console.log("Cart item already in map:", item.cartId);
-              }
-            }
-
-            ordersList.push({ id: doc.id, ...data } as Order);
-            console.log("Order added to list:", doc.id);
-          } else {
-            console.warn("Invalid order data structure:", data);
-          }
-        }
-
-        console.log("Total orders processed:", ordersList.length);
-        console.log("Final orders list:", ordersList);
-        console.log("Final cart items map:", cartItemsMap);
+        snapshot.docs.forEach((doc) => {
+          const data = doc.data() as Omit<Order, "id">;
+          ordersList.push({
+            id: doc.id,
+            ...data,
+          } as Order);
+        });
         setOrders(ordersList);
-        setCartItems(cartItemsMap);
+
         setLoading(false);
       },
       (error) => {
-        console.error("Error in orders listener:", error);
-        console.error("Error details:", {
-          code: error.code,
-          message: error.message,
-          stack: error.stack,
+        console.error("Error fetching orders:", error);
+        present({
+          message: "Failed to load orders. Please try again.",
+          duration: 3000,
+          color: "danger",
         });
         setLoading(false);
       }
     );
 
-    return () => {
-      console.log("Cleaning up orders listener");
-      unsubscribe();
-    };
-  }, []);
+    return () => unsubscribe();
+  }, [present]);
 
-  const handleRefresh = async (event: CustomEvent) => {
-    const user = auth.currentUser;
-    if (!user) {
-      event.detail.complete();
-      return;
-    }
-
+  const doRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
     try {
-      // Query orders again
+      const user = auth.currentUser;
+      if (!user) {
+        event.detail.complete();
+        return;
+      }
+
       const ordersRef = collection(db, "orders");
       const q = query(
         ordersRef,
@@ -201,267 +148,481 @@ const Orders: React.FC = () => {
         orderBy("orderDetails.createdAt", "desc")
       );
 
-      const querySnapshot = await getDocs(q);
+      const snapshot = await getDocs(q);
       const ordersList: Order[] = [];
-      const cartItemsMap: { [key: string]: CartItem } = {};
-
-      // Process each order
-      for (const doc of querySnapshot.docs) {
-        const data = doc.data();
-        console.log("Refreshed order data:", data);
-
-        if (data.orderDetails && data.items && Array.isArray(data.items)) {
-          // Fetch cart item details for each item
-          for (const item of data.items) {
-            if (!cartItemsMap[item.cartId]) {
-              const cartItemDetails = await fetchCartItemDetails(
-                user.uid,
-                item.cartId
-              );
-              if (cartItemDetails) {
-                cartItemsMap[item.cartId] = cartItemDetails;
-              }
-            }
-          }
-
-          ordersList.push({ id: doc.id, ...data } as Order);
-        }
-      }
-
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data() as Omit<Order, "id">;
+        ordersList.push({
+          id: doc.id,
+          ...data,
+        } as Order);
+      });
       setOrders(ordersList);
-      setCartItems(cartItemsMap);
     } catch (error) {
       console.error("Error refreshing orders:", error);
+      present({
+        message: "Failed to refresh orders. Please try again.",
+        duration: 3000,
+        color: "danger",
+      });
+    } finally {
+      event.detail.complete();
     }
-
-    event.detail.complete();
   };
 
-  const getStatusColor = (status: string | undefined) => {
-    // If status is undefined, return a default color
-    if (!status) {
-      return "medium";
+  const getStatusBadgeColor = (
+    status: string,
+    paymentMethod?: string,
+    paymentStatus?: string
+  ) => {
+    // Special case for GCash payments that are pending verification
+    if (paymentMethod === "gcash" && paymentStatus !== "approved") {
+      return "warning";
     }
 
-    switch (status.toLowerCase()) {
-      case "pending":
+    // Use status directly from database
+    switch (status) {
+      // Mobile app status values
+      case "processing":
         return "warning";
-      case "approved":
+      case "ready":
         return "success";
-      case "rejected":
+      case "completed":
+        return "success";
+      case "cancelled":
+        return "danger";
+      case "awaiting_payment_verification":
+        return "warning";
+      case "scheduled":
+        return "primary";
+
+      // Inventory system status values
+      case "Order Confirmed":
+        return "primary";
+      case "Preparing Order":
+        return "warning";
+      case "Ready for Pickup":
+        return "success";
+      case "Completed":
+        return "success";
+      case "Cancelled":
         return "danger";
       default:
         return "medium";
     }
   };
 
-  const getPaymentStatus = (paymentMethod: string, status: string) => {
-    if (paymentMethod === "cash") {
-      return "Verified";
+  const getStatusText = (
+    status: string,
+    paymentMethod?: string,
+    paymentStatus?: string
+  ) => {
+    // Special case for GCash payments that are pending verification
+    if (paymentMethod === "gcash" && paymentStatus !== "approved") {
+      return "Pending";
     }
-    // For GCash payments
-    switch (status.toLowerCase()) {
-      case "pending":
-        return "Pending Verification";
-      case "approved":
-        return "Verified";
-      case "rejected":
-        return "Rejected";
+
+    // Convert database status to user-friendly text
+    switch (status) {
+      // Mobile app status values
+      case "processing":
+        return "Preparing Order";
+      case "ready":
+        return "Ready for Pickup";
+      case "completed":
+        return "Completed";
+      case "cancelled":
+        return "Cancelled";
+      case "awaiting_payment_verification":
+        return "Pending";
+      case "scheduled":
+        return "Order Placed";
+
+      // Inventory system status values - already in user-friendly format
+      case "Order Confirmed":
+      case "Preparing Order":
+      case "Ready for Pickup":
+      case "Completed":
+      case "Cancelled":
+        return status;
       default:
-        return "Unknown";
+        return "Order Placed";
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    } catch (error) {
+      return dateString;
+    }
   };
 
-  const formatTime = (timeString: string) => {
-    // Return the time string as is since it's already in the correct format
-    return timeString;
+  // Format timestamp for order placement time
+  const formatTimestamp = (timestamp: any) => {
+    try {
+      // Handle Firestore timestamp or date string
+      const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+
+      // Format to show date and time (e.g. "Apr 15, 2:30 PM")
+      return (
+        date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }) +
+        ", " +
+        date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })
+      );
+    } catch (error) {
+      return "Unknown date";
+    }
   };
 
-  if (loading) {
+  // Group orders by status, including search results if any
+  const getOrdersByTab = () => {
+    // First filter by search if there's a search term
+    const searchFiltered = searchText
+      ? orders.filter(
+          (order) =>
+            order.id.toLowerCase().includes(searchText.toLowerCase()) ||
+            getStatusText(
+              order.orderDetails.status || order.status,
+              order.orderDetails.paymentMethod,
+              order.orderDetails.paymentStatus
+            )
+              .toLowerCase()
+              .includes(searchText.toLowerCase())
+        )
+      : orders;
+
+    // Then organize by tab
+    if (activeTab === "active") {
+      return searchFiltered.filter((order) => {
+        // Get effective status from either orderDetails.status or root status
+        const status = order.orderDetails.status || order.status;
+
+        // Special case for GCash payments that have been approved but status not updated
+        if (
+          order.orderDetails.paymentMethod === "gcash" &&
+          order.orderDetails.paymentStatus === "approved" &&
+          !["completed", "cancelled", "Completed", "Cancelled"].includes(status)
+        ) {
+          return true; // Keep in active orders until explicitly completed or cancelled
+        }
+
+        // Handle both mobile app status values and inventory system status values
+        const activeAppStatuses = [
+          "scheduled",
+          "processing",
+          "ready",
+          "awaiting_payment_verification",
+        ];
+
+        const activeInventoryStatuses = [
+          "Order Confirmed",
+          "Preparing Order",
+          "Ready for Pickup",
+        ];
+
+        return (
+          activeAppStatuses.includes(status) ||
+          activeInventoryStatuses.includes(status)
+        );
+      });
+    } else if (activeTab === "completed") {
+      return searchFiltered.filter((order) => {
+        const status = order.orderDetails.status || order.status;
+        return status === "completed" || status === "Completed";
+      });
+    } else {
+      return searchFiltered.filter((order) => {
+        const status = order.orderDetails.status || order.status;
+        return status === "cancelled" || status === "Cancelled";
+      });
+    }
+  };
+
+  const displayOrders = getOrdersByTab();
+
+  // Get counts for each tab
+  const activeCounts = orders.filter((order) => {
+    const status = order.orderDetails.status || order.status;
+
+    // Special case for GCash payments that have been approved but status not updated
+    if (
+      order.orderDetails.paymentMethod === "gcash" &&
+      order.orderDetails.paymentStatus === "approved" &&
+      !["completed", "cancelled", "Completed", "Cancelled"].includes(status)
+    ) {
+      return true; // Count as active until explicitly completed or cancelled
+    }
+
+    // Handle both mobile app status values and inventory system status values
+    const activeAppStatuses = [
+      "scheduled",
+      "processing",
+      "ready",
+      "awaiting_payment_verification",
+    ];
+
+    const activeInventoryStatuses = [
+      "Order Confirmed",
+      "Preparing Order",
+      "Ready for Pickup",
+    ];
+
     return (
-      <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>My Orders</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent>
-          <div className="orders-container">
-            {[1, 2, 3].map((index) => (
-              <IonCard key={index} className="order-card">
-                <IonCardHeader>
-                  <IonCardTitle>
-                    <IonSkeletonText animated style={{ width: "60%" }} />
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonSkeletonText animated style={{ width: "80%" }} />
-                </IonCardContent>
-              </IonCard>
-            ))}
-          </div>
-        </IonContent>
-      </IonPage>
+      activeAppStatuses.includes(status) ||
+      activeInventoryStatuses.includes(status)
     );
-  }
+  }).length;
 
-  console.log("Rendering orders page with orders:", orders);
+  const completedCounts = orders.filter((order) => {
+    const status = order.orderDetails.status || order.status;
+    return status === "completed" || status === "Completed";
+  }).length;
+
+  const cancelledCounts = orders.filter((order) => {
+    const status = order.orderDetails.status || order.status;
+    return status === "cancelled" || status === "Cancelled";
+  }).length;
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>My Orders</IonTitle>
+          <IonTitle>Orders</IonTitle>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent />
+      <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={doRefresh}>
+          <IonRefresherContent
+            pullingIcon={refreshOutline}
+            pullingText="Pull to refresh"
+            refreshingSpinner="circles"
+            refreshingText="Refreshing..."
+          ></IonRefresherContent>
         </IonRefresher>
 
         <div className="orders-container">
-          {orders.length === 0 ? (
-            <div className="no-orders">
-              <IonIcon icon={timeOutline} className="no-orders-icon" />
-              <p>No orders found</p>
-            </div>
-          ) : (
-            orders.map((order) => {
-              console.log("Rendering order:", order.id, order);
-              return (
-                <IonCard key={order.id} className="order-card">
-                  <IonCardHeader>
-                    <div className="order-header">
-                      <div className="order-title">
-                        <IonCardTitle>
-                          Order #{order.id.slice(0, 6)}
-                        </IonCardTitle>
-                        <IonBadge
-                          color={getStatusColor(
-                            order.orderDetails.paymentStatus
-                          )}
-                        >
-                          {(
-                            order.orderDetails.paymentStatus || "PENDING"
-                          ).toUpperCase()}
-                        </IonBadge>
-                      </div>
-                      <IonIcon
-                        icon={chevronForwardOutline}
-                        className="order-arrow"
-                      />
-                    </div>
-                  </IonCardHeader>
+          <IonSearchbar
+            value={searchText}
+            onIonInput={(e) => setSearchText(e.detail.value!)}
+            placeholder="Search orders..."
+            animated
+            className="orders-search"
+          ></IonSearchbar>
+
+          {/* Status tabs with counts */}
+          <IonSegment
+            value={activeTab}
+            onIonChange={(e) => setActiveTab(e.detail.value as OrderTab)}
+            className="order-tabs"
+          >
+            <IonSegmentButton value="active" className="tab-button">
+              <div className="tab-content">
+                <IonLabel>Active</IonLabel>
+                {activeCounts > 0 && (
+                  <IonChip className="count-chip">{activeCounts}</IonChip>
+                )}
+              </div>
+            </IonSegmentButton>
+
+            <IonSegmentButton value="completed" className="tab-button">
+              <div className="tab-content">
+                <IonLabel>Completed</IonLabel>
+                {completedCounts > 0 && (
+                  <IonChip className="count-chip">{completedCounts}</IonChip>
+                )}
+              </div>
+            </IonSegmentButton>
+
+            <IonSegmentButton value="cancelled" className="tab-button">
+              <div className="tab-content">
+                <IonLabel>Cancelled</IonLabel>
+                {cancelledCounts > 0 && (
+                  <IonChip className="count-chip">{cancelledCounts}</IonChip>
+                )}
+              </div>
+            </IonSegmentButton>
+          </IonSegment>
+
+          {loading ? (
+            <div className="orders-loading">
+              {[...Array(3)].map((_, index) => (
+                <IonCard key={index} className="order-mini-card skeleton">
                   <IonCardContent>
-                    <IonList lines="none">
-                      <IonItem>
-                        <IonIcon icon={calendarOutline} slot="start" />
-                        <IonLabel>
-                          <div className="order-detail">
-                            <span className="detail-label">Pickup Date</span>
-                            <span className="detail-value">
-                              {formatDate(order.orderDetails.pickupDate)}
-                            </span>
-                          </div>
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem>
-                        <IonIcon icon={timeOutline} slot="start" />
-                        <IonLabel>
-                          <div className="order-detail">
-                            <span className="detail-label">Pickup Time</span>
-                            <span className="detail-value">
-                              {formatTime(order.orderDetails.pickupTime)}
-                            </span>
-                          </div>
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem>
-                        <IonIcon icon={cardOutline} slot="start" />
-                        <IonLabel>
-                          <div className="order-detail">
-                            <span className="detail-label">Payment Method</span>
-                            <span className="detail-value">
-                              {order.orderDetails.paymentMethod.toUpperCase()}
-                            </span>
-                          </div>
-                        </IonLabel>
-                      </IonItem>
-                      {order.orderDetails.paymentMethod === "gcash" &&
-                        order.orderDetails.gcashReference && (
-                          <IonItem>
-                            <IonIcon icon={cardOutline} slot="start" />
-                            <IonLabel>
-                              <div className="order-detail">
-                                <span className="detail-label">
-                                  GCash Reference
-                                </span>
-                                <span className="detail-value">
-                                  {order.orderDetails.gcashReference}
-                                </span>
-                              </div>
-                            </IonLabel>
-                          </IonItem>
-                        )}
-                      <IonItem>
-                        <IonIcon icon={locationOutline} slot="start" />
-                        <IonLabel>
-                          <div className="order-detail">
-                            <span className="detail-label">
-                              Pickup Location
-                            </span>
-                            <span className="detail-value">
-                              Store Address, City, Philippines
-                            </span>
-                          </div>
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem className="order-items">
-                        <IonLabel>
-                          <div className="order-items-content">
-                            {order.items.map((item) => {
-                              const cartItem = cartItems[item.cartId];
-                              return cartItem ? (
-                                <div key={item.cartId} className="order-item">
-                                  <span className="item-size">
-                                    {cartItem.productSize}
-                                  </span>
-                                  <span className="item-quantity">
-                                    x{cartItem.productQuantity}
-                                  </span>
-                                  <span className="item-price">
-                                    ₱{cartItem.productPrice}
-                                  </span>
-                                </div>
-                              ) : null;
-                            })}
-                          </div>
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem className="order-total">
-                        <IonLabel>
-                          <div className="order-detail">
-                            <span className="detail-label">Total Amount</span>
-                            <span className="detail-value total-amount">
-                              ₱{order.orderDetails.totalAmount.toLocaleString()}
-                            </span>
-                          </div>
-                        </IonLabel>
-                      </IonItem>
-                    </IonList>
+                    <div className="mini-card-content">
+                      <div className="mini-card-row">
+                        <IonSkeletonText
+                          animated
+                          style={{ width: "25%", height: "14px" }}
+                        />
+                        <IonSkeletonText
+                          animated
+                          style={{ width: "20%", height: "14px" }}
+                        />
+                      </div>
+
+                      <div className="mini-card-row">
+                        <div style={{ width: "70%" }}>
+                          <IonSkeletonText
+                            animated
+                            style={{
+                              width: "80%",
+                              height: "13px",
+                              marginBottom: "6px",
+                            }}
+                          />
+                          <IonSkeletonText
+                            animated
+                            style={{ width: "50%", height: "13px" }}
+                          />
+                        </div>
+                        <IonSkeletonText
+                          animated
+                          style={{
+                            width: "20%",
+                            height: "15px",
+                            float: "right",
+                          }}
+                        />
+                      </div>
+
+                      <div className="mini-card-row items-row">
+                        <IonSkeletonText
+                          animated
+                          style={{ width: "20%", height: "13px" }}
+                        />
+                        <IonSkeletonText
+                          animated
+                          style={{ width: "30%", height: "13px" }}
+                        />
+                      </div>
+                    </div>
                   </IonCardContent>
                 </IonCard>
-              );
-            })
+              ))}
+            </div>
+          ) : displayOrders.length === 0 ? (
+            <div className="orders-empty">
+              <IonIcon
+                icon={documentTextOutline}
+                className="empty-orders-icon"
+              />
+              <IonText className="empty-orders-text">
+                {searchText
+                  ? "No orders match your search"
+                  : `No ${activeTab} orders`}
+              </IonText>
+              {searchText && (
+                <IonButton fill="clear" onClick={() => setSearchText("")}>
+                  Clear Search
+                </IonButton>
+              )}
+            </div>
+          ) : (
+            <div className="orders-list-mini">
+              {displayOrders.map((order) => (
+                <IonCard
+                  key={order.id}
+                  className="order-mini-card"
+                  onClick={() => history.push(`/orders/${order.id}`)}
+                >
+                  <IonCardContent>
+                    <div className="mini-card-content">
+                      <div className="mini-card-row">
+                        <div className="mini-order-id">
+                          #{order.id.slice(0, 6)}
+                        </div>
+                        <IonBadge
+                          color={getStatusBadgeColor(
+                            order.orderDetails.status || order.status,
+                            order.orderDetails.paymentMethod,
+                            order.orderDetails.paymentStatus
+                          )}
+                          className="mini-badge"
+                        >
+                          {/* Show status based on GCash verification or direct from database */}
+                          {(order.orderDetails.status ===
+                            "awaiting_payment_verification" ||
+                            order.status === "awaiting_payment_verification") &&
+                          order.orderDetails.paymentStatus === "approved"
+                            ? "Processing"
+                            : getStatusText(
+                                order.orderDetails.status || order.status,
+                                order.orderDetails.paymentMethod,
+                                order.orderDetails.paymentStatus
+                              )}
+                        </IonBadge>
+                      </div>
+
+                      <div className="mini-card-row">
+                        <div className="mini-order-details">
+                          <div className="mini-order-date-time">
+                            <IonIcon
+                              icon={calendarOutline}
+                              className="mini-icon"
+                            />
+                            {formatDate(order.orderDetails.pickupDate)}
+                            <IonIcon
+                              icon={timeOutline}
+                              className="mini-icon with-margin"
+                            />
+                            {order.orderDetails.pickupTime}
+                          </div>
+                          <div className="mini-order-payment">
+                            <IonIcon
+                              icon={
+                                order.orderDetails.paymentMethod === "cash"
+                                  ? cashOutline
+                                  : cardOutline
+                              }
+                              className="mini-icon"
+                            />
+                            {order.orderDetails.paymentMethod === "cash"
+                              ? "Cash"
+                              : "GCash"}
+                            {order.orderDetails.paymentStatus && (
+                              <span
+                                className={`payment-status ${order.orderDetails.paymentStatus}`}
+                              >
+                                •{" "}
+                                {order.orderDetails.paymentStatus === "approved"
+                                  ? "Paid"
+                                  : "Pending"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mini-order-price">
+                          ₱{order.orderDetails.totalAmount.toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div className="mini-card-row items-row">
+                        <div className="mini-order-items">
+                          {order.items.length}{" "}
+                          {order.items.length === 1 ? "item" : "items"}
+                        </div>
+                        <div className="view-details">
+                          View details <IonIcon icon={chevronForwardOutline} />
+                        </div>
+                      </div>
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              ))}
+            </div>
           )}
         </div>
       </IonContent>

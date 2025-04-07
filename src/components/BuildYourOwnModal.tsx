@@ -24,6 +24,7 @@ import {
   IonToast,
   IonText,
   IonImg,
+  IonRouterLink,
 } from "@ionic/react";
 import {
   close,
@@ -97,10 +98,15 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
     const fetchSizes = async () => {
       try {
         const sizesSnapshot = await getDocs(collection(db, "sizes"));
-        const sizesData = sizesSnapshot.docs.map((doc) => ({
-          sizeId: doc.id,
-          ...doc.data(),
-        })) as Size[];
+        const sizesData = sizesSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          console.log(`BYOM - Size ${doc.id} data:`, data);
+          return {
+            sizeId: doc.id,
+            ...data,
+          };
+        }) as Size[];
+        console.log("BYOM - All sizes data:", sizesData);
         setSizes(sizesData);
       } catch (error) {
         console.error("Error fetching sizes:", error);
@@ -343,12 +349,12 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
     switch (step) {
       case 1:
         return (
-          <div className="step-content">
-            <div className="step-header">
-              <IonTitle className="step-title product-title">
+          <div className="byok-step-content">
+            <div className="byok-step-header">
+              <IonTitle className="byok-step-title product-title">
                 Choose Size
               </IonTitle>
-              <IonText className="step-description">
+              <IonText className="byok-step-description">
                 Select a size for your kakanin
               </IonText>
             </div>
@@ -407,15 +413,15 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
 
       case 2:
         return (
-          <div className="step-content">
-            <div className="step-header">
-              <IonTitle className="step-title product-title">
+          <div className="byok-step-content">
+            <div className="byok-step-header">
+              <IonTitle className="byok-step-title product-title">
                 Choose Variety (Up to{" "}
                 {sizes.find((size) => size.sizeId === selectedSize)
                   ?.maxVarieties || 1}
                 )
               </IonTitle>
-              <IonText className="step-description">
+              <IonText className="byok-step-description">
                 Select your favorite kakanin
               </IonText>
             </div>
@@ -486,17 +492,19 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
 
       case 3:
         return (
-          <div className="step-content">
-            <IonTitle className="step-title product-title">
-              Review & Finalize
-            </IonTitle>
-            <IonText className="step-description">
-              Review your selection and add to cart
-            </IonText>
+          <div className="byok-step-content">
+            <div className="byok-step-header">
+              <IonTitle className="byok-step-title product-title">
+                Review & Finalize
+              </IonTitle>
+              <IonText className="byok-step-description">
+                Review your selection and add to cart
+              </IonText>
+            </div>
 
             <div className="review-section">
               <div className="review-summary">
-                <IonTitle>Your Custom Kakanin</IonTitle>
+                <IonTitle>Your Customized Kakanin</IonTitle>
 
                 <div className="review-detail">
                   <span className="review-label">Size:</span>
@@ -657,12 +665,12 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
       />
       <IonHeader>
         <IonToolbar>
-          <IonTitle className="title-toolbar">Build Your Own Kakanin</IonTitle>
-          <IonButtons slot="end">
-            <IonButton className="byok-back-button" onClick={onClose}>
-              <IonIcon className="byok-back-icon" icon={close} />
+          <IonButtons slot="start">
+            <IonButton onClick={onClose}>
+              <IonIcon icon={close} className="close-btn" />
             </IonButton>
           </IonButtons>
+          <IonTitle className="title-toolbar">Build Your Own Kakanin</IonTitle>
         </IonToolbar>
       </IonHeader>
 

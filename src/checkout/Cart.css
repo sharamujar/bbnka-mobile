@@ -322,8 +322,8 @@ ion-item-sliding.active ion-item-options {
   width: 20%;
 }
 
-.size-badge {
-  font-size: 14px;
+.cart-size-badge {
+  font-size: 12px;
   font-weight: bold;
   color: #fff;
   padding: 6px 12px;
@@ -334,4 +334,9 @@ ion-item-sliding.active ion-item-options {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 1px;
+}
+
+.close-btn {
+  font-size: 26px;
+  color: #424242;
 }
