@@ -46,7 +46,7 @@ ion-header ion-title {
   padding: var(--spacing-md) var(--spacing-sm);
 }
 
-.cart-icon {
+.home-cart-icon {
   color: var(--button-color);
   font-size: 22px;
 }
@@ -69,7 +69,7 @@ ion-header ion-title {
 }
 
 /* Build Your Own Kakanin card */
-.byok-cta-card {
+.home-byok-cta-card {
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   margin: 0 var(--spacing-md) var(--spacing-lg);
@@ -79,18 +79,18 @@ ion-header ion-title {
   transition: transform 0.2s ease;
 }
 
-.byok-cta-card:active {
+.home-byok-cta-card:active {
   transform: scale(0.98);
 }
 
-.byok-content {
+.home-byok-content {
   display: flex;
   flex-direction: column;
   padding: var(--spacing-lg);
   position: relative;
 }
 
-.byok-text ion-card-title {
+.home-byok-text ion-card-title {
   font-size: 20px;
   font-weight: 700;
   margin-bottom: var(--spacing-xs);
@@ -98,7 +98,7 @@ ion-header ion-title {
   letter-spacing: -0.3px;
 }
 
-.byok-text ion-card-subtitle {
+.home-byok-text ion-card-subtitle {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.85);
   font-weight: 400;
@@ -106,7 +106,7 @@ ion-header ion-title {
   margin-bottom: var(--spacing-md);
 }
 
-.byok-btn {
+.home-byok-btn {
   --background: #ffffff;
   --color: var(--button-color);
   --border-radius: 24px;
@@ -118,13 +118,13 @@ ion-header ion-title {
   margin: 0;
 }
 
-.byok-icon {
+.home-byok-icon {
   font-size: 16px;
   margin-left: var(--spacing-xs);
 }
 
 /* Products section */
-.product-title {
+.home-product-title {
   color: var(--header-color);
   font-weight: 700;
   font-size: 20px;
@@ -134,12 +134,12 @@ ion-header ion-title {
   display: inline-block;
 }
 
-.product-grid {
+.home-product-grid {
   --ion-grid-column-padding: 0;
   padding: 0 var(--spacing-sm) var(--spacing-lg);
 }
 
-.product-card {
+.home-product-card {
   margin: var(--spacing-xs) !important;
   border-radius: var(--border-radius-md);
   overflow: hidden;
@@ -149,43 +149,45 @@ ion-header ion-title {
   animation: fadeIn 0.3s ease-out forwards;
 }
 
-.product-card:active {
+.home-product-card:active {
   transform: scale(0.97);
   box-shadow: var(--shadow-medium);
 }
 
-.product-row ion-col:nth-of-type(odd) .product-card {
+.home-product-row ion-col:nth-of-type(odd) .home-product-card {
   margin-left: var(--spacing-xs) !important;
   margin-right: var(--spacing-xs) !important;
 }
 
-.product-row ion-col:nth-of-type(even) .product-card {
+.home-product-row ion-col:nth-of-type(even) .home-product-card {
   margin-left: var(--spacing-xs) !important;
   margin-right: var(--spacing-xs) !important;
 }
 
-.product-img ion-img {
+.home-product-img ion-img {
   width: 100%;
   height: 130px;
   object-fit: cover;
   display: block;
 }
 
-.product-header {
+.home-product-header {
   margin: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
 }
 
 .home-product-details {
-  text-align: left;
-  padding: 10px 12px;
+  padding-left: 7px;
 }
 
 .home-product-name {
   font-size: 15px;
   font-weight: 600;
   color: var(--header-color);
-  margin: 0;
+  margin-top: var(--spacing-xs);
+  margin-bottom: 4px;
+  text-align: left;
+  padding: 0 7px;
 }
 
 .home-product-description {
@@ -195,8 +197,18 @@ ion-header ion-title {
   text-overflow: ellipsis;
   white-space: normal;
   overflow: hidden;
-  line-height: 1.4;
+  text-align: left;
   margin: 0;
+  padding: 0 7px 10px 7px;
+  line-height: 1.4;
+}
+
+.product-action-hint {
+  font-size: 10px;
+  color: var(--text-light);
+  text-align: center;
+  padding: 0 7px 7px 7px;
+  font-style: italic;
 }
 
 .no-products-container {

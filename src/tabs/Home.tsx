@@ -26,6 +26,7 @@ import {
   IonFabButton,
   useIonViewDidEnter,
   useIonViewWillLeave,
+  IonText,
 } from "@ionic/react";
 import {
   cart,
@@ -62,32 +63,26 @@ const Home: React.FC = () => {
   const [productDetailsModal, setProductDetailsModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
-  // Toast state
-  // const [showToast, setShowToast] = useState(false);
-  // const [toastMessage, setToastMessage] = useState("");
-  // const [isSuccess, setIsSuccess] = useState(false);
-
   // FAB button state
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollTop = useRef(0);
   const scrollListener = useRef<((ev: CustomEvent) => void) | null>(null);
 
   const [showBYOKModal, setBYOKShowModal] = useState(false);
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    success: boolean;
-    show: boolean;
-  }>({
-    message: "",
-    success: false,
-    show: false,
-  });
+
+  // Dummy function for BuildYourOwnModal
+  const handleShowToastMessage = (message: string, success: boolean) => {
+    console.log("Toast message (not shown):", message, success);
+    // Toast is not shown but BuildYourOwnModal requires this prop
+  };
 
   // Check if user is logged in
   useEffect(() => {
-    const fetchAuth = onAuthStateChanged(auth, (user) => {
+    console.log("Home: Setting up auth listener");
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log("User is logged in:", user);
+        console.log("User is logged in:", user.email);
       } else if (location.pathname.includes("/home")) {
         console.log("No user detected, redirecting to login...");
         history.replace("/login");
@@ -96,15 +91,18 @@ const Home: React.FC = () => {
       }
     });
 
-    const fetchProducts = onSnapshot(collection(db, "products"), (snapshot) => {
-      const productList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(productList);
-    });
+    const unsubscribeProducts = onSnapshot(
+      collection(db, "products"),
+      (snapshot) => {
+        const productList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setProducts(productList);
+      }
+    );
 
-    const fetchCategories = onSnapshot(
+    const unsubscribeCategories = onSnapshot(
       collection(db, "categories"),
       (snapshot) => {
         const categoryList = snapshot.docs.map((doc) => ({
@@ -115,7 +113,7 @@ const Home: React.FC = () => {
       }
     );
 
-    const fetchPromotions = onSnapshot(
+    const unsubscribePromotions = onSnapshot(
       collection(db, "promotions"),
       (snapshot) => {
         const promotionsList = snapshot.docs.map((doc) => ({
@@ -127,10 +125,11 @@ const Home: React.FC = () => {
     );
 
     return () => {
-      fetchAuth();
-      fetchProducts();
-      fetchCategories();
-      fetchPromotions();
+      console.log("Home: Cleaning up listeners");
+      unsubscribeAuth();
+      unsubscribeProducts();
+      unsubscribeCategories();
+      unsubscribePromotions();
     };
   }, []);
 
@@ -151,12 +150,6 @@ const Home: React.FC = () => {
     setSelectedProduct(product);
     setProductDetailsModal(true);
   };
-
-  // const showToastMessage = (message: string, success: boolean) => {
-  //   setToastMessage(message);
-  //   setIsSuccess(success);
-  //   setShowToast(true);
-  // };
 
   // Scroll event listener to hide/show the FAB button
   useIonViewDidEnter(() => {
@@ -201,14 +194,6 @@ const Home: React.FC = () => {
     };
   }, []);
 
-  const handleShowToastMessage = (message: string, success: boolean) => {
-    setToastMessage({
-      message,
-      success,
-      show: true,
-    });
-  };
-
   return (
     <IonPage className="home-page">
       <IonHeader className="home-header">
@@ -220,7 +205,7 @@ const Home: React.FC = () => {
               onClick={() => history.push("/home/cart")}
             >
               <IonIcon
-                className="cart-icon"
+                className="home-cart-icon"
                 icon={cart}
                 slot="icon-only"
                 size="small"
@@ -255,25 +240,25 @@ const Home: React.FC = () => {
         </IonCard>
 
         <IonCard
-          className="byok-cta-card"
+          className="home-byok-cta-card"
           onClick={() => setBYOKShowModal(true)}
         >
-          <div className="byok-content">
-            <div className="byok-text">
+          <div className="home-byok-content">
+            <div className="home-byok-text">
               <IonCardTitle>Build Your Own Kakanin</IonCardTitle>
               <IonCardSubtitle>
                 Customize your kakanin with your favorite flavors!
               </IonCardSubtitle>
-              <div className="byok-btn-container">
+              <div className="home-byok-btn-container">
                 <IonButton
-                  className="byok-btn"
+                  className="home-byok-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     setBYOKShowModal(true);
                   }}
                 >
-                  Order Now
-                  <IonIcon icon={fastFood} className="byok-icon"></IonIcon>
+                  Add to Cart
+                  <IonIcon icon={fastFood} className="home-byok-icon"></IonIcon>
                 </IonButton>
               </div>
             </div>
@@ -287,22 +272,22 @@ const Home: React.FC = () => {
         />
 
         <div>
-          <IonTitle className="product-title">Our Products</IonTitle>
+          <IonTitle className="home-product-title">Our Products</IonTitle>
         </div>
 
-        <IonGrid className="product-grid">
-          <IonRow className="product-row">
+        <IonGrid className="home-product-grid">
+          <IonRow className="home-product-row">
             {products.length > 0 ? (
               [...products]
                 .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
                 .map((product) => (
                   <IonCol key={product.id} size="6">
                     <IonCard
-                      className="product-card"
+                      className="home-product-card"
                       onClick={() => openProductModal(product)}
                       button
                     >
-                      <div className="product-img">
+                      <div className="home-product-img">
                         <IonImg src={product.imageURL} alt={product.name} />
                       </div>
                       <div className="home-product-details">
@@ -429,14 +414,6 @@ const Home: React.FC = () => {
           onClose={() => setProductDetailsModal(false)}
           product={selectedProduct}
         />
-
-        {/* <IonToast
-          isOpen={showToast}
-          onDidDismiss={() => setShowToast(false)}
-          message={toastMessage}
-          duration={2000}
-          color={isSuccess ? "success" : "danger"}
-        /> */}
       </IonContent>
     </IonPage>
   );

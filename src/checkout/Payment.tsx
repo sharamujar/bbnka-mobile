@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   IonPage,
   IonHeader,
@@ -29,6 +29,8 @@ import {
   IonListHeader,
   IonCardHeader,
   IonSpinner,
+  IonSegment,
+  IonSegmentButton,
 } from "@ionic/react";
 import { useHistory } from "react-router";
 import {
@@ -41,6 +43,11 @@ import {
   cardOutline,
   close,
   copy,
+  imageOutline,
+  keyOutline,
+  cameraOutline,
+  trash,
+  informationCircleOutline,
 } from "ionicons/icons";
 import CheckoutStepProgress from "../components/CheckoutStepProgress";
 import "./Payment.css";
@@ -101,6 +108,11 @@ const Payment: React.FC = () => {
   const [verificationResult, setVerificationResult] = useState<
     "success" | "error" | null
   >(null);
+  const [paymentVerificationMethod, setPaymentVerificationMethod] = useState<
+    "reference" | "screenshot"
+  >("reference");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Validate GCash reference number (basic validation)
   useEffect(() => {
@@ -306,8 +318,88 @@ const Payment: React.FC = () => {
     setShowToast(true);
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setToastMessage("Image is too large. Maximum size is 5MB.");
+        setShowToast(true);
+        return;
+      }
+
+      // Check file type
+      const validImageTypes = ["image/jpeg", "image/png", "image/jpg"];
+      if (!validImageTypes.includes(file.type)) {
+        setToastMessage("Please upload a valid image (JPEG or PNG).");
+        setShowToast(true);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setSelectedImage(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleScreenshotSubmit = async () => {
+    if (!selectedImage) {
+      setToastMessage("Please upload a screenshot of your payment");
+      setShowToast(true);
+      return;
+    }
+
+    setIsLoading(true);
+    setVerificationComplete(false);
+    setVerificationResult(null);
+
+    try {
+      // Simulate verification process
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Store in local storage (just save "SCREENSHOT_UPLOADED" as a flag)
+      localStorage.setItem("gcashReference", "SCREENSHOT_UPLOADED");
+      localStorage.setItem("paymentMethod", "gcash");
+
+      // Store the image in localStorage (in a real app, you'd upload to storage)
+      localStorage.setItem("gcashScreenshot", selectedImage);
+
+      // Update order status for GCash payment
+      updateOrderStatus("gcash", pickupOption);
+
+      setIsLoading(false);
+      setVerificationResult("success");
+      setVerificationComplete(true);
+
+      // Enable the Review button immediately
+      document
+        .querySelector(".footer-action-button")
+        ?.removeAttribute("disabled");
+
+      // Update the state to reflect the change
+      setPaymentMethod("gcash");
+    } catch (error) {
+      setIsLoading(false);
+      setVerificationResult("error");
+      setVerificationComplete(true);
+      setToastMessage("Screenshot submission failed. Please try again.");
+      setShowToast(true);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const closeGcashModal = () => {
     setReferenceNumber(""); // Reset input when closing
+    setSelectedImage(null); // Reset image when closing
     setIsValidReference(false);
     setReferenceError("");
     setVerificationComplete(false);
@@ -456,7 +548,7 @@ const Payment: React.FC = () => {
         {/* GCash Payment Modal */}
         <IonModal
           isOpen={showGcashModal}
-          onDidDismiss={() => setShowGcashModal(false)}
+          onDidDismiss={closeGcashModal}
           className="gcash-modal"
         >
           <IonHeader>
@@ -484,13 +576,19 @@ const Payment: React.FC = () => {
                   </div>
                   <IonText className="gcash-reference-number-message">
                     {verificationResult === "success"
-                      ? "Reference Number Submitted!"
+                      ? paymentVerificationMethod === "reference"
+                        ? "Reference Number Submitted!"
+                        : "Payment Screenshot Submitted!"
                       : "Submission Failed"}
                   </IonText>
                   <p>
                     {verificationResult === "success"
-                      ? "Your reference number has been submitted and is awaiting verification by our staff. Your order will be processed once payment is confirmed."
-                      : "We couldn't process your reference number. Please check the number and try again."}
+                      ? paymentVerificationMethod === "reference"
+                        ? "Your reference number has been submitted and is awaiting verification by our staff. Your order will be processed once payment is confirmed."
+                        : "Your payment screenshot has been submitted and is awaiting verification by our staff. Your order will be processed once payment is confirmed."
+                      : paymentVerificationMethod === "reference"
+                      ? "We couldn't process your reference number. Please check the number and try again."
+                      : "We couldn't process your screenshot. Please try again with a clearer image."}
                   </p>
                   {verificationResult === "error" ? (
                     <IonButton
@@ -573,106 +671,222 @@ const Payment: React.FC = () => {
                     </IonCardContent>
                   </IonCard>
 
-                  <IonCard
-                    className={`reference-card ${
-                      isValidReference
-                        ? "valid"
-                        : referenceNumber
-                        ? "invalid"
-                        : ""
-                    }`}
+                  {/* Verification Options Message */}
+                  <div className="verification-options-message">
+                    <IonIcon icon={informationCircleOutline} />
+                    <p>
+                      Choose one of the following options to verify your
+                      payment:
+                    </p>
+                  </div>
+
+                  {/* Verification Method Segment */}
+                  <IonSegment
+                    value={paymentVerificationMethod}
+                    onIonChange={(e) =>
+                      setPaymentVerificationMethod(
+                        e.detail.value as "reference" | "screenshot"
+                      )
+                    }
+                    className="verification-method-segment"
                   >
-                    <IonCardContent>
-                      <IonItem lines="none" className="reference-item">
-                        <IonLabel
-                          position="stacked"
-                          color={
-                            referenceError
-                              ? "danger"
-                              : isValidReference
-                              ? "success"
-                              : "medium"
+                    <IonSegmentButton value="reference">
+                      <IonIcon icon={keyOutline} />
+                      <IonLabel>Reference #</IonLabel>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="screenshot">
+                      <IonIcon icon={imageOutline} />
+                      <IonLabel>Screenshot</IonLabel>
+                    </IonSegmentButton>
+                  </IonSegment>
+
+                  {/* Reference Number Input */}
+                  {paymentVerificationMethod === "reference" && (
+                    <>
+                      <IonCard
+                        className={`reference-card ${
+                          isValidReference
+                            ? "valid"
+                            : referenceNumber
+                            ? "invalid"
+                            : ""
+                        }`}
+                      >
+                        <IonCardContent>
+                          <IonItem lines="none" className="reference-item">
+                            <IonLabel
+                              position="stacked"
+                              color={
+                                referenceError
+                                  ? "danger"
+                                  : isValidReference
+                                  ? "success"
+                                  : "medium"
+                              }
+                            >
+                              Enter Reference Number
+                              {isValidReference && (
+                                <IonIcon
+                                  icon={checkmarkCircle}
+                                  color="success"
+                                  className="validation-icon"
+                                />
+                              )}
+                            </IonLabel>
+                            <IonInput
+                              value={referenceNumber}
+                              onIonInput={(e) =>
+                                setReferenceNumber(e.detail.value || "")
+                              }
+                              placeholder="e.g., 1234567890123"
+                              maxlength={9}
+                              inputmode="numeric"
+                              class={`reference-input ${
+                                isValidReference ? "valid-reference" : ""
+                              }`}
+                              debounce={50}
+                            />
+                            {referenceError ? (
+                              <IonText color="danger" className="error-message">
+                                {referenceError}
+                              </IonText>
+                            ) : referenceNumber && !isValidReference ? (
+                              <IonText
+                                color="medium"
+                                className="validation-message"
+                              >
+                                {`${referenceNumber.length}/9 digits required`}
+                              </IonText>
+                            ) : isValidReference ? (
+                              <IonText
+                                color="success"
+                                className="validation-message"
+                              >
+                                Reference number format is valid
+                              </IonText>
+                            ) : null}
+                            <IonText color="medium" className="hint-text">
+                              You'll find your 9-digit reference number in your
+                              GCash receipt
+                            </IonText>
+                          </IonItem>
+                        </IonCardContent>
+                      </IonCard>
+
+                      {/* Custom verify button for reference number */}
+                      <div className="verify-button-wrapper">
+                        <IonButton
+                          expand="block"
+                          disabled={!isValidReference || isLoading}
+                          onClick={handleGcashSubmit}
+                          className={`verify-button ${
+                            isValidReference ? "valid-button" : ""
+                          }`}
+                          style={
+                            {
+                              "--background": isValidReference
+                                ? "var(--button-color)"
+                                : "#ddd",
+                              "--color": isValidReference ? "white" : "#999",
+                              opacity: isValidReference ? 1 : 0.7,
+                            } as any
                           }
                         >
-                          Enter Reference Number
-                          {isValidReference && (
-                            <IonIcon
-                              icon={checkmarkCircle}
-                              color="success"
-                              className="validation-icon"
-                            />
+                          {isLoading ? (
+                            <>
+                              <IonSpinner name="dots" />
+                              <span className="verify-text">Submitting...</span>
+                            </>
+                          ) : (
+                            "Submit Reference Number"
                           )}
-                        </IonLabel>
-                        <IonInput
-                          value={referenceNumber}
-                          onIonInput={(e) =>
-                            setReferenceNumber(e.detail.value || "")
-                          }
-                          placeholder="e.g., 1234567890123"
-                          maxlength={9}
-                          inputmode="numeric"
-                          class={`reference-input ${
-                            isValidReference ? "valid-reference" : ""
-                          }`}
-                          debounce={50}
-                        />
-                        {referenceError ? (
-                          <IonText color="danger" className="error-message">
-                            {referenceError}
-                          </IonText>
-                        ) : referenceNumber && !isValidReference ? (
-                          <IonText
-                            color="medium"
-                            className="validation-message"
-                          >
-                            {`${referenceNumber.length}/9 digits required`}
-                          </IonText>
-                        ) : isValidReference ? (
-                          <IonText
-                            color="success"
-                            className="validation-message"
-                          >
-                            Reference number format is valid
-                          </IonText>
-                        ) : null}
-                        <IonText color="medium" className="hint-text">
-                          You'll find your 9-digit reference number in your
-                          GCash receipt
-                        </IonText>
-                      </IonItem>
-                    </IonCardContent>
-                  </IonCard>
+                        </IonButton>
+                      </div>
+                    </>
+                  )}
 
-                  {/* Custom verify button that ignores disabled state for styling */}
-                  <div className="verify-button-wrapper">
-                    <IonButton
-                      expand="block"
-                      disabled={!isValidReference || isLoading}
-                      onClick={handleGcashSubmit}
-                      className={`verify-button ${
-                        isValidReference ? "valid-button" : ""
-                      }`}
-                      style={
-                        {
-                          // Force styles for valid button state
-                          "--background": isValidReference
-                            ? "var(--button-color)"
-                            : "#ddd",
-                          "--color": isValidReference ? "white" : "#999",
-                          opacity: isValidReference ? 1 : 0.7,
-                        } as any
-                      }
-                    >
-                      {isLoading ? (
-                        <>
-                          <IonSpinner name="dots" />
-                          <span className="verify-text">Submitting...</span>
-                        </>
-                      ) : (
-                        "Submit Reference Number"
-                      )}
-                    </IonButton>
-                  </div>
+                  {/* Screenshot Upload */}
+                  {paymentVerificationMethod === "screenshot" && (
+                    <>
+                      <IonCard className="screenshot-card">
+                        <IonCardContent>
+                          <div className="screenshot-content">
+                            {selectedImage ? (
+                              <div className="screenshot-preview-container">
+                                <img
+                                  src={selectedImage}
+                                  alt="Payment Screenshot"
+                                  className="screenshot-preview"
+                                />
+                                <IonButton
+                                  fill="clear"
+                                  className="remove-image-button"
+                                  onClick={removeImage}
+                                >
+                                  <IonIcon icon={trash} color="danger" />
+                                </IonButton>
+                              </div>
+                            ) : (
+                              <div
+                                className="screenshot-upload-container"
+                                onClick={() => fileInputRef.current?.click()}
+                              >
+                                <IonIcon
+                                  icon={imageOutline}
+                                  className="upload-icon"
+                                />
+                                <h3>Upload Screenshot</h3>
+                                <p>
+                                  Tap to select a screenshot from your device
+                                </p>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  hidden
+                                  ref={fileInputRef}
+                                  onChange={handleImageUpload}
+                                />
+                              </div>
+                            )}
+                            <IonText color="medium" className="hint-text">
+                              Please upload a clear screenshot of your GCash
+                              payment receipt
+                            </IonText>
+                          </div>
+                        </IonCardContent>
+                      </IonCard>
+
+                      {/* Submit screenshot button */}
+                      <div className="verify-button-wrapper">
+                        <IonButton
+                          expand="block"
+                          disabled={!selectedImage || isLoading}
+                          onClick={handleScreenshotSubmit}
+                          className={`verify-button ${
+                            selectedImage ? "valid-button" : ""
+                          }`}
+                          style={
+                            {
+                              "--background": selectedImage
+                                ? "var(--button-color)"
+                                : "#ddd",
+                              "--color": selectedImage ? "white" : "#999",
+                              opacity: selectedImage ? 1 : 0.7,
+                            } as any
+                          }
+                        >
+                          {isLoading ? (
+                            <>
+                              <IonSpinner name="dots" />
+                              <span className="verify-text">Submitting...</span>
+                            </>
+                          ) : (
+                            "Submit Screenshot"
+                          )}
+                        </IonButton>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -696,37 +910,33 @@ const Payment: React.FC = () => {
       />
 
       <IonFooter>
-        <IonToolbar className="product-footer">
-          <div className="footer-content">
-            <div className="footer-back-action-button-container">
-              <IonButton
-                className="footer-back-action-button"
-                routerLink="/home/cart/schedule"
-                fill="outline"
-                onClick={() => {
-                  // Reset payment-related data when going back
-                  localStorage.removeItem("paymentMethod");
-                  localStorage.removeItem("gcashReference");
-                }}
-              >
-                <IonIcon icon={chevronBackCircleOutline} slot="start" />
-                Back
-              </IonButton>
-            </div>
-            <div className="footer-action-button-container">
-              <IonButton
-                className="footer-action-button"
-                onClick={handlePayment}
-                disabled={
-                  paymentMethod === "gcash" &&
-                  !localStorage.getItem("gcashReference")
-                }
-              >
-                <IonIcon icon={documentTextSharp} slot="start" />
-                <IonIcon icon={chevronForwardCircle} slot="end" />
-                Review
-              </IonButton>
-            </div>
+        <IonToolbar>
+          <div className="modal-footer-buttons">
+            <IonButton
+              className="footer-back-action-button"
+              routerLink="/home/cart/schedule"
+              fill="outline"
+              onClick={() => {
+                // Reset payment-related data when going back
+                localStorage.removeItem("paymentMethod");
+                localStorage.removeItem("gcashReference");
+              }}
+            >
+              <IonIcon icon={chevronBackCircleOutline} slot="start" />
+              Back
+            </IonButton>
+
+            <IonButton
+              className="footer-action-button review-button"
+              onClick={handlePayment}
+              disabled={
+                paymentMethod === "gcash" &&
+                !localStorage.getItem("gcashReference")
+              }
+            >
+              <IonIcon icon={documentTextSharp} slot="start" />
+              Review
+            </IonButton>
           </div>
         </IonToolbar>
       </IonFooter>

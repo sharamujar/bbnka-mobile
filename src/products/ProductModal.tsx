@@ -145,10 +145,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
       canDismiss={true}
       onWillDismiss={onClose}
     >
-      <IonToolbar className="product-modal-header">
+      <IonToolbar className="product-details-toolbar">
         <IonButtons slot="start">
-          <IonButton className="back-button" onClick={handleClose}>
-            <IonIcon className="back-icon" icon={close} />
+          <IonButton
+            className="product-details-back-button"
+            onClick={handleClose}
+          >
+            <IonIcon className="product-details-back-icon" icon={close} />
           </IonButton>
         </IonButtons>
         {/* {productDetails?.bestseller && (
@@ -158,7 +161,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         )} */}
       </IonToolbar>
 
-      <IonContent className="product-modal-content">
+      <IonContent className="product-details-content">
         <div className="product-details-container">
           <div className="product-details-img">
             <IonImg src={product.imageURL} alt={product.name} />
@@ -193,29 +196,37 @@ const ProductModal: React.FC<ProductModalProps> = ({
         </div> */}
 
             <div className="product-details-section">
-              <div className="section-title">
+              <div className="product-details-section-title">
                 <IonIcon icon={checkmarkCircle} />
-                <span>Available Sizes</span>
+                <span>Size Options</span>
               </div>
+              <p className="product-details-section-subtitle">
+                This product is available in different sizes. Each size has
+                specific dimensions and number of servings.
+              </p>
 
               {availableSizes.length > 0 ? (
-                <IonGrid className="sizes-grid">
+                <IonGrid className="product-details-sizes-grid">
                   <IonRow>
                     {availableSizes
                       .sort((a, b) => b.price - a.price)
                       .map((size) => (
                         <IonCol size="6" key={size.id}>
-                          <div className="size-info-card">
-                            <div className="size-info-name">{size.name}</div>
-                            <div className="size-info-price">₱{size.price}</div>
-                            <div className="size-info-details">
+                          <div className="product-details-size-info-card">
+                            <div className="product-details-size-info-name">
+                              {size.name}
+                            </div>
+                            <div className="product-details-size-info-price">
+                              ₱{size.price}
+                            </div>
+                            <div className="product-details-size-info-details">
                               {size.slices && (
-                                <div className="size-info-servings">
+                                <div className="product-details-size-info-servings">
                                   {size.slices} slices
                                 </div>
                               )}
                               {size.dimensions && (
-                                <div className="size-info-dimensions">
+                                <div className="product-details-size-info-dimensions">
                                   {size.dimensions}
                                 </div>
                               )}

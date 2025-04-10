@@ -23,6 +23,7 @@ import {
   IonBadge,
   IonToast,
   IonModal,
+  IonLoading,
 } from "@ionic/react";
 import {
   chevronBackCircleOutline,
@@ -35,6 +36,7 @@ import {
   closeCircleOutline,
   storefront,
   home,
+  imageOutline,
 } from "ionicons/icons";
 import { auth, db } from "../firebase-config";
 import {
@@ -49,6 +51,12 @@ import {
 } from "firebase/firestore";
 import CheckoutStepProgress from "../components/CheckoutStepProgress";
 import "./Review.css";
+import dayjs from "dayjs";
+
+// Cloudinary configuration
+const CLOUDINARY_UPLOAD_PRESET = "bbnka-payment-screenshots"; // Set your upload preset here
+const CLOUDINARY_CLOUD_NAME = "dbmofuvwn"; // Set your cloud name here
+const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/dbmofuvwn/image/upload`;
 
 const Review: React.FC = () => {
   const history = useHistory();
@@ -60,6 +68,7 @@ const Review: React.FC = () => {
   const [isOrdering, setIsOrdering] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [orderId, setOrderId] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   // Get data from localStorage
   const [orderDetails, setOrderDetails] = useState({
@@ -69,6 +78,42 @@ const Review: React.FC = () => {
     gcashReference: "",
     pickupOption: "later",
   });
+
+  // Helper function to upload GCash screenshot to Cloudinary
+  const uploadImageToCloudinary = async (
+    base64Image: string
+  ): Promise<string> => {
+    // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+    const imageData = base64Image.split(",")[1];
+
+    // setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", `data:image/jpeg;base64,${imageData}`);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Image upload failed");
+      }
+
+      const data = await response.json();
+      console.log("Image uploaded successfully:", data);
+
+      // Return the secure URL of the uploaded image
+      return data.secure_url;
+    } catch (error) {
+      console.error("Error uploading image to Cloudinary:", error);
+      throw error;
+    } finally {
+      // setIsUploading(false);
+    }
+  };
 
   // Force update when component becomes active
   useEffect(() => {
@@ -185,30 +230,63 @@ const Review: React.FC = () => {
       const customerDoc = await getDoc(customerDocRef);
       const customerData = customerDoc.data();
 
-      // Extract customer name using various possible fields
-      const customerName =
-        customerData?.name ||
-        (customerData?.firstName && customerData?.lastName)
-          ? `${customerData.firstName} ${customerData.lastName}`
-          : customerData?.firstName || "Customer";
+      console.log("Customer data from Firestore:", customerData);
 
-      // Add user details directly to order
-      const userDetails = {
-        firstName:
-          customerData?.firstName || customerData?.name?.split(" ")[0] || "New",
-        lastName:
-          customerData?.lastName ||
-          (customerData?.name
-            ? customerData.name.split(" ").slice(1).join(" ")
-            : "User"),
-        name:
-          customerData?.name ||
-          customerData?.name ||
-          `${customerData?.firstName || "New"} ${
-            customerData?.lastName || "User"
-          }`,
-        email: user.email || customerData?.email || "",
-      };
+      // Extract customer name following the same logic as in inventory
+      let customerName = "";
+
+      if (customerData) {
+        if (customerData.name) {
+          // For users who signed in with Google
+          customerName = customerData.name;
+        } else if (customerData.firstName && customerData.lastName) {
+          // For users who registered directly
+          customerName = `${customerData.firstName} ${customerData.lastName}`;
+        } else if (customerData.firstName) {
+          customerName = customerData.firstName;
+        } else {
+          customerName = "Customer";
+        }
+      } else {
+        // Fallback if no customer data
+        customerName = user.displayName || "Customer";
+      }
+
+      console.log("Using customer name:", customerName);
+
+      // Handle GCash screenshot upload if present
+      let gcashData = orderDetails.gcashReference || null;
+      let gcashScreenshotUrl = null;
+
+      if (
+        orderDetails.paymentMethod === "gcash" &&
+        orderDetails.gcashReference === "SCREENSHOT_UPLOADED"
+      ) {
+        // Get the screenshot from localStorage
+        const screenshot = localStorage.getItem("gcashScreenshot");
+
+        if (screenshot) {
+          try {
+            // Upload to Cloudinary and get the URL
+            gcashScreenshotUrl = await uploadImageToCloudinary(screenshot);
+            console.log(
+              "GCash screenshot uploaded to Cloudinary:",
+              gcashScreenshotUrl
+            );
+
+            // Keep gcashReference as SCREENSHOT_UPLOADED
+            gcashData = "SCREENSHOT_UPLOADED";
+          } catch (error) {
+            console.error("Failed to upload GCash screenshot:", error);
+            setToastMessage(
+              "Failed to upload payment screenshot. Please try again."
+            );
+            setShowToast(true);
+            setIsOrdering(false);
+            return;
+          }
+        }
+      }
 
       // Calculate total amount
       const totalAmount = cartItems.reduce(
@@ -218,17 +296,20 @@ const Review: React.FC = () => {
 
       // Determine order status based on payment method only
       let orderStatus = "scheduled"; // Default is "Order Placed"
+      let paymentStatus = "approved"; // Default for cash payments
 
       // For GCash payments, we need payment verification
       if (orderDetails.paymentMethod === "gcash") {
+        // If we have a screenshot or reference number, mark payment as pending verification
         orderStatus = "awaiting_payment_verification";
+        paymentStatus = "pending";
       }
 
       const ordersRef = collection(db, "orders");
       const orderData = {
         userId: user.uid,
-        customerName: customerName,
-        status: orderStatus, // Changed from orderStatus to status
+        customerName: customerName, // Store only the customer name
+        status: orderStatus,
         createdAt: serverTimestamp(),
         items: cartItems.map((item) => ({
           cartId: item.id,
@@ -240,16 +321,25 @@ const Review: React.FC = () => {
         })),
         orderDetails: {
           createdAt: new Date().toISOString(),
-          gcashReference: orderDetails.gcashReference || null,
+          gcashReference: gcashData,
+          gcashScreenshotUrl: gcashScreenshotUrl, // Add the screenshot URL separately
           paymentMethod: orderDetails.paymentMethod,
-          paymentStatus:
-            orderDetails.paymentMethod === "cash" ? "approved" : "pending",
+          paymentStatus: paymentStatus,
           pickupDate: orderDetails.pickupDate,
           pickupTime: orderDetails.pickupTime,
           pickupOption: orderDetails.pickupOption,
           totalAmount: totalAmount,
         },
       };
+
+      // Log the final order data for debugging
+      console.log("Saving order with data:", {
+        userId: orderData.userId,
+        customerName: orderData.customerName,
+        status: orderData.status,
+        itemCount: orderData.items.length,
+        orderDetails: orderData.orderDetails,
+      });
 
       const orderRef = await addDoc(ordersRef, orderData);
       setOrderId(orderRef.id);
@@ -323,6 +413,7 @@ const Review: React.FC = () => {
     localStorage.removeItem("pickupTime");
     localStorage.removeItem("paymentMethod");
     localStorage.removeItem("gcashReference");
+    localStorage.removeItem("gcashScreenshot");
     localStorage.removeItem("pickupOption");
     localStorage.removeItem("status");
 
@@ -358,8 +449,8 @@ const Review: React.FC = () => {
 
   // Load order details from localStorage on component mount
   useEffect(() => {
-    const pickupDate = localStorage.getItem("pickupDate");
-    const pickupTime = localStorage.getItem("pickupTime");
+    const pickupDate = localStorage.getItem("pickupDate") || "";
+    const pickupTime = localStorage.getItem("pickupTime") || "";
     const paymentMethod = localStorage.getItem("paymentMethod") || "cash";
     const gcashReference = localStorage.getItem("gcashReference") || "";
     const pickupOption =
@@ -374,8 +465,8 @@ const Review: React.FC = () => {
     });
 
     setOrderDetails({
-      pickupDate: pickupDate || "",
-      pickupTime: pickupTime || "",
+      pickupDate,
+      pickupTime,
       paymentMethod,
       gcashReference,
       pickupOption,
@@ -446,6 +537,23 @@ const Review: React.FC = () => {
       .map((word) => word[0])
       .join("")
       .toUpperCase();
+  };
+
+  // Helper function to parse and format a date from YYYY-MM-DD format
+  const formatDateToDisplay = (dateString: string) => {
+    if (!dateString) return "Not selected";
+
+    try {
+      // Check for date in YYYY-MM-DD format
+      const date = dayjs(dateString);
+      if (date.isValid()) {
+        return date.format("dddd, MMMM D, YYYY");
+      }
+      return dateString;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString; // Return original string if there's an error
+    }
   };
 
   return (
@@ -536,7 +644,7 @@ const Review: React.FC = () => {
                   <div className="detail-content">
                     <div className="review-detail-label">Date</div>
                     <div className="detail-value">
-                      {orderDetails.pickupDate}
+                      {formatDateToDisplay(orderDetails.pickupDate)}
                     </div>
                   </div>
                 </div>
@@ -545,7 +653,7 @@ const Review: React.FC = () => {
                   <div className="detail-content">
                     <div className="review-detail-label">Time</div>
                     <div className="detail-value">
-                      {orderDetails.pickupTime}
+                      {orderDetails.pickupTime || "Not selected"}
                     </div>
                   </div>
                 </div>
@@ -573,18 +681,28 @@ const Review: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {orderDetails.paymentMethod === "gcash" &&
-                  orderDetails.gcashReference && (
-                    <div className="detail-item">
-                      <IonIcon icon={cardOutline} className="detail-icon" />
-                      <div className="detail-content">
-                        <div className="review-detail-label">Reference #</div>
-                        <div className="detail-value ref-number">
-                          {orderDetails.gcashReference}
-                        </div>
+                {orderDetails.paymentMethod === "gcash" && (
+                  <div className="detail-item">
+                    <IonIcon icon={cardOutline} className="detail-icon" />
+                    <div className="detail-content">
+                      <div className="review-detail-label">
+                        Payment Verification
+                      </div>
+                      <div className="detail-value">
+                        {orderDetails.gcashReference ===
+                        "SCREENSHOT_UPLOADED" ? (
+                          <span className="screenshot-indicator">
+                            <IonIcon icon={imageOutline} /> Screenshot Uploaded
+                          </span>
+                        ) : (
+                          <span className="ref-number">
+                            Reference #: {orderDetails.gcashReference}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
                 <div className="detail-item">
                   <IonIcon
                     icon={
@@ -598,8 +716,8 @@ const Review: React.FC = () => {
                     <div className="review-detail-label">Pickup Option</div>
                     <div className="detail-value">
                       {orderDetails.pickupOption === "now"
-                        ? "Pickup Today (Walk-in)"
-                        : "Scheduled for Later"}
+                        ? "Pickup Today"
+                        : "Pickup Tomorrow"}
                     </div>
                   </div>
                 </div>
@@ -610,32 +728,29 @@ const Review: React.FC = () => {
       </IonContent>
 
       <IonFooter>
-        <IonToolbar className="product-footer">
-          <div className="footer-content">
-            <div className="footer-back-action-button-container">
-              <IonButton
-                className="footer-back-action-button"
-                routerLink="/home/cart/schedule/payment"
-                fill="outline"
-                disabled={isOrdering}
-                onClick={() => {
-                  // No review-specific data to clear, but could be added here if needed
-                }}
-              >
-                <IonIcon icon={chevronBackCircleOutline} slot="start" />
-                Back
-              </IonButton>
-            </div>
-            <div className="footer-action-button-container">
-              <IonButton
-                className="footer-action-button"
-                onClick={nextStep}
-                disabled={isOrdering}
-              >
-                <IonIcon icon={checkmarkCircleSharp} slot="start" />
-                {isOrdering ? "Processing..." : "Place Order"}
-              </IonButton>
-            </div>
+        <IonToolbar>
+          <div className="modal-footer-buttons">
+            <IonButton
+              className="footer-back-action-button"
+              routerLink="/home/cart/schedule/payment"
+              fill="outline"
+              disabled={isOrdering}
+              onClick={() => {
+                // No review-specific data to clear, but could be added here if needed
+              }}
+            >
+              <IonIcon icon={chevronBackCircleOutline} slot="start" />
+              Back
+            </IonButton>
+
+            <IonButton
+              className="footer-action-button place-order-button"
+              onClick={nextStep}
+              disabled={isOrdering}
+            >
+              <IonIcon icon={checkmarkCircleSharp} slot="start" />
+              {isOrdering ? "Processing..." : "Place Order"}
+            </IonButton>
           </div>
         </IonToolbar>
       </IonFooter>
@@ -647,6 +762,13 @@ const Review: React.FC = () => {
         duration={3000}
         position="bottom"
         color={toastMessage.includes("successfully") ? "success" : "danger"}
+      />
+
+      {/* Loading indicator for Cloudinary upload */}
+      <IonLoading
+        isOpen={isUploading}
+        message="Placing your order"
+        spinner="circles"
       />
 
       <IonModal
@@ -702,11 +824,11 @@ const Review: React.FC = () => {
               <div className="pickup-row">
                 <div className="pickup-date">
                   <IonIcon icon={calendarOutline} />
-                  <span>{orderDetails.pickupDate}</span>
+                  <span>{formatDateToDisplay(orderDetails.pickupDate)}</span>
                 </div>
                 <div className="pickup-time">
                   <IonIcon icon={timeOutline} />
-                  <span>{orderDetails.pickupTime}</span>
+                  <span>{orderDetails.pickupTime || "Not selected"}</span>
                 </div>
               </div>
             </div>

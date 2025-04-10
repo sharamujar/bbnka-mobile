@@ -1,0 +1,173 @@
+.help-header ion-toolbar {
+  --background: var(--primary-bg-color);
+  --color: var(--header-color);
+}
+
+.help-content {
+  --background: var(--primary-bg-color);
+  --padding-top: 16px;
+  --padding-bottom: 24px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+}
+
+.help-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.help-section {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 20px 0 0;
+}
+
+.help-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--header-color);
+  margin: 0 0 16px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.help-section-title ion-icon {
+  color: var(--button-color);
+  font-size: 20px;
+}
+
+/* FAQ Section */
+.faq-accordion {
+  background: transparent;
+}
+
+.faq-item {
+  --background: transparent;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  --border-color: rgba(0, 0, 0, 0.05);
+  --inner-padding-end: 0;
+}
+
+.faq-item ion-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--header-color);
+  margin: 0;
+  white-space: normal;
+}
+
+.faq-icon {
+  font-size: 16px;
+  color: var(--button-color);
+  opacity: 0.8;
+}
+
+.faq-content {
+  padding: 0 16px 16px;
+  background: white;
+}
+
+.faq-content p {
+  font-size: 14px;
+  color: var(--text-light);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Contact Section */
+.contact-list {
+  background: transparent;
+  padding: 0;
+}
+
+.contact-item {
+  --background: transparent;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  --border-color: rgba(0, 0, 0, 0.05);
+  --inner-padding-end: 0;
+}
+
+.contact-icon {
+  color: var(--button-color);
+  font-size: 20px;
+  margin-right: 16px;
+}
+
+.contact-item ion-label h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--header-color);
+  margin: 0 0 4px 0;
+}
+
+.contact-item ion-label p {
+  font-size: 14px;
+  color: var(--text-light);
+  margin: 0;
+}
+
+/* Location Section */
+.location-info {
+  padding: 0 16px 20px;
+}
+
+.location-address,
+.location-hours {
+  font-size: 14px;
+  color: var(--text-light);
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+.location-map-button {
+  --border-radius: 12px;
+  --box-shadow: none;
+  height: 42px;
+  margin-top: 8px;
+  font-weight: 500;
+  --background: var(--button-color);
+}
+
+/* Message Form */
+.message-form {
+  padding: 0 16px 20px;
+}
+
+.message-input {
+  --background: transparent;
+  --padding-start: 0;
+  --padding-end: 0;
+  --border-color: rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+}
+
+.message-input ion-label {
+  --color: var(--text-light);
+  font-size: 14px;
+}
+
+.message-input ion-input,
+.message-input ion-textarea {
+  --color: var(--header-color);
+  font-size: 15px;
+  --padding-bottom: 8px;
+}
+
+.send-message-button {
+  --border-radius: 12px;
+  --box-shadow: none;
+  height: 42px;
+  margin-top: 16px;
+  font-weight: 500;
+  --background: var(--button-color);
+}

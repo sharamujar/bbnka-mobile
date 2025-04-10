@@ -5,7 +5,7 @@
   --border-radius: 0;
 }
 
-.product-modal-header ion-toolbar {
+.product-details-toolbar ion-toolbar {
   --background: transparent;
   --border-style: none;
   position: absolute;
@@ -15,20 +15,25 @@
   right: 0;
 }
 
-.back-button {
-  --background: rgba(255, 255, 255, 0.8);
-  --background-hover: rgba(255, 255, 255, 0.9);
+.product-details-back-button {
+  --background: rgba(255, 255, 255, 0.9);
+  --background-hover: rgba(255, 255, 255, 1);
   --background-activated: rgba(255, 255, 255, 1);
-  --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
   --padding-start: 8px;
   --padding-end: 8px;
   --padding-top: 8px;
   --padding-bottom: 8px;
   --border-radius: 50%;
   margin: 12px;
+  transition: transform 0.2s ease;
 }
 
-.back-icon {
+.product-details-back-button:active {
+  transform: scale(0.95);
+}
+
+.product-details-back-icon {
   color: var(--header-color);
   font-size: 20px;
 }
@@ -44,7 +49,7 @@
   letter-spacing: 0.5px;
 }
 
-.product-modal-content {
+.product-details-content {
   --background: var(--primary-bg-color);
   --padding-top: 0;
   --padding-bottom: 24px;
@@ -60,9 +65,20 @@
 
 .product-details-img {
   width: 100%;
-  height: 40vh;
+  height: 42vh;
   overflow: hidden;
   background-color: var(--card-bg-color);
+  position: relative;
+}
+
+.product-details-img::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.2), transparent);
 }
 
 .product-details-img ion-img {
@@ -75,8 +91,8 @@
   padding: 0 16px 24px;
   background-color: var(--primary-bg-color);
   border-radius: 24px 24px 0 0;
-  margin-top: -24px;
-  box-shadow: var(--shadow-light);
+  margin-top: -28px;
+  box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 2;
 }
@@ -85,141 +101,140 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 24px 0 8px;
+  padding: 28px 0 10px;
 }
 
 .product-details-header ion-card-title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--header-color);
   margin: 0;
   line-height: 1.2;
 }
 
-.product-rating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--header-color);
-  font-weight: 600;
-  font-size: 14px;
-}
-
 .product-details-description {
   color: var(--text-light);
   font-size: 15px;
-  line-height: 1.5;
-  margin: 0;
-  padding: 0 0 16px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+  margin: 0 0 26px 0;
+  padding: 4px 0 18px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.product-details-summary {
-  display: flex;
-  gap: 16px;
-  margin: 16px 0;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-light);
-  font-size: 14px;
-}
-
-.detail-item ion-icon {
-  color: var(--button-color);
-  font-size: 18px;
-}
-
+/* Size Options Section */
 .product-details-section {
-  margin: 24px 0;
+  margin: 28px 0;
 }
 
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--header-color);
-  margin: 0 0 16px 0;
+.product-details-section-title {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.section-title ion-icon {
-  color: var(--button-color);
-  font-size: 20px;
-}
-
-.sizes-grid {
-  margin-top: 8px;
-}
-
-.size-info-card {
-  background-color: #fff;
-  border-radius: var(--border-radius-sm);
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: var(--shadow-light);
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.size-info-name {
-  font-weight: 600;
-  font-size: 14px;
+  margin-bottom: 16px;
   color: var(--header-color);
-  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: 600;
 }
 
-.size-info-price {
-  font-weight: 700;
-  font-size: 16px;
+.product-details-section-title ion-icon {
   color: var(--button-color);
-  margin-bottom: 4px;
+  font-size: 22px;
+  opacity: 0.9;
 }
 
-.size-info-details {
+.product-details-section-subtitle {
+  color: var(--text-light);
+  font-size: 12px;
+  margin-top: -12px;
+  margin-bottom: 16px;
+  padding-left: 30px;
+  line-height: 1.4;
+}
+
+.product-details-sizes-grid {
+  margin: 0 -8px;
+  padding: 0;
+}
+
+.product-details-size-info-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  height: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  position: relative;
+  overflow: hidden;
 }
 
-.size-info-servings {
-  font-size: 12px;
+.product-details-size-info-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background-color: var(--button-color);
+  opacity: 0.7;
+}
+
+.product-details-size-info-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--header-color);
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+
+.product-details-size-info-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--button-color);
+  padding-left: 2px;
+}
+
+.product-details-size-info-details {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.product-details-size-info-servings,
+.product-details-size-info-dimensions {
+  font-size: 13px;
   color: var(--text-light);
-}
-
-.size-info-dimensions {
-  font-size: 12px;
-  color: var(--text-light);
-  margin-top: 2px;
-}
-
-.size-info-available {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #2dd36f;
-  margin-top: 4px;
+  gap: 6px;
+  padding-left: 2px;
 }
 
-.size-info-available ion-icon {
-  font-size: 14px;
+.product-details-size-info-servings::before {
+  content: "•";
+  font-size: 18px;
+  color: var(--button-color);
+  opacity: 0.8;
+}
+
+.product-details-size-info-dimensions::before {
+  content: "•";
+  font-size: 18px;
+  color: var(--button-color);
+  opacity: 0.8;
 }
 
 .no-sizes-available {
   text-align: center;
-  padding: 20px;
+  padding: 26px;
   background-color: rgba(0, 0, 0, 0.03);
-  border-radius: var(--border-radius-sm);
+  border-radius: 14px;
+  color: var(--text-light);
+  font-size: 14px;
+  border: 1px dashed rgba(0, 0, 0, 0.1);
 }
 
 .allergen-info {
@@ -340,4 +355,35 @@
   font-size: 14px;
   font-weight: 700;
   color: var(--button-color);
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .sizes-grid {
+    margin: 0 -12px;
+  }
+
+  .size-info-card {
+    padding: 22px;
+  }
+
+  .size-info-name {
+    font-size: 19px;
+  }
+
+  .size-info-price {
+    font-size: 22px;
+  }
+
+  .product-details-img {
+    height: 45vh;
+  }
+
+  .product-details-content {
+    padding: 0 24px 30px;
+  }
+
+  .product-details-header ion-card-title {
+    font-size: 28px;
+  }
 }

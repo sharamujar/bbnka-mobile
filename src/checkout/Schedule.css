@@ -69,7 +69,6 @@
 
 .step-line {
   position: absolute;
-  top: 14px;
   height: 1px;
   background-color: #dedede;
   width: 100%;
@@ -303,22 +302,24 @@
   margin: 0 auto;
 }
 
-.footer-back-action-button-container {
-  margin-right: auto;
-}
-
 .footer-back-action-button {
-  --border-radius: 8px;
-  font-size: 13px;
-  --border-width: 1px;
-  --border-color: var(--button-color);
+  --background: transparent;
   --color: var(--button-color);
+  --border-color: var(--button-color);
+  font-weight: 500;
 }
 
 .footer-action-button {
-  --border-radius: 8px;
-  font-size: 13px;
   --background: var(--button-color);
+  --color: white;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.payment-button {
+  --background: var(--button-color);
+  position: relative;
+  width: 100%;
 }
 
 @keyframes fadeIn {

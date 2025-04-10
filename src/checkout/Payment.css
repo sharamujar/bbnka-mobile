@@ -530,7 +530,6 @@ ion-text.validation-message[color="success"] {
 .footer-back-action-button {
   --border-radius: 8px;
   font-size: 13px;
-  --border-width: 1px;
   --border-color: var(--button-color);
   --color: var(--button-color);
 }
@@ -539,6 +538,12 @@ ion-text.validation-message[color="success"] {
   --border-radius: 8px;
   font-size: 13px;
   --background: var(--button-color);
+}
+
+.review-button {
+  --background: var(--button-color);
+  position: relative;
+  width: 100%;
 }
 
 /* Responsive adjustments */
@@ -573,4 +578,150 @@ ion-text.validation-message[color="success"] {
 .title-toolbar {
   --color: var(--header-color);
   font-weight: 600;
+}
+
+/* Verification Options Message */
+.verification-options-message {
+  display: flex;
+  align-items: flex-start;
+  background-color: rgba(191, 89, 6, 0.08);
+  border-left: 3px solid var(--button-color);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 5px 0;
+}
+
+.verification-options-message ion-icon {
+  color: var(--button-color);
+  font-size: 20px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.verification-options-message p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--header-color);
+  line-height: 1.4;
+}
+
+/* Verification Method Segment */
+.verification-method-segment {
+  --background: #f8f8f8;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.verification-method-segment ion-segment-button {
+  --color: #666;
+  --color-checked: var(--button-color);
+  --indicator-color: var(--button-color);
+  --background-checked: rgba(191, 89, 6, 0.1);
+  font-size: 14px;
+}
+
+.verification-method-segment ion-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+/* Screenshot Card */
+.screenshot-card {
+  background: white;
+  border-radius: 12px;
+  margin: 16px 0;
+  overflow: hidden;
+  border: 1px solid #eee;
+}
+
+.screenshot-content {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+.screenshot-upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f8f8;
+  border: 2px dashed #ddd;
+  border-radius: 12px;
+  padding: 30px 20px;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.screenshot-upload-container:hover {
+  background-color: #f0f0f0;
+  border-color: #ccc;
+}
+
+.screenshot-upload-container .upload-icon {
+  font-size: 48px;
+  color: #999;
+  margin-bottom: 15px;
+}
+
+.screenshot-upload-container h3 {
+  margin: 0 0 8px;
+  color: var(--header-color);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.screenshot-upload-container p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.screenshot-preview-container {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.screenshot-preview {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.remove-image-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  --background: rgba(255, 255, 255, 0.9);
+  --border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  --padding-start: 0;
+  --padding-end: 0;
+  margin: 0;
+}
+
+/* Verification Method Description */
+.verification-method-description {
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.verification-method-description h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--header-color);
+  margin: 0 0 8px 0;
+}
+
+.verification-method-description p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
 }

@@ -175,9 +175,16 @@ const Orders: React.FC = () => {
     paymentMethod?: string,
     paymentStatus?: string
   ) => {
-    // Special case for GCash payments that are pending verification
-    if (paymentMethod === "gcash" && paymentStatus !== "approved") {
-      return "warning";
+    // Special case for GCash payments
+    if (paymentMethod === "gcash") {
+      // Pending payment verification shows as warning/yellow
+      if (paymentStatus !== "approved") {
+        return "warning";
+      }
+      // Approved payment but still in verification status shows as primary/blue
+      else if (status === "awaiting_payment_verification") {
+        return "primary";
+      }
     }
 
     // Use status directly from database
@@ -192,7 +199,7 @@ const Orders: React.FC = () => {
       case "cancelled":
         return "danger";
       case "awaiting_payment_verification":
-        return "warning";
+        return "warning"; // Default is warning for awaiting verification
       case "scheduled":
         return "primary";
 
@@ -217,9 +224,16 @@ const Orders: React.FC = () => {
     paymentMethod?: string,
     paymentStatus?: string
   ) => {
-    // Special case for GCash payments that are pending verification
-    if (paymentMethod === "gcash" && paymentStatus !== "approved") {
-      return "Pending";
+    // Special case for GCash payments
+    if (paymentMethod === "gcash") {
+      // Pending payment shows as "Pending"
+      if (paymentStatus !== "approved") {
+        return "Pending";
+      }
+      // Approved payment but still in verification status shows as "Order Placed"
+      else if (status === "awaiting_payment_verification") {
+        return "Order Placed";
+      }
     }
 
     // Convert database status to user-friendly text
@@ -552,12 +566,11 @@ const Orders: React.FC = () => {
                           )}
                           className="mini-badge"
                         >
-                          {/* Show status based on GCash verification or direct from database */}
                           {(order.orderDetails.status ===
                             "awaiting_payment_verification" ||
                             order.status === "awaiting_payment_verification") &&
                           order.orderDetails.paymentStatus === "approved"
-                            ? "Processing"
+                            ? "Order Placed"
                             : getStatusText(
                                 order.orderDetails.status || order.status,
                                 order.orderDetails.paymentMethod,

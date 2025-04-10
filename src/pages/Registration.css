@@ -115,3 +115,21 @@
   height: 12px;
   margin-right: 8px;
 }
+
+.phone-number-helper-text {
+  display: block;
+  font-size: 11px;
+  color: var(--text-light);
+  padding: 0 1rem;
+  margin: 2px 0 10px 0;
+  opacity: 0.8;
+}
+
+.registration-toast {
+  --border-radius: 8px;
+  --box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  text-align: center;
+  --width: 320px;
+  z-index: 9999;
+}

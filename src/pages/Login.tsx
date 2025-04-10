@@ -189,6 +189,27 @@ const Login: React.FC = () => {
       const result = await FirebaseAuthentication.signInWithGoogle();
       console.log("User signed in:", result.user);
 
+      // Check if user exists already and if we have valid user data
+      if (result.user && result.user.email) {
+        const q = query(
+          collection(db, "customers"),
+          where("email", "==", result.user.email)
+        );
+        const querySnapshot = await getDocs(q);
+
+        // If user doesn't exist yet, we need to collect phone number
+        if (querySnapshot.empty && !result.user.phoneNumber) {
+          setToastMessage("Phone number is required to complete registration");
+          setIsSuccess(false);
+          setShowToast(true);
+
+          // Show a modal or redirect to a page to collect phone number
+          // For now, we'll just show a toast message
+          setLoading(false);
+          return;
+        }
+      }
+
       if (result.credential) {
         const credential = GoogleAuthProvider.credential(
           result.credential.idToken,
@@ -223,16 +244,41 @@ const Login: React.FC = () => {
           console.log("User found in customers collection. Logging in...");
           history.replace("/home");
         } else {
+          // If no phone number or not a Philippine phone number, we can't create account
+          if (!user.phoneNumber || !user.phoneNumber.startsWith("+63")) {
+            console.warn("Philippine phone number required for registration");
+            // TODO: Redirect to a page to collect phone number
+            // For now we'll just sign out the user
+            await auth.signOut();
+            setToastMessage(
+              "A Philippine phone number (+63) is required to complete registration"
+            );
+            setIsSuccess(false);
+            setShowToast(true);
+            return;
+          }
+
           console.warn("User not found in customers collection:", user.email);
           console.log("New user detected. Creating account...");
 
+          // For Google sign-in, properly format all name fields
+          let firstName = "";
+          let lastName = "";
+          let fullName = "";
+
+          if (user.displayName) {
+            const nameParts = user.displayName.split(" ");
+            firstName = nameParts[0] || "";
+            lastName = nameParts.slice(1).join(" ") || "";
+            fullName = user.displayName;
+          }
+
           await setDoc(doc(db, "customers", user.uid), {
             email: user.email,
-            firstName: user.displayName ? user.displayName.split(" ")[0] : "",
-            lastName: user.displayName
-              ? user.displayName.split(" ").slice(1).join(" ")
-              : "",
-            name: user.displayName || "",
+            firstName: firstName,
+            lastName: lastName,
+            name: fullName,
+            phoneNumber: user.phoneNumber || "",
             createdAt: serverTimestamp(),
           });
 

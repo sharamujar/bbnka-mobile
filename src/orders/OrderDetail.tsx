@@ -287,7 +287,7 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
     <div className="order-detail-progress-container vertical">
       {isCancelled && (
         <div className="order-detail-cancelled-badge">
-          <IonChip color="danger" className="cancelled-chip">
+          <IonChip color="danger" className="order-detail-cancelled-chip">
             <IonIcon icon={closeCircle} />
             Order Cancelled
           </IonChip>
@@ -816,12 +816,12 @@ const OrderDetail: React.FC = () => {
         </IonRefresher>
 
         {loading ? (
-          <div className="loading-container">
+          <div className="order-detail-loading-container">
             <IonSpinner name="crescent" />
             <p>Loading order details...</p>
           </div>
         ) : error ? (
-          <div className="error-container">
+          <div className="order-detail-error-container">
             <IonIcon icon={alertCircleOutline} color="danger" />
             <p>{error}</p>
             <IonButton onClick={() => history.goBack()}>Go Back</IonButton>
@@ -832,21 +832,20 @@ const OrderDetail: React.FC = () => {
               <IonCardContent>
                 {order && (
                   <>
-                    <div className="order-header">
-                      <div className="order-id">
-                        <h4>Order #{order.id.slice(-6)}</h4>
-                        <p className="order-date">
+                    <div className="order-detail-header">
+                      <div className="order-detail-id">
+                        <h4>Order #{order.id.slice(0, 6)}</h4>
+                        <p className="order-detail-date">
                           {formatTimestamp(order.createdAt)}
                         </p>
                       </div>
-                      <IonChip
+                      {/* <IonChip
                         color={getStatusColor(
                           order.orderDetails.status || order.status,
                           order.orderDetails.paymentMethod,
                           order.orderDetails.paymentStatus
                         )}
                       >
-                        {/* Show status based on GCash verification or direct from database */}
                         {(order.orderDetails.status ===
                           "awaiting_payment_verification" ||
                           order.status === "awaiting_payment_verification") &&
@@ -857,7 +856,7 @@ const OrderDetail: React.FC = () => {
                               order.orderDetails.paymentMethod,
                               order.orderDetails.paymentStatus
                             )}
-                      </IonChip>
+                      </IonChip> */}
                     </div>
 
                     <OrderTrackingProgress
@@ -877,38 +876,38 @@ const OrderDetail: React.FC = () => {
               </IonCardContent>
             </IonCard>
 
-            <IonCard className="order-items-card">
+            <IonCard className="order-detail-items-card">
               <IonCardHeader>
                 <IonCardTitle>
                   <IonIcon icon={bagHandleOutline} /> Order Items
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                <IonList lines="full" className="item-list">
+                <IonList lines="full" className="order-detail-item-list">
                   {order?.items?.map((item, index) => (
-                    <IonItem key={index} className="order-item">
-                      <div className="item-content">
-                        <div className="item-main">
-                          <div className="size-badge-container">
-                            <IonChip className="size-badge" color="primary">
+                    <IonItem key={index} className="order-detail-item">
+                      <div className="order-detail-item-content">
+                        <div className="order-detail-item-main">
+                          <div className="order-detail-size-badge-container">
+                            <IonChip className="order-detail-size-badge">
                               {typeof item.productSize === "object"
                                 ? item.productSize.name
                                 : item.productSize}
                             </IonChip>
                           </div>
-                          <div className="item-details">
+                          <div className="order-detail-item-details">
                             {item.productVarieties &&
                               item.productVarieties.length > 0 && (
-                                <p className="varieties">
+                                <p className="order-detail-varieties">
                                   {item.productVarieties.join(", ")}
                                 </p>
                               )}
-                            <div className="quantity-price">
-                              <span className="quantity">
+                            <div className="order-detail-quantity-price">
+                              <span className="order-detail-quantity">
                                 {item.productQuantity}{" "}
                                 {item.productQuantity > 1 ? "items" : "item"}
                               </span>
-                              <span className="price">
+                              <span className="order-detail-price">
                                 ₱{item.productPrice.toLocaleString()}
                               </span>
                             </div>
@@ -919,16 +918,16 @@ const OrderDetail: React.FC = () => {
                   ))}
                 </IonList>
 
-                <div className="total-section">
-                  <div className="total-row">
-                    <span>Subtotal</span>
+                <div className="order-detail-total-section">
+                  <div className="order-detail-total-row">
+                    {/* <span>Subtotal</span>
                     <span>
                       ₱
                       {order?.orderDetails?.totalAmount?.toLocaleString() ||
                         "0"}
-                    </span>
+                    </span> */}
                   </div>
-                  <div className="total-row grand-total">
+                  <div className="order-detail-total-row grand-total">
                     <span>Total</span>
                     <span>
                       ₱
@@ -940,35 +939,35 @@ const OrderDetail: React.FC = () => {
               </IonCardContent>
             </IonCard>
 
-            <IonCard className="pickup-details-card">
+            <IonCard className="order-detail-pickup-details-card">
               <IonCardHeader>
                 <IonCardTitle>
                   <IonIcon icon={calendarOutline} /> Pickup Details
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                <div className="detail-row">
+                <div className="order-detail-detail-row">
                   <IonIcon icon={calendarOutline} />
-                  <div className="detail-label">Date</div>
-                  <div className="detail-value">
+                  <div className="order-detail-detail-label">Date</div>
+                  <div className="order-detail-detail-value">
                     {order?.orderDetails?.pickupDate || "N/A"}
                   </div>
                 </div>
-                <div className="detail-row">
+                <div className="order-detail-detail-row">
                   <IonIcon icon={timeOutline} />
-                  <div className="detail-label">Time</div>
-                  <div className="detail-value">
+                  <div className="order-detail-detail-label">Time</div>
+                  <div className="order-detail-detail-value">
                     {order?.orderDetails?.pickupTime || "N/A"}
                   </div>
                 </div>
-                <div className="detail-row">
+                <div className="order-detail-detail-row">
                   <IonIcon icon={locationOutline} />
-                  <div className="detail-label">Location</div>
-                  <div className="detail-value">
+                  <div className="order-detail-detail-label">Location</div>
+                  <div className="order-detail-detail-value">
                     Store Address, City, Philippines
                   </div>
                 </div>
-                <div className="detail-row">
+                <div className="order-detail-detail-row">
                   <IonIcon
                     icon={
                       order?.orderDetails?.pickupOption === "now"
@@ -976,8 +975,8 @@ const OrderDetail: React.FC = () => {
                         : calendarOutline
                     }
                   />
-                  <div className="detail-label">Pickup Option</div>
-                  <div className="detail-value">
+                  <div className="order-detail-detail-label">Pickup Option</div>
+                  <div className="order-detail-detail-value">
                     {order?.orderDetails?.pickupOption === "now"
                       ? "Ready Now (Walk-in)"
                       : "Scheduled for Later"}
@@ -986,14 +985,14 @@ const OrderDetail: React.FC = () => {
               </IonCardContent>
             </IonCard>
 
-            <IonCard className="payment-details-card">
+            <IonCard className="order-detail-payment-details-card">
               <IonCardHeader>
                 <IonCardTitle>
                   <IonIcon icon={receiptOutline} /> Payment Details
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                <div className="detail-row">
+                <div className="order-detail-detail-row">
                   <IonIcon
                     icon={
                       order?.orderDetails?.paymentMethod === "cash"
@@ -1001,14 +1000,14 @@ const OrderDetail: React.FC = () => {
                         : cardOutline
                     }
                   />
-                  <div className="detail-label">Method</div>
-                  <div className="detail-value">
+                  <div className="order-detail-detail-label">Method</div>
+                  <div className="order-detail-detail-value">
                     {order?.orderDetails?.paymentMethod === "cash"
                       ? "Cash"
                       : "GCash"}
                   </div>
                 </div>
-                <div className="detail-row">
+                <div className="order-detail-detail-row">
                   <IonIcon
                     icon={
                       order?.orderDetails?.paymentStatus === "approved"
@@ -1016,15 +1015,15 @@ const OrderDetail: React.FC = () => {
                         : timerOutline
                     }
                   />
-                  <div className="detail-label">Status</div>
-                  <div className="detail-value">
+                  <div className="order-detail-detail-label">Status</div>
+                  <div className="order-detail-detail-value">
                     <IonChip
                       color={
                         order?.orderDetails?.paymentStatus === "approved"
                           ? "success"
                           : "warning"
                       }
-                      className="payment-status-chip"
+                      className="order-detail-payment-status-chip"
                     >
                       {order?.orderDetails?.paymentStatus === "approved"
                         ? "Paid"
@@ -1034,10 +1033,12 @@ const OrderDetail: React.FC = () => {
                 </div>
                 {order?.orderDetails?.paymentMethod === "gcash" &&
                   order?.orderDetails?.gcashReference && (
-                    <div className="detail-row">
+                    <div className="order-detail-detail-row">
                       <IonIcon icon={cardOutline} />
-                      <div className="detail-label">Reference #</div>
-                      <div className="detail-value reference">
+                      <div className="order-detail-detail-label">
+                        Reference #
+                      </div>
+                      <div className="order-detail-detail-value reference">
                         {order?.orderDetails?.gcashReference}
                       </div>
                     </div>
@@ -1045,20 +1046,20 @@ const OrderDetail: React.FC = () => {
               </IonCardContent>
             </IonCard>
 
-            <IonCard className="customer-card">
+            <IonCard className="order-detail-customer-card">
               <IonCardHeader>
                 <IonCardTitle>
                   <IonIcon icon={personOutline} /> Customer Details
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                <div className="customer-info">
-                  <IonAvatar className="customer-avatar">
-                    <div className="initials-avatar">
+                <div className="order-detail-customer-info">
+                  <IonAvatar className="order-detail-customer-avatar">
+                    <div className="order-detail-initials-avatar">
                       {getInitials(order.customerName || "User")}
                     </div>
                   </IonAvatar>
-                  <div className="customer-details">
+                  <div className="order-detail-customer-details">
                     <h3>{order.customerName || "Customer"}</h3>
                     {order.userDetails?.email && (
                       <p>{order.userDetails.email}</p>
@@ -1075,11 +1076,11 @@ const OrderDetail: React.FC = () => {
               )) &&
               (!order.status ||
                 !["completed", "cancelled"].includes(order.status)) && (
-                <div className="action-container">
+                <div className="order-detail-action-container">
                   <IonButton
                     expand="block"
                     color="danger"
-                    className="cancel-button"
+                    className="order-detail-cancel-button"
                     onClick={() => setShowCancelAlert(true)}
                   >
                     <IonIcon icon={closeCircle} slot="start" />

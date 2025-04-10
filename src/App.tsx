@@ -18,10 +18,13 @@ import Home from "./tabs/Home";
 import Account from "./tabs/Account";
 import Notifications from "./tabs/Notifications";
 import Orders from "./tabs/Orders";
-import OrderDetail from "./pages/OrderDetail";
+import OrderDetail from "./orders/OrderDetail";
 import Cart from "./checkout/Cart";
 import Payment from "./checkout/Payment";
 import SplashScreen from "./pages/Splashscreen";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import Help from "./pages/Help";
 import { useEffect, useState } from "react";
 import { auth, db } from "./firebase-config";
 import {
@@ -112,6 +115,15 @@ const App: React.FC = () => {
               </Route>
               <Route exact path="/home/cart/schedule/payment/review">
                 <Review />
+              </Route>
+              <Route exact path="/profile">
+                <Profile />
+              </Route>
+              <Route exact path="/settings">
+                <Settings />
+              </Route>
+              <Route exact path="/help">
+                <Help />
               </Route>
               <Redirect from="/" to="/home" exact />
             </IonRouterOutlet>

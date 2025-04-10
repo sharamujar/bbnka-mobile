@@ -59,7 +59,6 @@ const Schedule: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState("");
   const [alertHeader, setAlertHeader] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
-  const [isScheduledForTomorrow, setIsScheduledForTomorrow] = useState(false);
   const [isStoreOpen, setIsStoreOpen] = useState(false);
 
   // All possible time slots with 15-minute intervals (updated to use ranges)
@@ -104,7 +103,7 @@ const Schedule: React.FC = () => {
 
       setAlertHeader("Store Closed");
       setAlertMessage(
-        "Our store is currently closed. Store hours are 4:00 AM to 6:00 PM. Please select 'Pickup Later' to schedule a pickup during business hours."
+        "Our store is currently closed. Store hours are 4:00 AM to 6:00 PM. Please select 'Schedule Pickup' to schedule a pickup during business hours."
       );
       setShowAlert(true);
     }
@@ -124,9 +123,31 @@ const Schedule: React.FC = () => {
   useEffect(() => {
     localStorage.setItem("pickupOption", pickupOption);
 
-    // When switching to pickup now, automatically calculate the immediate pickup time
+    // When switching to pickup today, automatically select today's date
     if (pickupOption === "now") {
-      calculatePickupNow();
+      const today = dayjs().format("YYYY-MM-DD");
+      setPickupDate(today);
+      localStorage.setItem("pickupDate", today);
+
+      // Update time slots for today (only future times)
+      updateAvailableTimeSlots(today);
+
+      // Clear any previously selected time
+      setPickupTime("");
+      localStorage.removeItem("pickupTime");
+    }
+    // When switching to schedule pickup, automatically select tomorrow's date
+    else if (pickupOption === "later") {
+      const tomorrow = dayjs().add(1, "day").format("YYYY-MM-DD");
+      setPickupDate(tomorrow);
+      localStorage.setItem("pickupDate", tomorrow);
+
+      // Update time slots for tomorrow (all times)
+      updateAvailableTimeSlots(tomorrow);
+
+      // Clear any previously selected time
+      setPickupTime("");
+      localStorage.removeItem("pickupTime");
     }
   }, [pickupOption]);
 
@@ -142,9 +163,12 @@ const Schedule: React.FC = () => {
 
   // Effect to load available time slots on initial mount
   useEffect(() => {
-    if (pickupDate && pickupOption === "later") {
-      // Initialize available time slots immediately on component mount
-      updateAvailableTimeSlots(pickupDate);
+    if (pickupOption === "now") {
+      const today = dayjs().format("YYYY-MM-DD");
+      updateAvailableTimeSlots(today);
+    } else if (pickupOption === "later") {
+      const tomorrow = dayjs().add(1, "day").format("YYYY-MM-DD");
+      updateAvailableTimeSlots(tomorrow);
     }
   }, []); // Empty dependency array means this runs once on mount
 
@@ -170,61 +194,9 @@ const Schedule: React.FC = () => {
     }
   }, [availableTimeSlots, pickupTime, pickupOption]);
 
-  const calculatePickupNow = () => {
-    const now = dayjs();
-    const lastOrderTime = now.hour(17).minute(55); // 5:55 PM cutoff
-
-    let scheduledDate = now.format("YYYY-MM-DD");
-    let scheduledTime = "";
-    let isTomorrow = false;
-
-    if (now.isAfter(lastOrderTime)) {
-      scheduledDate = now.add(1, "day").format("YYYY-MM-DD");
-      scheduledTime = "04:00 AM";
-      setAlertHeader("Scheduled for Tomorrow");
-      setAlertMessage(
-        "Your pickup is set for 4:00 AM tomorrow as the store is closing soon."
-      );
-      setShowAlert(true);
-      isTomorrow = true;
-    } else {
-      let minutes = now.minute();
-      let nextMinutes = minutes < 30 ? 30 : 0;
-      let nextHour = nextMinutes === 0 ? now.hour() + 1 : now.hour();
-
-      if (nextHour >= 18) {
-        scheduledDate = now.add(1, "day").format("YYYY-MM-DD");
-        scheduledTime = "04:00 AM";
-        setAlertHeader("Scheduled for Tomorrow");
-        setAlertMessage(
-          "Your pickup is set for 4:00 AM tomorrow as the store is closing soon."
-        );
-        setShowAlert(true);
-        isTomorrow = true;
-      } else {
-        scheduledTime = dayjs()
-          .hour(nextHour)
-          .minute(nextMinutes)
-          .format("hh:mm A");
-      }
-    }
-
-    // Set current date and time
-    setPickupDate(scheduledDate);
-    setPickupTime(scheduledTime);
-    setIsScheduledForTomorrow(isTomorrow);
-
-    // Save to localStorage
-    localStorage.setItem("pickupDate", scheduledDate);
-    localStorage.setItem("pickupTime", scheduledTime);
-    localStorage.setItem("isScheduledForTomorrow", JSON.stringify(isTomorrow));
-
-    // Always set initial status to "scheduled" (Order Placed)
-    localStorage.setItem("status", "scheduled");
-  };
-
   const updateAvailableTimeSlots = (selectedDate: string) => {
     const today = dayjs().format("YYYY-MM-DD");
+    const tomorrow = dayjs().add(1, "day").format("YYYY-MM-DD");
     const now = dayjs();
 
     // If selected date is today, filter out past time slots
@@ -236,8 +208,13 @@ const Schedule: React.FC = () => {
       });
 
       setAvailableTimeSlots(availableSlots.map((slot) => slot.value));
-    } else {
-      // For future dates, all time slots are available
+    }
+    // If selected date is tomorrow, all time slots are available
+    else if (selectedDate === tomorrow) {
+      setAvailableTimeSlots(allTimeSlots.map((slot) => slot.value));
+    }
+    // For any other future dates (fallback)
+    else {
       setAvailableTimeSlots(allTimeSlots.map((slot) => slot.value));
     }
   };
@@ -246,12 +223,12 @@ const Schedule: React.FC = () => {
     const dates = [];
     // Use dayjs for consistent date handling
     const today = dayjs();
+    const tomorrow = today.add(1, "day");
 
-    for (let i = 0; i < 7; i++) {
-      // Use dayjs add method to calculate future dates
-      const futureDate = today.add(i, "day");
-      dates.push(futureDate.format("YYYY-MM-DD"));
-    }
+    // Only add today and tomorrow
+    dates.push(today.format("YYYY-MM-DD"));
+    dates.push(tomorrow.format("YYYY-MM-DD"));
+
     return dates;
   };
 
@@ -287,14 +264,6 @@ const Schedule: React.FC = () => {
         setShowAlert(true);
         return;
       }
-    } else if (isScheduledForTomorrow) {
-      // If pickup now is scheduled for tomorrow, show alert
-      setAlertHeader("Cannot Proceed with Tomorrow's Pickup");
-      setAlertMessage(
-        "Since your pickup is scheduled for tomorrow, please choose 'Pickup Later' option and select the date and time manually."
-      );
-      setShowAlert(true);
-      return;
     }
 
     if (currentStep < 2) {
@@ -309,7 +278,7 @@ const Schedule: React.FC = () => {
     if (value === "now" && !isStoreOpen) {
       setAlertHeader("Store Closed");
       setAlertMessage(
-        "Our store is currently closed. Store hours are 4:00 AM to 6:00 PM. Please select 'Pickup Later' to schedule a pickup during business hours."
+        "Our store is currently closed. Store hours are 4:00 AM to 6:00 PM. Please select 'Schedule Pickup' to schedule a pickup during business hours."
       );
       setShowAlert(true);
       return;
@@ -321,16 +290,6 @@ const Schedule: React.FC = () => {
     // Payment method will determine final status in the Payment step
     localStorage.setItem("status", "scheduled");
   };
-
-  // Load isScheduledForTomorrow from localStorage on initial mount
-  useEffect(() => {
-    const savedIsScheduledForTomorrow = localStorage.getItem(
-      "isScheduledForTomorrow"
-    );
-    if (savedIsScheduledForTomorrow) {
-      setIsScheduledForTomorrow(JSON.parse(savedIsScheduledForTomorrow));
-    }
-  }, []);
 
   return (
     <IonPage>
@@ -371,12 +330,12 @@ const Schedule: React.FC = () => {
                     >
                       <IonLabel>
                         <IonText>
-                          <strong>Pickup Now</strong>
+                          <strong>Pickup Today</strong>
                         </IonText>
                         <IonText color="medium">
                           <small>
                             {isStoreOpen
-                              ? "Order will be prepared immediately"
+                              ? "Select a pickup time for later today"
                               : "Store is currently closed (4:00 AM - 6:00 PM)"}
                           </small>
                         </IonText>
@@ -405,10 +364,10 @@ const Schedule: React.FC = () => {
                     <IonItem className="pickup-option-item" lines="none" button>
                       <IonLabel>
                         <IonText>
-                          <strong>Pickup Later</strong>
+                          <strong>Pickup Tomorrow</strong>
                         </IonText>
                         <IonText color="medium">
-                          <small>Schedule a pickup time in advance</small>
+                          <small>Schedule your pickup for tomorrow</small>
                         </IonText>
                       </IonLabel>
                       <IonRadio slot="end" value="later" />
@@ -425,44 +384,14 @@ const Schedule: React.FC = () => {
           </IonCard>
         </div>
 
-        {/* If Pickup Now is selected */}
+        {/* If Pickup Today is selected */}
         {pickupOption === "now" && (
-          <IonCard className="pickup-info-card">
-            <IonCardContent>
-              <div className="pickup-now-info">
-                <IonIcon icon={storefront} className="pickup-icon-large" />
-                <div className="pickup-text">
-                  <h2>Walk-in Customer</h2>
-                  <p>Your order will be prepared immediately</p>
-                </div>
-              </div>
-            </IonCardContent>
-          </IonCard>
-        )}
-
-        {/* If Pickup Later is selected */}
-        {pickupOption === "later" && (
           <div className="schedule-form-container">
             <IonItem className="date-selection-item">
-              <IonLabel className="selection-label">Pick a Date</IonLabel>
-              <IonSelect
-                className="date-select"
-                placeholder="Select Date"
-                value={pickupDate}
-                onIonChange={(e) => setPickupDate(e.detail.value)}
-                interface="action-sheet"
-                justify="end"
-              >
-                {generateAvailableDates().map((date) => (
-                  <IonSelectOption
-                    key={date}
-                    value={date}
-                    className="date-option"
-                  >
-                    {formatDateToDisplay(date)}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
+              <IonLabel className="selection-label">Date</IonLabel>
+              <IonText slot="end" color="medium">
+                {pickupDate ? formatDateToDisplay(pickupDate) : "Today"}
+              </IonText>
             </IonItem>
 
             <IonItem className="time-selection-item">
@@ -473,10 +402,9 @@ const Schedule: React.FC = () => {
                 value={pickupTime}
                 onIonChange={(e) => {
                   setPickupTime(e.detail.value);
-                  // Force immediate save to localStorage
                   localStorage.setItem("pickupTime", e.detail.value);
                 }}
-                disabled={!pickupDate || availableTimeSlots.length === 0}
+                disabled={availableTimeSlots.length === 0}
                 interface="action-sheet"
                 justify="end"
               >
@@ -492,11 +420,57 @@ const Schedule: React.FC = () => {
               </IonSelect>
             </IonItem>
 
-            {pickupDate && availableTimeSlots.length === 0 && (
+            {availableTimeSlots.length === 0 && (
               <div className="no-slots-container">
                 <IonText className="no-slots-message">
-                  No available time slots for today. Please select a different
-                  date.
+                  No available time slots for today. Please use Schedule Pickup
+                  option.
+                </IonText>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* If Schedule Pickup is selected */}
+        {pickupOption === "later" && (
+          <div className="schedule-form-container">
+            <IonItem className="date-selection-item">
+              <IonLabel className="selection-label">Date</IonLabel>
+              <IonText slot="end" color="medium">
+                {pickupDate ? formatDateToDisplay(pickupDate) : "Tomorrow"}
+              </IonText>
+            </IonItem>
+
+            <IonItem className="time-selection-item">
+              <IonLabel className="selection-label">Pick a Time</IonLabel>
+              <IonSelect
+                className="time-select"
+                placeholder="Select Time"
+                value={pickupTime}
+                onIonChange={(e) => {
+                  setPickupTime(e.detail.value);
+                  localStorage.setItem("pickupTime", e.detail.value);
+                }}
+                disabled={availableTimeSlots.length === 0}
+                interface="action-sheet"
+                justify="end"
+              >
+                {availableTimeSlots.map((time) => (
+                  <IonSelectOption
+                    key={time}
+                    value={time}
+                    className="time-option"
+                  >
+                    {time}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
+
+            {availableTimeSlots.length === 0 && (
+              <div className="no-slots-container">
+                <IonText className="no-slots-message">
+                  No available time slots for tomorrow.
                 </IonText>
               </div>
             )}
@@ -505,43 +479,32 @@ const Schedule: React.FC = () => {
       </IonContent>
 
       <IonFooter>
-        <IonToolbar className="product-footer">
-          <div className="footer-content">
-            <div className="footer-back-action-button-container">
-              <IonButton
-                className="footer-back-action-button"
-                routerLink="/home/cart"
-                fill="outline"
-                onClick={() => {
-                  // Reset schedule-related data when going back to cart
-                  localStorage.removeItem("pickupOption");
-                  localStorage.removeItem("pickupDate");
-                  localStorage.removeItem("pickupTime");
-                  localStorage.removeItem("isScheduledForTomorrow");
-                }}
-              >
-                <IonIcon icon={chevronBackCircleOutline} slot="start" />
-                Back
-              </IonButton>
-            </div>
-            <div className="footer-action-button-container">
-              <IonButton
-                className="footer-action-button"
-                disabled={
-                  (pickupOption === "later" &&
-                    (!pickupDate ||
-                      !pickupTime ||
-                      availableTimeSlots.length === 0)) ||
-                  (pickupOption === "now" && isScheduledForTomorrow)
-                }
-                onClick={nextStep}
-                routerLink="/home/cart/schedule/payment"
-              >
-                <IonIcon icon={card} slot="start" />
-                <IonIcon icon={chevronForwardCircle} slot="end" />
-                Payment
-              </IonButton>
-            </div>
+        <IonToolbar>
+          <div className="modal-footer-buttons">
+            <IonButton
+              className="footer-back-action-button"
+              routerLink="/home/cart"
+              fill="outline"
+              onClick={() => {
+                // Reset schedule-related data when going back to cart
+                localStorage.removeItem("pickupOption");
+                localStorage.removeItem("pickupDate");
+                localStorage.removeItem("pickupTime");
+              }}
+            >
+              <IonIcon icon={chevronBackCircleOutline} slot="start" />
+              Back
+            </IonButton>
+
+            <IonButton
+              className="footer-action-button payment-button"
+              disabled={!pickupTime}
+              onClick={nextStep}
+              routerLink="/home/cart/schedule/payment"
+            >
+              <IonIcon icon={card} slot="start" />
+              Payment
+            </IonButton>
           </div>
         </IonToolbar>
       </IonFooter>

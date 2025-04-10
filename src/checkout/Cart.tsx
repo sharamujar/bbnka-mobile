@@ -50,6 +50,7 @@ import {
   bag,
   cardOutline,
   cart,
+  cartOutline,
   chevronForwardCircle,
   close,
   remove,
@@ -314,18 +315,49 @@ const Cart: React.FC = () => {
 
       <IonContent>
         {loading ? (
-          <div className="loading-container">
-            <IonText>Loading cart...</IonText>
+          <div className="skeleton-container">
+            <div className="skeleton-header">
+              <div className="skeleton-title"></div>
+              <div className="skeleton-subtitle"></div>
+            </div>
+            {[1, 2, 3].map((item) => (
+              <div className="skeleton-item" key={item}>
+                <div className="skeleton-badge"></div>
+                <div className="skeleton-content">
+                  <div className="skeleton-name"></div>
+                  <div className="skeleton-info"></div>
+                  <div className="skeleton-price-row">
+                    <div className="skeleton-price"></div>
+                    <div className="skeleton-quantity"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : cartItems.length === 0 ? (
-          <div className="empty-cart-container">
-            <IonTitle>Your cart is empty</IonTitle>
-            <IonText>Looks like you haven't added any items yet.</IonText>
-            <IonButton expand="block" color="primary">
-              Start Shopping
+          <div className="empty-notifications">
+            <IonIcon icon={cartOutline} className="empty-icon" />
+            <IonText className="empty-text">Your cart is Empty</IonText>
+            <p className="empty-subtext">You haven't added any items yet.</p>
+            <IonButton
+              className="browse-button"
+              expand="block"
+              routerLink="/home"
+            >
+              Add Items to Cart
+              <IonIcon slot="end" icon={arrowForward} />
             </IonButton>
           </div>
         ) : (
+          // <div className="empty-cart-container">
+          //   <IonIcon icon={cart} className="empty-cart-icon" />
+          //   <IonTitle>Your cart is empty</IonTitle>
+          //   <IonText>Looks like you haven't added any items yet.</IonText>
+          //   <IonButton expand="block" color="primary" routerLink="/home">
+          //     Browse Products
+          //     <IonIcon slot="end" icon={arrowForward} />
+          //   </IonButton>
+          // </div>
           <>
             <IonGrid>
               <IonRow>
@@ -388,7 +420,7 @@ const Cart: React.FC = () => {
 
                               <div className="price-quantity-container">
                                 <IonText className="cart-price-text">
-                                  ₱{item.productPrice || 0}
+                                  ₱{item.productPrice.toLocaleString()}
                                 </IonText>
                                 <div className="cart-quantity-control">
                                   <IonButton

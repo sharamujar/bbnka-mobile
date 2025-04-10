@@ -1,0 +1,82 @@
+.profile-header ion-toolbar {
+  --background: var(--primary-bg-color);
+  --color: var(--header-color);
+}
+
+.profile-content {
+  --background: var(--primary-bg-color);
+  --padding-top: 16px;
+  --padding-bottom: 24px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.profile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.profile-section {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.profile-list {
+  background: transparent;
+  padding: 0;
+}
+
+.profile-item {
+  --background: white;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  --border-color: rgba(0, 0, 0, 0.05);
+}
+
+.profile-item ion-label {
+  font-size: 14px;
+  color: var(--text-light);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.profile-input {
+  font-size: 16px;
+  color: var(--header-color);
+  --padding-start: 0;
+  margin-top: 4px;
+}
+
+.profile-input-active {
+  font-size: 16px;
+  color: var(--header-color);
+  --padding-start: 0;
+  margin-top: 4px;
+  --background: rgba(0, 0, 0, 0.02);
+  --padding: 8px;
+  --border-radius: 8px;
+}
+
+.button-container {
+  padding: 16px 0;
+}
+
+.button-container ion-button {
+  --border-radius: 12px;
+  --box-shadow: none;
+  margin: 0;
+  height: 48px;
+  font-weight: 500;
+}
