@@ -83,10 +83,9 @@ interface OrderItem {
 
 interface Order {
   id: string;
-  status: string;
-  items: OrderItem[];
   createdAt: any;
   customerName: string;
+  items: OrderItem[];
   orderDetails: {
     createdAt: string;
     pickupDate: string;
@@ -96,7 +95,8 @@ interface Order {
     totalAmount: number;
     pickupOption: string;
     gcashReference?: string;
-    status?: string;
+    status: string;
+    orderStatus: string;
     updatedAt?: string;
   };
   userDetails?: {
@@ -105,7 +105,6 @@ interface Order {
     name?: string;
     email?: string;
   };
-  trackingStatus?: string;
 }
 
 interface OrderTrackingProgressProps {
@@ -113,6 +112,8 @@ interface OrderTrackingProgressProps {
   paymentStatus: string;
   createdAt: any;
   orderId: string;
+  isScheduled: boolean;
+  paymentMethod: string;
 }
 
 const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
@@ -120,35 +121,50 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
   paymentStatus,
   createdAt,
   orderId,
+  isScheduled,
+  paymentMethod,
 }) => {
-  // Order step definitions - standardized to match inventory system
-  const orderSteps = [
-    {
-      label: "Order Placed",
-      icon: receiptOutline,
-      description: "Your order has been received",
-    },
-    {
-      label: "Order Confirmed",
-      icon: checkmarkCircleOutline,
-      description: "Your order has been confirmed",
-    },
-    {
-      label: "Preparing Order",
-      icon: restaurantOutline,
-      description: "Your order is being prepared",
-    },
-    {
-      label: "Ready for Pickup",
-      icon: bagHandleOutline,
-      description: "Your order is ready for pickup",
-    },
-    {
-      label: "Completed",
-      icon: checkmarkDoneOutline,
-      description: "Order has been completed",
-    },
-  ];
+  // Order step definitions with optional Stock Reserved step for scheduled orders
+  const getOrderSteps = () => {
+    const baseSteps = [
+      {
+        label: "Order Confirmed",
+        icon: checkmarkCircleOutline,
+        description: "Your order has been confirmed",
+      },
+    ];
+
+    // Add Stock Reserved step only for scheduled orders
+    if (isScheduled) {
+      baseSteps.push({
+        label: "Stock Reserved",
+        icon: flagOutline,
+        description: "Items have been reserved for your order",
+      });
+    }
+
+    // Add remaining steps for all orders
+    return [
+      ...baseSteps,
+      {
+        label: "Preparing Order",
+        icon: restaurantOutline,
+        description: "Your order is being prepared",
+      },
+      {
+        label: "Ready for Pickup",
+        icon: bagHandleOutline,
+        description: "Your order is ready for pickup",
+      },
+      {
+        label: "Completed",
+        icon: checkmarkDoneOutline,
+        description: "Order has been completed",
+      },
+    ];
+  };
+
+  const orderSteps = getOrderSteps();
 
   // Handle cancelled as a special case
   const isCancelled =
@@ -165,43 +181,45 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
       return -1; // Special value for cancelled
     }
 
-    if (isGcashPending) {
+    // Only show GCash-specific pending for GCash payment method
+    if (isGcashPending && paymentMethod === "gcash") {
       return -2; // Special value for pending payment
     }
 
     // Map status directly to step index
     switch (currentStatus) {
-      // Mobile app status display format and Inventory system status values
-      case "Order Placed":
-        return 0;
+      // Inventory system status values
       case "Order Confirmed":
-        return 1;
-      case "Preparing Order":
-        return 2;
-      case "Ready for Pickup":
-        return 3;
-      case "Completed":
-        return 4;
-
-      // Mobile app status values
-      case "scheduled":
         return 0;
-      case "pending":
-        return 1;
+      case "Stock Reserved":
+        return isScheduled ? 1 : 0; // If not scheduled, treat as Order Confirmed
+      case "Preparing Order":
+        return isScheduled ? 2 : 1; // Index depends on whether Stock Reserved is included
+      case "Ready for Pickup":
+        return isScheduled ? 3 : 2;
+      case "Completed":
+        return isScheduled ? 4 : 3;
+
+      // Mobile app status values - map to matching inventory system values
       case "processing":
-        return 2;
+        return isScheduled ? 2 : 1; // Maps to Preparing Order
       case "ready":
-        return 3;
+        return isScheduled ? 3 : 2; // Maps to Ready for Pickup
       case "completed":
-        return 4;
+        return isScheduled ? 4 : 3; // Maps to Completed
+      case "scheduled":
+        return 0; // Maps to Order Confirmed
+      case "pending":
+        return 0; // Maps to Order Confirmed
       case "awaiting_payment_verification":
-        return 0; // Map to Order Placed but will be displayed as pending payment
+        // For cash payments, map to Order Confirmed (0)
+        return 0;
 
       case "Cancelled":
         return -1; // Special value for cancelled
 
       default:
-        return 0; // Default to first step
+        return 0; // Default to Order Confirmed
     }
   };
 
@@ -251,36 +269,17 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
     }
   };
 
-  // Calculate dates for each step
+  // Get date for each step - we only show the actual order creation date
+  // instead of simulating dates for each step
   const getStepDate = (stepIndex: number): string => {
-    // All orders have a createdAt timestamp for the first step
-    if (stepIndex === 0) {
+    // Only show the timestamp for the first step (Order Placed)
+    // or for the current active step
+    if (stepIndex === 0 || stepIndex === currentStepIndex) {
       return formatDate(createdAt);
     }
 
-    // For subsequent steps, we'd ideally fetch timestamps from backend
-    // This is a placeholder for demonstration
-    if (stepIndex <= currentStepIndex) {
-      let baseDate: Date;
-
-      // Generate a consistent base date from the createdAt timestamp
-      if (createdAt?.toDate) {
-        baseDate = createdAt.toDate();
-      } else if (typeof createdAt === "string") {
-        baseDate = new Date(createdAt);
-      } else if (createdAt instanceof Date) {
-        baseDate = createdAt;
-      } else {
-        return "";
-      }
-
-      // Add time for each step
-      const simulatedDate = new Date(baseDate);
-      simulatedDate.setMinutes(simulatedDate.getMinutes() + stepIndex * 30);
-      return formatDate(simulatedDate);
-    }
-
-    return ""; // No date for future steps
+    // Don't show dates for future steps or intermediate steps
+    return "";
   };
 
   return (
@@ -294,21 +293,13 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
         </div>
       )}
 
-      {/* {isGcashPending && (
-        <div className="order-detail-cancelled-badge">
-          <IonChip color="warning" className="pending-chip">
-            <IonIcon icon={hourglassOutline} />
-            Payment Verification Pending
-          </IonChip>
-        </div>
-      )} */}
-
       <div className="order-detail-steps-vertical">
         {orderSteps.map((step, index) => {
           // For cancelled orders, all steps are inactive
           const isActive = currentStepIndex === index;
           const isCompleted = !isCancelled && currentStepIndex > index;
-          const isPending = isGcashPending && index === 0; // Only first step affected by pending
+          const isPending =
+            isGcashPending && paymentMethod === "gcash" && index === 0; // Only show pending for GCash
 
           // Special handling for GCash pending
           if (isPending) {
@@ -465,9 +456,40 @@ const OrderDetail: React.FC = () => {
         const orderData = docSnapshot.data() as Omit<Order, "id">;
         const orderWithId = { id: docSnapshot.id, ...orderData } as Order;
 
+        // Check if this is a GCash payment that just got approved
+        const isGcashPaymentApproved =
+          orderWithId.orderDetails.paymentMethod === "gcash" &&
+          orderWithId.orderDetails.paymentStatus === "approved" &&
+          previousPaymentStatus === "pending" &&
+          orderWithId.orderDetails.orderStatus ===
+            "awaiting_payment_verification";
+
+        // If GCash payment just got approved, we need to update the status from awaiting_payment_verification to Order Confirmed
+        if (isGcashPaymentApproved) {
+          try {
+            // Update status in Firestore
+            await updateDoc(orderDocRef, {
+              "orderDetails.status": "Order Confirmed",
+              "orderDetails.orderStatus": "Order Confirmed",
+            });
+
+            console.log(
+              "Updated GCash payment status from 'awaiting_payment_verification' to 'Order Confirmed'"
+            );
+
+            // Update the order object for the rest of this function
+            orderWithId.orderDetails.status = "Order Confirmed";
+            orderWithId.orderDetails.orderStatus = "Order Confirmed";
+          } catch (error) {
+            console.error(
+              "Error updating order status after payment approval:",
+              error
+            );
+          }
+        }
+
         // Get current status
-        const currentStatus =
-          orderWithId.orderDetails.status || orderWithId.status;
+        const currentStatus = orderWithId.orderDetails.orderStatus;
         const currentPaymentStatus = orderWithId.orderDetails.paymentStatus;
 
         // If this is not the initial load (previousStatus exists)
@@ -564,6 +586,20 @@ const OrderDetail: React.FC = () => {
 
     // Use status directly from database
     switch (status) {
+      // Inventory system status values first for priority
+      case "Order Confirmed":
+        return "primary";
+      case "Stock Reserved":
+        return "tertiary"; // Use a different color for stock reserved
+      case "Preparing Order":
+        return "warning";
+      case "Ready for Pickup":
+        return "success";
+      case "Completed":
+        return "success";
+      case "Cancelled":
+        return "danger";
+
       // Mobile app status values
       case "processing":
         return "warning";
@@ -579,18 +615,6 @@ const OrderDetail: React.FC = () => {
         return "primary";
       case "pending":
         return "primary";
-
-      // Inventory system status values
-      case "Order Confirmed":
-        return "primary";
-      case "Preparing Order":
-        return "warning";
-      case "Ready for Pickup":
-        return "success";
-      case "Completed":
-        return "success";
-      case "Cancelled":
-        return "danger";
       default:
         return "medium";
     }
@@ -672,28 +696,45 @@ const OrderDetail: React.FC = () => {
   const getDisplayStatusForTracking = (
     status: string,
     paymentMethod: string,
-    paymentStatus: string
+    paymentStatus: string,
+    pickupOption: string
   ) => {
-    // Special case for GCash pending payment
+    // Special case for GCash pending payment verification
     if (
       paymentMethod === "gcash" &&
       paymentStatus !== "approved" &&
-      status !== "cancelled" &&
-      status !== "Cancelled"
+      status === "awaiting_payment_verification"
     ) {
-      return "awaiting_payment_verification";
+      return "Order Confirmed"; // Map to Order Confirmed instead of pending
     }
+
+    // For cash payments with pending verification, show as Order Confirmed
+    if (
+      paymentMethod === "cash" &&
+      status === "awaiting_payment_verification"
+    ) {
+      return "Order Confirmed";
+    }
+
+    // Check if this is a scheduled order (pickup tomorrow/later)
+    const isScheduled = pickupOption === "later";
 
     // The inventory system status values are already in display format
     if (
       [
         "Order Confirmed",
+        "Stock Reserved",
         "Preparing Order",
         "Ready for Pickup",
         "Completed",
         "Cancelled",
       ].includes(status)
     ) {
+      // If we have "Stock Reserved" but it's not a scheduled order,
+      // we should convert it to "Order Confirmed"
+      if (status === "Stock Reserved" && !isScheduled) {
+        return "Order Confirmed";
+      }
       return status;
     }
 
@@ -708,13 +749,13 @@ const OrderDetail: React.FC = () => {
       case "cancelled":
         return "Cancelled";
       case "scheduled":
-        return "Order Placed";
+        return "Order Confirmed";
       case "pending":
         return "Order Confirmed";
       case "awaiting_payment_verification":
-        return "Order Placed";
+        return "Order Confirmed";
       default:
-        return "Order Placed";
+        return "Order Confirmed";
     }
   };
 
@@ -736,7 +777,8 @@ const OrderDetail: React.FC = () => {
       // Update order status in Firestore
       const orderRef = doc(db, "orders", id);
       await updateDoc(orderRef, {
-        "orderDetails.status": "cancelled",
+        "orderDetails.status": "Cancelled",
+        "orderDetails.orderStatus": "cancelled",
         "orderDetails.updatedAt": new Date().toISOString(),
       });
       console.log(`Updated order status in Firestore to cancelled`);
@@ -746,7 +788,8 @@ const OrderDetail: React.FC = () => {
         ...order,
         orderDetails: {
           ...order.orderDetails,
-          status: "cancelled",
+          status: "Cancelled",
+          orderStatus: "cancelled",
           updatedAt: new Date().toISOString(),
         },
       });
@@ -839,37 +882,26 @@ const OrderDetail: React.FC = () => {
                           {formatTimestamp(order.createdAt)}
                         </p>
                       </div>
-                      {/* <IonChip
-                        color={getStatusColor(
-                          order.orderDetails.status || order.status,
-                          order.orderDetails.paymentMethod,
-                          order.orderDetails.paymentStatus
-                        )}
-                      >
-                        {(order.orderDetails.status ===
-                          "awaiting_payment_verification" ||
-                          order.status === "awaiting_payment_verification") &&
-                        order.orderDetails.paymentStatus === "approved"
-                          ? "Processing"
-                          : getStatusText(
-                              order.orderDetails.status || order.status,
-                              order.orderDetails.paymentMethod,
-                              order.orderDetails.paymentStatus
-                            )}
-                      </IonChip> */}
                     </div>
 
                     <OrderTrackingProgress
                       currentStatus={getDisplayStatusForTracking(
-                        order?.orderDetails?.status || order?.status || "",
+                        order?.orderDetails?.orderStatus || "",
                         order?.orderDetails?.paymentMethod || "cash",
-                        order?.orderDetails?.paymentStatus || "pending"
+                        order?.orderDetails?.paymentStatus || "pending",
+                        order?.orderDetails?.pickupOption || "now"
                       )}
                       paymentStatus={
                         order?.orderDetails?.paymentStatus || "pending"
                       }
                       createdAt={order?.createdAt}
                       orderId={order?.id || ""}
+                      isScheduled={
+                        order?.orderDetails?.pickupOption === "later"
+                      }
+                      paymentMethod={
+                        order?.orderDetails?.paymentMethod || "cash"
+                      }
                     />
                   </>
                 )}
@@ -978,8 +1010,8 @@ const OrderDetail: React.FC = () => {
                   <div className="order-detail-detail-label">Pickup Option</div>
                   <div className="order-detail-detail-value">
                     {order?.orderDetails?.pickupOption === "now"
-                      ? "Ready Now (Walk-in)"
-                      : "Scheduled for Later"}
+                      ? "Today"
+                      : "Scheduled"}
                   </div>
                 </div>
               </IonCardContent>
@@ -1027,7 +1059,9 @@ const OrderDetail: React.FC = () => {
                     >
                       {order?.orderDetails?.paymentStatus === "approved"
                         ? "Paid"
-                        : "Pending"}
+                        : order?.orderDetails?.paymentMethod === "cash"
+                        ? "Pending"
+                        : "Pending Verification"}
                     </IonChip>
                   </div>
                 </div>
@@ -1070,24 +1104,23 @@ const OrderDetail: React.FC = () => {
             </IonCard>
 
             {/* Cancel Order button for active orders that aren't completed or already cancelled */}
-            {(!order.orderDetails.status ||
-              !["completed", "cancelled"].includes(
-                order.orderDetails.status
-              )) &&
-              (!order.status ||
-                !["completed", "cancelled"].includes(order.status)) && (
-                <div className="order-detail-action-container">
-                  <IonButton
-                    expand="block"
-                    color="danger"
-                    className="order-detail-cancel-button"
-                    onClick={() => setShowCancelAlert(true)}
-                  >
-                    <IonIcon icon={closeCircle} slot="start" />
-                    Cancel Order
-                  </IonButton>
-                </div>
-              )}
+            {(order.orderDetails.orderStatus ===
+              "awaiting_payment_verification" ||
+              !["completed", "cancelled", "Completed", "Cancelled"].includes(
+                order.orderDetails.orderStatus
+              )) && (
+              <div className="order-detail-action-container">
+                <IonButton
+                  expand="block"
+                  color="danger"
+                  className="order-detail-cancel-button"
+                  onClick={() => setShowCancelAlert(true)}
+                >
+                  <IonIcon icon={closeCircle} slot="start" />
+                  Cancel Order
+                </IonButton>
+              </div>
+            )}
           </div>
         ) : null}
       </IonContent>
@@ -1110,7 +1143,7 @@ const OrderDetail: React.FC = () => {
         ]}
       />
 
-      <IonLoading isOpen={loading} message="Loading order details..." />
+      {/* <IonLoading isOpen={loading} message="Loading order details..." /> */}
     </IonPage>
   );
 };

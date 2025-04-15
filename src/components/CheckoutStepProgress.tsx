@@ -19,7 +19,7 @@ const CheckoutStepProgress: React.FC<CheckoutStepProgressProps> = ({
           <IonCol key={index} className="step-col">
             {/* Step Circle */}
             <div
-              className={`step-circle ${
+              className={`byok-step-dot ${
                 currentStep > index
                   ? "completed"
                   : currentStep === index

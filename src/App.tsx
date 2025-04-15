@@ -22,9 +22,10 @@ import OrderDetail from "./orders/OrderDetail";
 import Cart from "./checkout/Cart";
 import Payment from "./checkout/Payment";
 import SplashScreen from "./pages/Splashscreen";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import Help from "./pages/Help";
+import Profile from "./account/Profile";
+import Settings from "./account/Settings";
+import Help from "./account/Help";
+import ChangePassword from "./account/ChangePassword";
 import { useEffect, useState } from "react";
 import { auth, db } from "./firebase-config";
 import {
@@ -121,6 +122,9 @@ const App: React.FC = () => {
               </Route>
               <Route exact path="/settings">
                 <Settings />
+              </Route>
+              <Route exact path="/change-password">
+                <ChangePassword />
               </Route>
               <Route exact path="/help">
                 <Help />

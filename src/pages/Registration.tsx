@@ -420,7 +420,7 @@ const Registration: React.FC = () => {
                 <IonText className="login-header">
                   Welcome to <strong>BBNKA</strong>
                 </IonText>
-                <IonText className="login-title">Register</IonText>
+                <IonText className="login-title">Sign Up</IonText>
                 <IonText className="login-subtitle">
                   Fill in the details to create an account
                 </IonText>

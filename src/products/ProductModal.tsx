@@ -146,7 +146,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       onWillDismiss={onClose}
     >
       <IonToolbar className="product-details-toolbar">
-        <IonButtons slot="start">
+            <IonButtons slot="start">
           <IonButton
             className="product-details-back-button"
             onClick={handleClose}
@@ -162,7 +162,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       </IonToolbar>
 
       <IonContent className="product-details-content">
-        <div className="product-details-container">
+          <div className="product-details-container">
           <div className="product-details-img">
             <IonImg src={product.imageURL} alt={product.name} />
           </div>
@@ -209,8 +209,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 <IonGrid className="product-details-sizes-grid">
                   <IonRow>
                     {availableSizes
-                      .sort((a, b) => b.price - a.price)
-                      .map((size) => (
+              .sort((a, b) => b.price - a.price)
+              .map((size) => (
                         <IonCol size="6" key={size.id}>
                           <div className="product-details-size-info-card">
                             <div className="product-details-size-info-name">
@@ -227,14 +227,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
                               )}
                               {size.dimensions && (
                                 <div className="product-details-size-info-dimensions">
-                                  {size.dimensions}
+                          {size.dimensions}
                                 </div>
                               )}
                             </div>
-                          </div>
-                        </IonCol>
-                      ))}
-                  </IonRow>
+                      </div>
+                </IonCol>
+              ))}
+          </IonRow>
                 </IonGrid>
               ) : (
                 <div className="no-sizes-available">

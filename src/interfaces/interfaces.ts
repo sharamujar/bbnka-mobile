@@ -22,6 +22,7 @@ export interface Promotion {
 
 export interface Size {
   sizeId: string;
+  imageUrl: string;
   name: string;
   dimensions: string;
   shape: string;

@@ -245,18 +245,17 @@ const Login: React.FC = () => {
           history.replace("/home");
         } else {
           // If no phone number or not a Philippine phone number, we can't create account
-          if (!user.phoneNumber || !user.phoneNumber.startsWith("+63")) {
-            console.warn("Philippine phone number required for registration");
-            // TODO: Redirect to a page to collect phone number
-            // For now we'll just sign out the user
-            await auth.signOut();
-            setToastMessage(
-              "A Philippine phone number (+63) is required to complete registration"
-            );
-            setIsSuccess(false);
-            setShowToast(true);
-            return;
-          }
+          // if (!user.phoneNumber || !user.phoneNumber.startsWith("+63")) {
+          //   console.warn("Philippine phone number required for registration");
+
+          //   await auth.signOut();
+          //   setToastMessage(
+          //     "A Philippine phone number (+63) is required to complete registration"
+          //   );
+          //   setIsSuccess(false);
+          //   setShowToast(true);
+          //   return;
+          // }
 
           console.warn("User not found in customers collection:", user.email);
           console.log("New user detected. Creating account...");

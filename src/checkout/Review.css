@@ -203,10 +203,10 @@
   font-weight: 400;
 }
 
-.ref-number {
+/* .ref-number {
   font-family: monospace;
   letter-spacing: 0.5px;
-}
+} */
 
 /* More compact confirmation modal */
 .review-confirmation-modal {
@@ -614,7 +614,7 @@
   font-size: 18px;
 }
 
-.ref-number {
+/* .ref-number {
   font-family: monospace;
   font-weight: 500;
-}
+} */

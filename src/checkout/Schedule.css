@@ -9,84 +9,15 @@
 }
 
 /* Main Container */
-.schedule-content {
-  background-color: #fafafa;
-  padding: 0 16px;
-}
-
-/* Step Progress Bar Styles */
-.step-progress-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 8px 24px;
-  position: relative;
-  margin-bottom: 16px;
-  background-color: white;
-}
-
-.step-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  flex: 1;
-  z-index: 1;
-}
-
-.step-circle {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background-color: #f4f4f4;
-  border: 1px solid #dedede;
-  color: #888;
-  font-weight: 500;
-  margin-bottom: 6px;
-  z-index: 2;
-}
-
-.step-circle.completed {
-  background-color: var(--button-color);
-  border-color: var(--button-color);
-  color: white;
-}
-
-.step-circle.active {
-  background-color: var(--header-color);
-  border-color: var(--header-color);
-  color: white;
-}
-
-.step-name {
-  font-size: 11px;
-  color: #666;
-  text-align: center;
-}
 
 .step-line {
   position: absolute;
-  height: 1px;
-  background-color: #dedede;
-  width: 100%;
+  top: 22px;
   left: 50%;
+  width: 100%;
+  height: 2px;
+  background-color: #e0e0e0;
   z-index: 0;
-}
-
-.step-line.completed {
-  background-color: var(--button-color);
-}
-
-.step-circle ion-icon {
-  font-size: 16px;
-}
-
-/* Make sure the step items are properly spaced */
-.step-item:not(:last-child) .step-line {
-  width: calc(100% - 16px);
 }
 
 /* Checkout Progress */

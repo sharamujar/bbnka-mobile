@@ -294,22 +294,22 @@ const Review: React.FC = () => {
         0
       );
 
-      // Determine order status based on payment method only
-      let orderStatus = "scheduled"; // Default is "Order Placed"
-      let paymentStatus = "approved"; // Default for cash payments
+      // Set initial order status
+      let orderStatus = "Order Confirmed"; // Technical status value
+      let statusDisplay = "Order Confirmed"; // User-friendly display name
+      let paymentStatus = "pending"; // All payments start as pending now
 
-      // For GCash payments, we need payment verification
+      // For GCash payments with pending verification, keep the special status
       if (orderDetails.paymentMethod === "gcash") {
-        // If we have a screenshot or reference number, mark payment as pending verification
+        // If we have a screenshot or reference number, mark for verification
         orderStatus = "awaiting_payment_verification";
-        paymentStatus = "pending";
+        statusDisplay = "Payment Pending"; // User-friendly display name
       }
 
       const ordersRef = collection(db, "orders");
       const orderData = {
         userId: user.uid,
         customerName: customerName, // Store only the customer name
-        status: orderStatus,
         createdAt: serverTimestamp(),
         items: cartItems.map((item) => ({
           cartId: item.id,
@@ -329,6 +329,8 @@ const Review: React.FC = () => {
           pickupTime: orderDetails.pickupTime,
           pickupOption: orderDetails.pickupOption,
           totalAmount: totalAmount,
+          status: statusDisplay, // User-friendly display name
+          orderStatus: orderStatus, // Technical status value
         },
       };
 
@@ -336,7 +338,6 @@ const Review: React.FC = () => {
       console.log("Saving order with data:", {
         userId: orderData.userId,
         customerName: orderData.customerName,
-        status: orderData.status,
         itemCount: orderData.items.length,
         orderDetails: orderData.orderDetails,
       });
@@ -350,7 +351,7 @@ const Review: React.FC = () => {
       if (orderDetails.paymentMethod === "cash") {
         if (orderDetails.pickupOption === "now") {
           notificationMessage +=
-            "Please wait at the store. Your order has been placed.";
+            "Please proceed to the payment counter to complete your purchase.";
         } else {
           notificationMessage +=
             "Please prepare the exact amount when picking up your order.";
@@ -716,8 +717,8 @@ const Review: React.FC = () => {
                     <div className="review-detail-label">Pickup Option</div>
                     <div className="detail-value">
                       {orderDetails.pickupOption === "now"
-                        ? "Pickup Today"
-                        : "Pickup Tomorrow"}
+                        ? "Today"
+                        : "Scheduled"}
                     </div>
                   </div>
                 </div>
@@ -842,8 +843,8 @@ const Review: React.FC = () => {
               ) : (
                 <p className="instruction-text">
                   {orderDetails.pickupOption === "now"
-                    ? "Please pay at the store when your order is ready."
-                    : "Please prepare the exact amount for pickup."}
+                    ? "Please proceed to the payment counter to complete your purchase."
+                    : "Please bring payment when you pick up your order at the scheduled time."}
                 </p>
               )}
 

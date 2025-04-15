@@ -42,6 +42,8 @@ import {
   orderBy,
   onSnapshot,
   getDocs,
+  writeBatch,
+  doc,
 } from "firebase/firestore";
 import "./Orders.css";
 import { useHistory } from "react-router-dom";
@@ -55,10 +57,9 @@ interface OrderItem {
 
 interface Order {
   id: string;
-  status: string;
-  items: OrderItem[];
   createdAt: any;
   customerName: string;
+  items: OrderItem[];
   orderDetails: {
     createdAt: string;
     pickupDate: string;
@@ -68,7 +69,8 @@ interface Order {
     totalAmount: number;
     pickupOption: string;
     gcashReference?: string;
-    status?: string;
+    status: string; // User-friendly display name
+    orderStatus: string; // Technical status value
   };
   userDetails?: {
     firstName: string;
@@ -106,17 +108,52 @@ const Orders: React.FC = () => {
 
     const unsubscribe = onSnapshot(
       q,
-      (snapshot) => {
+      async (snapshot) => {
         const ordersList: Order[] = [];
-        snapshot.docs.forEach((doc) => {
-          const data = doc.data() as Omit<Order, "id">;
-          ordersList.push({
-            id: doc.id,
-            ...data,
-          } as Order);
-        });
-        setOrders(ordersList);
+        const batch = writeBatch(db);
+        let hasPendingUpdates = false;
 
+        snapshot.docs.forEach((docSnapshot) => {
+          const data = docSnapshot.data() as Omit<Order, "id">;
+          const order = {
+            id: docSnapshot.id,
+            ...data,
+          } as Order;
+
+          // Check if this is a GCash payment that's approved but still in awaiting_payment_verification status
+          if (
+            order.orderDetails.paymentMethod === "gcash" &&
+            order.orderDetails.paymentStatus === "approved" &&
+            order.orderDetails.orderStatus === "awaiting_payment_verification"
+          ) {
+            // Update the status in the batch
+            const orderRef = doc(db, "orders", docSnapshot.id);
+            batch.update(orderRef, {
+              "orderDetails.status": "Order Confirmed",
+              "orderDetails.orderStatus": "Order Confirmed",
+            });
+
+            // Update the order in memory too for immediate UI update
+            order.orderDetails.status = "Order Confirmed";
+            order.orderDetails.orderStatus = "Order Confirmed";
+
+            hasPendingUpdates = true;
+          }
+
+          ordersList.push(order);
+        });
+
+        // Commit batch updates if needed
+        if (hasPendingUpdates) {
+          try {
+            await batch.commit();
+            console.log("Updated status for approved GCash payments");
+          } catch (error) {
+            console.error("Error updating order statuses:", error);
+          }
+        }
+
+        setOrders(ordersList);
         setLoading(false);
       },
       (error) => {
@@ -173,7 +210,8 @@ const Orders: React.FC = () => {
   const getStatusBadgeColor = (
     status: string,
     paymentMethod?: string,
-    paymentStatus?: string
+    paymentStatus?: string,
+    pickupOption?: string
   ) => {
     // Special case for GCash payments
     if (paymentMethod === "gcash") {
@@ -189,7 +227,21 @@ const Orders: React.FC = () => {
 
     // Use status directly from database
     switch (status) {
-      // Mobile app status values
+      // Inventory system status values (prioritize these)
+      case "Order Confirmed":
+        return "primary";
+      case "Stock Reserved":
+        return "tertiary"; // A different color for stock reserved status
+      case "Preparing Order":
+        return "warning";
+      case "Ready for Pickup":
+        return "success";
+      case "Completed":
+        return "success";
+      case "Cancelled":
+        return "danger";
+
+      // Mobile app status values (fallback)
       case "processing":
         return "warning";
       case "ready":
@@ -202,18 +254,6 @@ const Orders: React.FC = () => {
         return "warning"; // Default is warning for awaiting verification
       case "scheduled":
         return "primary";
-
-      // Inventory system status values
-      case "Order Confirmed":
-        return "primary";
-      case "Preparing Order":
-        return "warning";
-      case "Ready for Pickup":
-        return "success";
-      case "Completed":
-        return "success";
-      case "Cancelled":
-        return "danger";
       default:
         return "medium";
     }
@@ -222,7 +262,8 @@ const Orders: React.FC = () => {
   const getStatusText = (
     status: string,
     paymentMethod?: string,
-    paymentStatus?: string
+    paymentStatus?: string,
+    pickupOption?: string
   ) => {
     // Special case for GCash payments
     if (paymentMethod === "gcash") {
@@ -230,14 +271,23 @@ const Orders: React.FC = () => {
       if (paymentStatus !== "approved") {
         return "Pending";
       }
-      // Approved payment but still in verification status shows as "Order Placed"
+      // Approved payment but still in verification status shows as "Order Confirmed"
       else if (status === "awaiting_payment_verification") {
-        return "Order Placed";
+        return "Order Confirmed";
       }
     }
 
     // Convert database status to user-friendly text
     switch (status) {
+      // Inventory system status values - already in user-friendly format
+      case "Order Confirmed":
+      case "Stock Reserved":
+      case "Preparing Order":
+      case "Ready for Pickup":
+      case "Completed":
+      case "Cancelled":
+        return status;
+
       // Mobile app status values
       case "processing":
         return "Preparing Order";
@@ -250,17 +300,9 @@ const Orders: React.FC = () => {
       case "awaiting_payment_verification":
         return "Pending";
       case "scheduled":
-        return "Order Placed";
-
-      // Inventory system status values - already in user-friendly format
-      case "Order Confirmed":
-      case "Preparing Order":
-      case "Ready for Pickup":
-      case "Completed":
-      case "Cancelled":
-        return status;
+        return "Order Confirmed";
       default:
-        return "Order Placed";
+        return "Order Confirmed";
     }
   };
 
@@ -308,7 +350,7 @@ const Orders: React.FC = () => {
           (order) =>
             order.id.toLowerCase().includes(searchText.toLowerCase()) ||
             getStatusText(
-              order.orderDetails.status || order.status,
+              order.orderDetails.orderStatus,
               order.orderDetails.paymentMethod,
               order.orderDetails.paymentStatus
             )
@@ -320,8 +362,8 @@ const Orders: React.FC = () => {
     // Then organize by tab
     if (activeTab === "active") {
       return searchFiltered.filter((order) => {
-        // Get effective status from either orderDetails.status or root status
-        const status = order.orderDetails.status || order.status;
+        // Get effective status from orderDetails.orderStatus
+        const status = order.orderDetails.orderStatus;
 
         // Special case for GCash payments that have been approved but status not updated
         if (
@@ -353,12 +395,12 @@ const Orders: React.FC = () => {
       });
     } else if (activeTab === "completed") {
       return searchFiltered.filter((order) => {
-        const status = order.orderDetails.status || order.status;
+        const status = order.orderDetails.orderStatus;
         return status === "completed" || status === "Completed";
       });
     } else {
       return searchFiltered.filter((order) => {
-        const status = order.orderDetails.status || order.status;
+        const status = order.orderDetails.orderStatus;
         return status === "cancelled" || status === "Cancelled";
       });
     }
@@ -368,7 +410,7 @@ const Orders: React.FC = () => {
 
   // Get counts for each tab
   const activeCounts = orders.filter((order) => {
-    const status = order.orderDetails.status || order.status;
+    const status = order.orderDetails.orderStatus;
 
     // Special case for GCash payments that have been approved but status not updated
     if (
@@ -400,12 +442,12 @@ const Orders: React.FC = () => {
   }).length;
 
   const completedCounts = orders.filter((order) => {
-    const status = order.orderDetails.status || order.status;
+    const status = order.orderDetails.orderStatus;
     return status === "completed" || status === "Completed";
   }).length;
 
   const cancelledCounts = orders.filter((order) => {
-    const status = order.orderDetails.status || order.status;
+    const status = order.orderDetails.orderStatus;
     return status === "cancelled" || status === "Cancelled";
   }).length;
 
@@ -560,19 +602,18 @@ const Orders: React.FC = () => {
                         </div>
                         <IonBadge
                           color={getStatusBadgeColor(
-                            order.orderDetails.status || order.status,
+                            order.orderDetails.orderStatus,
                             order.orderDetails.paymentMethod,
                             order.orderDetails.paymentStatus
                           )}
                           className="mini-badge"
                         >
-                          {(order.orderDetails.status ===
-                            "awaiting_payment_verification" ||
-                            order.status === "awaiting_payment_verification") &&
+                          {order.orderDetails.orderStatus ===
+                            "awaiting_payment_verification" &&
                           order.orderDetails.paymentStatus === "approved"
-                            ? "Order Placed"
+                            ? "Order Confirmed"
                             : getStatusText(
-                                order.orderDetails.status || order.status,
+                                order.orderDetails.orderStatus,
                                 order.orderDetails.paymentMethod,
                                 order.orderDetails.paymentStatus
                               )}
@@ -612,6 +653,8 @@ const Orders: React.FC = () => {
                                 •{" "}
                                 {order.orderDetails.paymentStatus === "approved"
                                   ? "Paid"
+                                  : order.orderDetails.paymentMethod === "cash"
+                                  ? "Pending"
                                   : "Pending"}
                               </span>
                             )}

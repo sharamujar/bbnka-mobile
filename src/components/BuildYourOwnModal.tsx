@@ -91,18 +91,18 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
   // Calculated total
   const [totalPrice, setTotalPrice] = useState(0);
 
-  const getSizeImage = (sizeName: string): string => {
-    const sizeImages: Record<string, string> = {
-      "Big Bilao": "/assets/bilao.webp",
-      Tray: "/assets/rectangle.webp",
-      Small: "/assets/round.webp",
-      "Half-Tray": "/assets/rectangle.webp",
-      Solo: "/assets/round.webp",
-      "1/4 Slice": "/assets/slice1.webp",
-    };
+  // const getSizeImage = (sizeName: string): string => {
+  //   const sizeImages: Record<string, string> = {
+  //     "Big Bilao": "/assets/bilao.webp",
+  //     Tray: "/assets/rectangle.webp",
+  //     Small: "/assets/round.webp",
+  //     "Half-Tray": "/assets/rectangle.webp",
+  //     Solo: "/assets/round.webp",
+  //     "1/4 Slice": "/assets/slice1.webp",
+  //   };
 
-    return sizeImages[sizeName] ?? "/assets/default.png";
-  };
+  //   return sizeImages[sizeName] ?? "/assets/default.png";
+  // };
 
   // Fetch sizes and varieties
   useEffect(() => {
@@ -469,7 +469,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                           </div>
                           <IonCardContent className="size-card-content">
                             <IonImg
-                              src={getSizeImage(size.name)}
+                              src={size.imageUrl}
                               className="size-image"
                               alt={size.name}
                             />
