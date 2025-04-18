@@ -282,7 +282,7 @@
 
 /* Cancel button */
 .order-detail-action-container {
-  margin: 30px 10px 0;
+  margin: 20px 10px 0;
 }
 
 .order-detail-cancel-button {
@@ -489,4 +489,89 @@
 /* Adjust card content padding to fit the tracking progress better */
 .order-detail-status-card ion-card-content {
   padding: 16px 12px 20px;
+}
+
+/* Cancel Order Modal Styles */
+.cancel-order-modal {
+  --height: auto;
+  --width: 90%;
+  --max-width: 400px;
+  --border-radius: 12px;
+}
+
+.cancel-order-content {
+  padding: 20px;
+  text-align: center;
+}
+
+.cancel-order-content h2 {
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+  color: var(--ion-color-danger);
+}
+
+.cancel-order-content p {
+  margin: 0 0 24px;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+.cancel-order-form {
+  margin-bottom: 24px;
+}
+
+.cancel-order-select {
+  width: 100%;
+  margin-bottom: 16px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --border-radius: 8px;
+  --background: var(--ion-color-light);
+  --placeholder-color: var(--ion-color-medium);
+}
+
+.cancel-order-textarea {
+  width: 100%;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --border-radius: 8px;
+  --background: var(--ion-color-light);
+  --placeholder-color: var(--ion-color-medium);
+  text-align: left;
+}
+
+.cancel-order-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cancel-order-actions ion-button {
+  margin: 0;
+  --padding-start: 20px;
+  --padding-end: 20px;
+}
+
+.cancel-order-back-button {
+  --color: var(--button-color);
+  --border-radius: 8px;
+  --border-color: var(--button-color);
+}
+
+/* Disable cancel button for orders that can't be cancelled */
+.order-detail-cancel-button:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Add a warning message for orders that can't be cancelled */
+.order-cannot-cancel-message {
+  text-align: center;
+  padding: 16px;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  margin: 16px 0;
 }

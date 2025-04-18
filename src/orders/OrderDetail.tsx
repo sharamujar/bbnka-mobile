@@ -31,6 +31,10 @@ import {
   IonRefresher,
   IonRefresherContent,
   RefresherEventDetail,
+  IonModal,
+  IonSelect,
+  IonSelectOption,
+  IonTextarea,
 } from "@ionic/react";
 import {
   timeOutline,
@@ -73,6 +77,7 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "../firebase-config";
 import "./OrderDetail.css";
+import { notificationService } from "../services/NotificationService";
 
 interface OrderItem {
   productPrice: number;
@@ -98,6 +103,9 @@ interface Order {
     status: string;
     orderStatus: string;
     updatedAt?: string;
+    statusTimestamps?: Record<string, any>;
+    cancellationReason?: string;
+    cancellationNote?: string;
   };
   userDetails?: {
     firstName: string;
@@ -114,7 +122,22 @@ interface OrderTrackingProgressProps {
   orderId: string;
   isScheduled: boolean;
   paymentMethod: string;
+  statusTimestamps?: Record<string, any>; // Add timestamps for each status
 }
+
+interface CancellationReason {
+  value: string;
+  label: string;
+}
+
+const CANCELLATION_REASONS: CancellationReason[] = [
+  { value: "change_of_mind", label: "Change of Mind" },
+  { value: "found_alternative", label: "Found a Better Alternative" },
+  { value: "schedule_issues", label: "Pickup time/location Conflict" },
+  { value: "duplicate_order", label: "Duplicate Order" },
+  { value: "payment_issues", label: "Payment Issues" },
+  { value: "other", label: "Other Reason" },
+];
 
 const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
   currentStatus,
@@ -123,6 +146,7 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
   orderId,
   isScheduled,
   paymentMethod,
+  statusTimestamps = {}, // Default to empty object if not provided
 }) => {
   // Order step definitions with optional Stock Reserved step for scheduled orders
   const getOrderSteps = () => {
@@ -134,7 +158,7 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
       },
     ];
 
-    // Add Stock Reserved step only for scheduled orders
+    // Add Stock Reserved step only for scheduled orders (pickup tomorrow)
     if (isScheduled) {
       baseSteps.push({
         label: "Stock Reserved",
@@ -173,7 +197,9 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
   // If GCash payment and not approved, show special "Pending" step
   const isGcashPending =
     currentStatus === "awaiting_payment_verification" ||
-    (paymentStatus === "pending" && currentStatus !== "cancelled");
+    (paymentStatus === "pending" &&
+      currentStatus !== "cancelled" &&
+      currentStatus !== "Cancelled");
 
   // Calculate the current step index
   const getCurrentStepIndex = () => {
@@ -192,7 +218,8 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
       case "Order Confirmed":
         return 0;
       case "Stock Reserved":
-        return isScheduled ? 1 : 0; // If not scheduled, treat as Order Confirmed
+        // Stock Reserved is only valid for scheduled orders
+        return isScheduled ? 1 : 0;
       case "Preparing Order":
         return isScheduled ? 2 : 1; // Index depends on whether Stock Reserved is included
       case "Ready for Pickup":
@@ -269,16 +296,60 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
     }
   };
 
-  // Get date for each step - we only show the actual order creation date
-  // instead of simulating dates for each step
+  // Map step labels to the corresponding status value
+  const getStatusValueForStep = (index: number): string => {
+    if (isScheduled) {
+      switch (index) {
+        case 0:
+          return "Order Confirmed";
+        case 1:
+          return "Stock Reserved";
+        case 2:
+          return "Preparing Order";
+        case 3:
+          return "Ready for Pickup";
+        case 4:
+          return "Completed";
+        default:
+          return "";
+      }
+    } else {
+      switch (index) {
+        case 0:
+          return "Order Confirmed";
+        case 1:
+          return "Preparing Order";
+        case 2:
+          return "Ready for Pickup";
+        case 3:
+          return "Completed";
+        default:
+          return "";
+      }
+    }
+  };
+
+  // Get date for each step - show the actual timestamp when the status was updated
   const getStepDate = (stepIndex: number): string => {
-    // Only show the timestamp for the first step (Order Placed)
-    // or for the current active step
-    if (stepIndex === 0 || stepIndex === currentStepIndex) {
+    const statusValue = getStatusValueForStep(stepIndex);
+
+    // If we have a timestamp for this specific status, use it
+    if (statusValue && statusTimestamps[statusValue]) {
+      return formatDate(statusTimestamps[statusValue]);
+    }
+
+    // For the Order Confirmed step, use creation date if no specific timestamp
+    if (stepIndex === 0) {
       return formatDate(createdAt);
     }
 
-    // Don't show dates for future steps or intermediate steps
+    // For cancelled step, use the cancellation timestamp if available
+    if (isCancelled && statusTimestamps["Cancelled"]) {
+      return formatDate(statusTimestamps["Cancelled"]);
+    }
+
+    // Don't use current time as fallback anymore - only show actual timestamps
+    // Don't show dates for steps without timestamps
     return "";
   };
 
@@ -380,7 +451,9 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
                 <div className="order-detail-step-desc">
                   Order has been cancelled
                   <span className="order-detail-step-date">
-                    {getStepDate(5)}
+                    {statusTimestamps["Cancelled"]
+                      ? formatDate(statusTimestamps["Cancelled"])
+                      : ""}
                   </span>
                 </div>
               </div>
@@ -401,6 +474,64 @@ const OrderDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCancelAlert, setShowCancelAlert] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState<string>("");
+  const [cancellationNote, setCancellationNote] = useState<string>("");
+
+  // Helper function for badge color based on size name
+  const getSizeColor = (sizeName: any): string => {
+    // Handle case where sizeName is an object
+    if (typeof sizeName === "object" && sizeName !== null) {
+      // If it's an object with a name property
+      if (sizeName.name) {
+        sizeName = sizeName.name;
+      } else {
+        // If it's an object but no name property, return a default color
+        return "hsl(0, 0%, 50%)";
+      }
+    }
+
+    // Handle case where sizeName is not a string
+    if (typeof sizeName !== "string") {
+      return "hsl(0, 0%, 50%)";
+    }
+
+    let hash = 0;
+    for (let i = 0; i < sizeName.length; i++) {
+      hash = sizeName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    const hue = ((Math.abs(hash * 47) % 360) + 360) % 360;
+    const saturation = 35 + (Math.abs(hash * 12) % 35);
+    const lightness = 35 + (Math.abs(hash * 42) % 30);
+
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+
+  // Helper function for badge initials based on size name
+  const getSizeAbbreviation = (sizeName: any): string => {
+    // Handle case where sizeName is an object
+    if (typeof sizeName === "object" && sizeName !== null) {
+      // If it's an object with a name property
+      if (sizeName.name) {
+        sizeName = sizeName.name;
+      } else {
+        // If it's an object but no name property, return a default
+        return "N/A";
+      }
+    }
+
+    // Handle case where sizeName is not a string
+    if (typeof sizeName !== "string") {
+      return "N/A";
+    }
+
+    // Now we can safely split the string
+    return sizeName
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase();
+  };
 
   // Fetch order details
   const fetchOrderDetails = async () => {
@@ -467,10 +598,19 @@ const OrderDetail: React.FC = () => {
         // If GCash payment just got approved, we need to update the status from awaiting_payment_verification to Order Confirmed
         if (isGcashPaymentApproved) {
           try {
+            // Create a statusTimestamps object if it doesn't exist
+            const statusTimestamps =
+              orderWithId.orderDetails.statusTimestamps || {};
+
+            // Add the current timestamp for Order Confirmed
+            statusTimestamps["Order Confirmed"] = new Date();
+
             // Update status in Firestore
             await updateDoc(orderDocRef, {
               "orderDetails.status": "Order Confirmed",
               "orderDetails.orderStatus": "Order Confirmed",
+              "orderDetails.updatedAt": new Date().toISOString(),
+              "orderDetails.statusTimestamps": statusTimestamps,
             });
 
             console.log(
@@ -480,6 +620,8 @@ const OrderDetail: React.FC = () => {
             // Update the order object for the rest of this function
             orderWithId.orderDetails.status = "Order Confirmed";
             orderWithId.orderDetails.orderStatus = "Order Confirmed";
+            orderWithId.orderDetails.updatedAt = new Date().toISOString();
+            orderWithId.orderDetails.statusTimestamps = statusTimestamps;
           } catch (error) {
             console.error(
               "Error updating order status after payment approval:",
@@ -495,29 +637,30 @@ const OrderDetail: React.FC = () => {
         // If this is not the initial load (previousStatus exists)
         // and the status has changed, create a notification
         if (previousStatus !== null && previousStatus !== currentStatus) {
-          // Create a notification for the status change
+          // Create a local notification for the status change
           try {
-            const notificationsRef = collection(db, "notifications");
             const statusMessage = getStatusText(
               currentStatus,
               orderWithId.orderDetails.paymentMethod,
               orderWithId.orderDetails.paymentStatus
             );
 
-            await addDoc(notificationsRef, {
-              userId: user.uid,
+            await notificationService.addNotification({
               title: "Order Status Updated",
               message: `Your order #${id.substring(
                 0,
                 6
               )} status has been updated to: ${statusMessage}`,
               type: "info",
-              createdAt: serverTimestamp(),
-              isRead: false,
               orderId: id,
             });
+
+            console.log(
+              "Created local notification for status change:",
+              statusMessage
+            );
           } catch (error) {
-            console.error("Error creating status notification:", error);
+            console.error("Error creating local status notification:", error);
           }
         }
 
@@ -528,23 +671,21 @@ const OrderDetail: React.FC = () => {
           previousPaymentStatus !== currentPaymentStatus &&
           currentPaymentStatus === "approved"
         ) {
-          // Create a notification for payment approval
+          // Create a local notification for payment approval
           try {
-            const notificationsRef = collection(db, "notifications");
-            await addDoc(notificationsRef, {
-              userId: user.uid,
+            await notificationService.addNotification({
               title: "Payment Approved",
               message: `Your GCash payment for order #${id.substring(
                 0,
                 6
               )} has been approved.`,
               type: "success",
-              createdAt: serverTimestamp(),
-              isRead: false,
               orderId: id,
             });
+
+            console.log("Created local notification for payment approval");
           } catch (error) {
-            console.error("Error creating payment notification:", error);
+            console.error("Error creating local payment notification:", error);
           }
         }
 
@@ -763,6 +904,27 @@ const OrderDetail: React.FC = () => {
     try {
       if (!order) return;
 
+      // Check if order can be cancelled
+      const currentStatus = order.orderDetails.orderStatus;
+      const isPreparingOrLater = [
+        "Preparing Order",
+        "Ready for Pickup",
+        "Completed",
+        "preparing",
+        "ready",
+        "completed",
+      ].includes(currentStatus);
+
+      if (isPreparingOrLater) {
+        present({
+          message:
+            "This order can no longer be cancelled as it's already being prepared.",
+          duration: 3000,
+          color: "warning",
+        });
+        return;
+      }
+
       setShowCancelAlert(false);
       setCancelling(true);
 
@@ -774,12 +936,19 @@ const OrderDetail: React.FC = () => {
 
       console.log(`Starting order cancellation for order: ${id}`);
 
+      // Create or update statusTimestamps with current time for Cancelled status
+      const statusTimestamps = order.orderDetails.statusTimestamps || {};
+      statusTimestamps["Cancelled"] = new Date();
+
       // Update order status in Firestore
       const orderRef = doc(db, "orders", id);
       await updateDoc(orderRef, {
         "orderDetails.status": "Cancelled",
         "orderDetails.orderStatus": "cancelled",
         "orderDetails.updatedAt": new Date().toISOString(),
+        "orderDetails.statusTimestamps": statusTimestamps,
+        "orderDetails.cancellationReason": cancellationReason,
+        "orderDetails.cancellationNote": cancellationNote,
       });
       console.log(`Updated order status in Firestore to cancelled`);
 
@@ -791,6 +960,9 @@ const OrderDetail: React.FC = () => {
           status: "Cancelled",
           orderStatus: "cancelled",
           updatedAt: new Date().toISOString(),
+          statusTimestamps: statusTimestamps,
+          cancellationReason: cancellationReason,
+          cancellationNote: cancellationNote,
         },
       });
 
@@ -798,7 +970,7 @@ const OrderDetail: React.FC = () => {
       try {
         const user = auth.currentUser;
         if (user) {
-          const notificationsRef = collection(db, "notifications");
+          const notificationsRef = collection(db, "notifications", user.uid);
           await addDoc(notificationsRef, {
             userId: user.uid,
             title: "Order Cancelled",
@@ -816,6 +988,18 @@ const OrderDetail: React.FC = () => {
         console.error("Error creating notification:", notificationError);
       }
 
+      // Create a notification about the cancellation
+      try {
+        await notificationService.addNotification({
+          title: "Order Cancelled",
+          message: `Your order #${id.substring(0, 6)} has been cancelled.`,
+          type: "info",
+          orderId: id,
+        });
+      } catch (error) {
+        console.error("Error creating cancellation notification:", error);
+      }
+
       present({
         message: "Your order has been cancelled successfully",
         duration: 3000,
@@ -830,6 +1014,8 @@ const OrderDetail: React.FC = () => {
       });
     } finally {
       setCancelling(false);
+      setCancellationReason("");
+      setCancellationNote("");
     }
   };
 
@@ -902,6 +1088,9 @@ const OrderDetail: React.FC = () => {
                       paymentMethod={
                         order?.orderDetails?.paymentMethod || "cash"
                       }
+                      statusTimestamps={
+                        order?.orderDetails?.statusTimestamps || {}
+                      }
                     />
                   </>
                 )}
@@ -921,11 +1110,18 @@ const OrderDetail: React.FC = () => {
                       <div className="order-detail-item-content">
                         <div className="order-detail-item-main">
                           <div className="order-detail-size-badge-container">
-                            <IonChip className="order-detail-size-badge">
-                              {typeof item.productSize === "object"
-                                ? item.productSize.name
-                                : item.productSize}
-                            </IonChip>
+                            <IonBadge
+                              className="order-detail-size-badge"
+                              style={{
+                                backgroundColor: getSizeColor(
+                                  item.productSize || "Default"
+                                ),
+                              }}
+                            >
+                              {getSizeAbbreviation(
+                                item.productSize || "Default"
+                              )}
+                            </IonBadge>
                           </div>
                           <div className="order-detail-item-details">
                             {item.productVarieties &&
@@ -996,7 +1192,7 @@ const OrderDetail: React.FC = () => {
                   <IonIcon icon={locationOutline} />
                   <div className="order-detail-detail-label">Location</div>
                   <div className="order-detail-detail-value">
-                    Store Address, City, Philippines
+                    102 Bonifacio Avenue, Cainta, 1900 Rizal
                   </div>
                 </div>
                 <div className="order-detail-detail-row">
@@ -1106,9 +1302,16 @@ const OrderDetail: React.FC = () => {
             {/* Cancel Order button for active orders that aren't completed or already cancelled */}
             {(order.orderDetails.orderStatus ===
               "awaiting_payment_verification" ||
-              !["completed", "cancelled", "Completed", "Cancelled"].includes(
-                order.orderDetails.orderStatus
-              )) && (
+              ![
+                "completed",
+                "cancelled",
+                "Completed",
+                "Cancelled",
+                "Preparing Order",
+                "preparing",
+                "Ready for Pickup",
+                "ready",
+              ].includes(order.orderDetails.orderStatus)) && (
               <div className="order-detail-action-container">
                 <IonButton
                   expand="block"
@@ -1125,23 +1328,70 @@ const OrderDetail: React.FC = () => {
         ) : null}
       </IonContent>
 
-      <IonAlert
+      {/* Updated Cancel Order Modal */}
+      <IonModal
         isOpen={showCancelAlert}
-        onDidDismiss={() => setShowCancelAlert(false)}
-        header="Cancel Order"
-        message="Are you sure you want to cancel this order? This action cannot be undone."
-        buttons={[
-          {
-            text: "No",
-            role: "cancel",
-          },
-          {
-            text: "Yes, Cancel",
-            role: "destructive",
-            handler: handleCancelOrder,
-          },
-        ]}
-      />
+        onDidDismiss={() => {
+          setShowCancelAlert(false);
+          setCancellationReason("");
+          setCancellationNote("");
+        }}
+        className="cancel-order-modal"
+      >
+        <div className="cancel-order-content">
+          <h2>Cancel Order</h2>
+          <p>Please provide a reason for cancelling your order.</p>
+
+          <div className="cancel-order-form">
+            <IonSelect
+              value={cancellationReason}
+              placeholder="Select reason"
+              onIonChange={(e) => setCancellationReason(e.detail.value)}
+              className="cancel-order-select"
+            >
+              {CANCELLATION_REASONS.map((reason) => (
+                <IonSelectOption key={reason.value} value={reason.value}>
+                  {reason.label}
+                </IonSelectOption>
+              ))}
+            </IonSelect>
+
+            {cancellationReason === "other" && (
+              <IonTextarea
+                value={cancellationNote}
+                placeholder="Please specify your reason"
+                onIonChange={(e) => setCancellationNote(e.detail.value!)}
+                className="cancel-order-textarea"
+                rows={3}
+              />
+            )}
+          </div>
+
+          <div className="cancel-order-actions">
+            <IonButton
+              fill="outline"
+              className="cancel-order-back-button"
+              onClick={() => {
+                setShowCancelAlert(false);
+                setCancellationReason("");
+                setCancellationNote("");
+              }}
+            >
+              Back
+            </IonButton>
+            <IonButton
+              color="danger"
+              onClick={handleCancelOrder}
+              disabled={
+                !cancellationReason ||
+                (cancellationReason === "other" && !cancellationNote)
+              }
+            >
+              Confirm Cancellation
+            </IonButton>
+          </div>
+        </div>
+      </IonModal>
 
       {/* <IonLoading isOpen={loading} message="Loading order details..." /> */}
     </IonPage>

@@ -97,6 +97,7 @@ const Payment: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [showGcashModal, setShowGcashModal] = useState(false);
+  const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState("");
   const [isValidReference, setIsValidReference] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -535,7 +536,7 @@ const Payment: React.FC = () => {
                   <IonButton
                     expand="block"
                     className="gcash-button"
-                    onClick={() => setShowGcashModal(true)}
+                    onClick={() => setShowRefundPolicyModal(true)}
                   >
                     Pay with GCash
                   </IonButton>
@@ -544,6 +545,61 @@ const Payment: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* No Refund Policy Modal */}
+        <IonModal
+          isOpen={showRefundPolicyModal}
+          onDidDismiss={() => setShowRefundPolicyModal(false)}
+          className="refund-policy-modal"
+        >
+          <IonHeader>
+            <IonToolbar>
+              <IonButtons slot="start">
+                <IonButton onClick={() => setShowRefundPolicyModal(false)}>
+                  <IonIcon className="close-btn" icon={close}></IonIcon>
+                </IonButton>
+              </IonButtons>
+              <IonTitle>Payment Policy</IonTitle>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            <div className="refund-policy-content">
+              <div className="policy-icon">
+                <IonIcon icon={informationCircleOutline} color="danger" />
+              </div>
+              <h2>No Refund Policy</h2>
+              <p>
+                Please be informed that all payments made via GCash are{" "}
+                <strong>non-refundable</strong>. Once a payment is completed, we
+                cannot process any refunds.
+              </p>
+              <p>
+                By proceeding with your GCash payment, you acknowledge and agree
+                to this policy.
+              </p>
+              <div className="policy-buttons">
+                <IonButton
+                  expand="block"
+                  className="confirm-button"
+                  onClick={() => {
+                    setShowRefundPolicyModal(false);
+                    setShowGcashModal(true);
+                  }}
+                >
+                  I Accept
+                </IonButton>
+                <IonButton
+                  expand="block"
+                  fill="outline"
+                  className="cancel-button"
+                  onClick={() => setShowRefundPolicyModal(false)}
+                >
+                  Cancel
+                </IonButton>
+              </div>
+            </div>
+          </IonContent>
+        </IonModal>
 
         {/* GCash Payment Modal */}
         <IonModal
@@ -794,7 +850,6 @@ const Payment: React.FC = () => {
                         >
                           {isLoading ? (
                             <>
-                              <IonSpinner name="dots" />
                               <span className="verify-text">Submitting...</span>
                             </>
                           ) : (
@@ -877,7 +932,6 @@ const Payment: React.FC = () => {
                         >
                           {isLoading ? (
                             <>
-                              <IonSpinner name="dots" />
                               <span className="verify-text">Submitting...</span>
                             </>
                           ) : (

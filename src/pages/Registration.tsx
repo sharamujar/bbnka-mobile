@@ -86,15 +86,58 @@ const Registration: React.FC = () => {
   const history = useHistory(); //for navigation
   const [loading, setLoading] = useState(false);
 
-  useIonViewWillEnter(() => {
+  // Clear form data when unmounting component
+  useEffect(() => {
+    // Clear form fields on unmount
+    return () => {
+      setFirstName("");
+      setLastName("");
+      setPhoneNumber("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setFirstNameError("");
+      setLastNameError("");
+      setPhoneNumberError("");
+      setEmailError("");
+      setPasswordError("");
+      setConfirmPasswordError("");
+      setIsValidationError(false);
+    };
+  }, []);
+
+  // Listen for navigation events to reset form before navigating
+  useEffect(() => {
+    const unlisten = history.listen(() => {
+      // Clear form data immediately when navigation happens
+      setFirstName("");
+      setLastName("");
+      setPhoneNumber("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setFirstNameError("");
+      setLastNameError("");
+      setPhoneNumberError("");
+      setEmailError("");
+      setPasswordError("");
+      setConfirmPasswordError("");
+      setIsValidationError(false);
+    });
+
+    return () => {
+      unlisten();
+    };
+  }, [history]);
+
+  // Replace useIonViewWillEnter with useEffect to ensure it runs consistently
+  useEffect(() => {
     setFirstName("");
     setLastName("");
     setPhoneNumber("");
     setEmail("");
     setPassword("");
     setConfirmPassword("");
-
-    //clear registration error message
     setFirstNameError("");
     setLastNameError("");
     setPhoneNumberError("");
@@ -102,7 +145,7 @@ const Registration: React.FC = () => {
     setPasswordError("");
     setConfirmPasswordError("");
     setIsValidationError(false);
-  });
+  }, []); // Empty dependency array means this runs once on mount
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -403,10 +446,36 @@ const Registration: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Update the Link to use history.push instead of direct Link
+  const navigateToLogin = () => {
+    // First clear all form data
+    setFirstName("");
+    setLastName("");
+    setPhoneNumber("");
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setFirstNameError("");
+    setLastNameError("");
+    setPhoneNumberError("");
+    setEmailError("");
+    setPasswordError("");
+    setConfirmPasswordError("");
+    setIsValidationError(false);
+
+    // Add a small delay before navigating to ensure form is cleared
+    setTimeout(() => {
+      history.push("/login");
+    }, 10);
+  };
+
   return (
     <IonPage>
       <IonContent className="registration-page" fullscreen>
-        <div className="registration-wrapper">
+        <div
+          className="registration-wrapper"
+          style={{ paddingTop: "env(safe-area-inset-top, 20px)" }}
+        >
           <div className="register-img-wrapper">
             <IonImg
               className="register-img"
@@ -430,11 +499,13 @@ const Registration: React.FC = () => {
                 <div className="register-input-wrapper">
                   <IonItem
                     className={`login-item ${
-                      isValidationError && firstNameError ? "input-error" : ""
+                      isValidationError && firstNameError
+                        ? "login-input-error"
+                        : ""
                     }`}
                     lines="none"
                   >
-                    <IonLabel className="input-label" position="stacked">
+                    <IonLabel className="login-input-label" position="stacked">
                       First Name
                     </IonLabel>
                     <IonInput
@@ -453,18 +524,20 @@ const Registration: React.FC = () => {
                     </IonInput>
                   </IonItem>
                   {firstNameError && (
-                    <IonText color="danger" className="error-text">
+                    <IonText color="danger" className="login-error-text">
                       <IonIcon icon={warningOutline} /> {firstNameError}
                     </IonText>
                   )}
 
                   <IonItem
                     className={`login-item ${
-                      isValidationError && lastNameError ? "input-error" : ""
+                      isValidationError && lastNameError
+                        ? "login-input-error"
+                        : ""
                     }`}
                     lines="none"
                   >
-                    <IonLabel className="input-label" position="stacked">
+                    <IonLabel className="login-input-label" position="stacked">
                       Last Name
                     </IonLabel>
                     <IonInput
@@ -483,18 +556,20 @@ const Registration: React.FC = () => {
                     </IonInput>
                   </IonItem>
                   {lastNameError && (
-                    <IonText color="danger" className="error-text">
+                    <IonText color="danger" className="login-error-text">
                       <IonIcon icon={warningOutline} /> {lastNameError}
                     </IonText>
                   )}
 
                   <IonItem
                     className={`login-item ${
-                      isValidationError && phoneNumberError ? "input-error" : ""
+                      isValidationError && phoneNumberError
+                        ? "login-input-error"
+                        : ""
                     }`}
                     lines="none"
                   >
-                    <IonLabel className="input-label" position="stacked">
+                    <IonLabel className="login-input-label" position="stacked">
                       Phone Number
                     </IonLabel>
                     <IonInput
@@ -526,18 +601,18 @@ const Registration: React.FC = () => {
                     </IonInput>
                   </IonItem>
                   {phoneNumberError && (
-                    <IonText color="danger" className="error-text">
+                    <IonText color="danger" className="login-error-text">
                       <IonIcon icon={warningOutline} /> {phoneNumberError}
                     </IonText>
                   )}
 
                   <IonItem
                     className={`login-item ${
-                      isValidationError && emailError ? "input-error" : ""
+                      isValidationError && emailError ? "login-input-error" : ""
                     }`}
                     lines="none"
                   >
-                    <IonLabel className="input-label" position="stacked">
+                    <IonLabel className="login-input-label" position="stacked">
                       Email Address
                     </IonLabel>
                     <IonInput
@@ -557,18 +632,20 @@ const Registration: React.FC = () => {
                   </IonItem>
 
                   {emailError && (
-                    <IonText color="danger" className="error-text">
+                    <IonText color="danger" className="login-error-text">
                       <IonIcon icon={warningOutline} /> {emailError}
                     </IonText>
                   )}
 
                   <IonItem
                     className={`login-item ${
-                      isValidationError && passwordError ? "input-error" : ""
+                      isValidationError && passwordError
+                        ? "login-input-error"
+                        : ""
                     }`}
                     lines="none"
                   >
-                    <IonLabel className="input-label" position="stacked">
+                    <IonLabel className="login-input-label" position="stacked">
                       Password
                     </IonLabel>
                     <IonInput
@@ -601,7 +678,7 @@ const Registration: React.FC = () => {
                   </IonItem>
 
                   {passwordError && (
-                    <IonText color="danger" className="error-text">
+                    <IonText color="danger" className="login-error-text">
                       <IonIcon icon={warningOutline} /> {passwordError}
                     </IonText>
                   )}
@@ -609,12 +686,12 @@ const Registration: React.FC = () => {
                   <IonItem
                     className={`login-item ${
                       isValidationError && confirmPasswordError
-                        ? "input-error"
+                        ? "login-input-error"
                         : ""
                     }`}
                     lines="none"
                   >
-                    <IonLabel className="input-label" position="stacked">
+                    <IonLabel className="login-input-label" position="stacked">
                       Confirm Password
                     </IonLabel>
                     <IonInput
@@ -647,7 +724,7 @@ const Registration: React.FC = () => {
                   </IonItem>
 
                   {confirmPasswordError && (
-                    <IonText color="danger" className="error-text">
+                    <IonText color="danger" className="login-error-text">
                       <IonIcon icon={warningOutline} /> {confirmPasswordError}
                     </IonText>
                   )}
@@ -697,15 +774,14 @@ const Registration: React.FC = () => {
                   <IonText className="no-account-label">
                     Already have an account?
                   </IonText>
-                  <Link to="/login">
-                    <IonButton
-                      fill="clear"
-                      className="register-text-button"
-                      disabled={loading}
-                    >
-                      LOGIN
-                    </IonButton>
-                  </Link>
+                  <IonButton
+                    fill="clear"
+                    className="register-text-button"
+                    disabled={loading}
+                    onClick={navigateToLogin}
+                  >
+                    LOGIN
+                  </IonButton>
                 </div>
               </IonToolbar>
             </IonFooter>

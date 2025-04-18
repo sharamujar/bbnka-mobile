@@ -46,7 +46,7 @@
 }
 
 .faq-item {
-  --background: transparent;
+  --background: #fff;
   --padding-start: 16px;
   --padding-end: 16px;
   --padding-top: 12px;
@@ -70,8 +70,8 @@
 }
 
 .faq-content {
-  padding: 0 16px 16px;
-  background: white;
+  padding: 16px;
+  background: transparent;
 }
 
 .faq-content p {
@@ -143,12 +143,41 @@
   padding: 0 16px 20px;
 }
 
+/* Input Field Styling */
+.input-field {
+  --padding-start: 0;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  font-size: 15px;
+}
+
 .message-input {
   --background: transparent;
   --padding-start: 0;
   --padding-end: 0;
   --border-color: rgba(0, 0, 0, 0.1);
   margin-bottom: 16px;
+}
+
+.message-input ion-label[position="stacked"] {
+  color: var(--text-light);
+  margin-bottom: 8px;
+  font-size: 12px;
+  transform: none;
+  font-weight: 500;
+}
+
+/* Make sure text is visible when typing */
+.message-input ion-input,
+.message-input ion-textarea {
+  --color: var(--header-color);
+  --placeholder-color: rgba(0, 0, 0, 0.4);
+  --padding-bottom: 8px;
+}
+
+/* Loading indicator */
+.send-message-button ion-spinner {
+  margin-left: 8px;
 }
 
 .message-input ion-label {

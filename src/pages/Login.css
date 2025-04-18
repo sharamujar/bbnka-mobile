@@ -62,7 +62,7 @@ ion-content {
   flex-direction: column;
 }
 
-.input-label {
+.login-input-label {
   padding: 0 0 15px 20px;
 }
 
@@ -80,13 +80,13 @@ ion-content {
   padding-right: 15px;
 }
 
-.input-error .login-input {
+.login-input-error .login-input {
   --border-color: red;
   --border-width: 2px;
   --highlight-color-focused: red;
 }
 
-.error-text {
+.login-error-text {
   display: flex;
   align-items: center;
   color: red;
@@ -95,7 +95,7 @@ ion-content {
   padding: 0;
 }
 
-.error-text ion-icon {
+.login-error-text ion-icon {
   margin-right: 6px;
 }
 

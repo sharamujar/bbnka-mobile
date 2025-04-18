@@ -26,6 +26,7 @@ import {
   IonImg,
   IonRouterLink,
   IonProgressBar,
+  IonBadge,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import {
@@ -45,6 +46,7 @@ import {
   arrowBackOutline,
   arrowForwardOutline,
   arrowForward,
+  alertCircleOutline,
 } from "ionicons/icons";
 import {
   collection,
@@ -63,6 +65,21 @@ import { Varieties } from "../interfaces/interfaces";
 import { BuildYourOwnModalProps } from "../interfaces/interfaces";
 import { Product } from "../interfaces/interfaces";
 
+// Add Stock interface
+interface Stock {
+  id: string;
+  type: "size" | "variety";
+  size: string;
+  variety?: string;
+  slices: number;
+  minimumStock: number;
+  criticalLevel: number;
+  minimumSlices?: number;
+  criticalSlices?: number;
+  totalSlices?: number;
+  lastUpdated?: string;
+}
+
 const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
   isOpen,
   onClose,
@@ -75,6 +92,8 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
   const [varieties, setVarieties] = useState<Varieties[]>([]);
   const [filteredVarieties, setFilteredVarieties] = useState<Varieties[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  // Add state for size stocks
+  const [sizeStocks, setSizeStocks] = useState<Stock[]>([]);
 
   // Selected options
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -153,10 +172,25 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
       }
     };
 
+    const fetchSizeStocks = async () => {
+      try {
+        const sizeStocksSnapshot = await getDocs(collection(db, "sizeStocks"));
+        const sizeStocksData = sizeStocksSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Stock[];
+        console.log("BYOM - Size stocks data:", sizeStocksData);
+        setSizeStocks(sizeStocksData);
+      } catch (error) {
+        console.error("Error fetching size stocks:", error);
+      }
+    };
+
     if (isOpen) {
       fetchSizes();
       fetchVarieties();
       fetchProducts();
+      fetchSizeStocks();
     }
   }, [isOpen, showToastMessage]);
 
@@ -453,44 +487,85 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                 <IonRow className="size-selection-row">
                   {[...sizes]
                     .sort((a, b) => b.price - a.price)
-                    .map((size) => (
-                      <IonCol key={size.sizeId} size="6" size-md="4">
-                        <IonCard
-                          className={`size-card ${
-                            selectedSize === size.sizeId ? "selected-size" : ""
-                          }`}
-                          onClick={() => setSelectedSize(size.sizeId)}
-                        >
-                          <div className="size-radio-container">
-                            <IonRadio
-                              value={size.sizeId}
-                              className="custom-radio"
-                            />
-                          </div>
-                          <IonCardContent className="size-card-content">
-                            <IonImg
-                              src={size.imageUrl}
-                              className="size-image"
-                              alt={size.name}
-                            />
-                            <div className="size-details">
-                              <IonText className="size-name">
-                                {size.name}
-                              </IonText>
-                              <IonText className="size-dimension">
-                                {size.dimensions}
-                              </IonText>
-                              <IonText className="size-slices">
-                                {size.slices} slices
-                              </IonText>
-                              <IonText className="size-price">
-                                ₱{size.price}
-                              </IonText>
+                    .map((size) => {
+                      // Find stock for this size
+                      const sizeStock = sizeStocks.find(
+                        (stock) => stock.size === size.name
+                      );
+                      const stockAvailable = sizeStock?.slices || 0;
+                      const isLowStock =
+                        sizeStock &&
+                        (stockAvailable <= sizeStock.minimumStock ||
+                          stockAvailable <= sizeStock.criticalLevel);
+                      const outOfStock = stockAvailable === 0;
+
+                      return (
+                        <IonCol key={size.sizeId} size="6" size-md="4">
+                          <IonCard
+                            className={`size-card ${
+                              selectedSize === size.sizeId
+                                ? "selected-size"
+                                : ""
+                            } ${outOfStock ? "out-of-stock" : ""}`}
+                            onClick={() =>
+                              !outOfStock && setSelectedSize(size.sizeId)
+                            }
+                          >
+                            <div className="size-radio-container">
+                              <IonRadio
+                                value={size.sizeId}
+                                className="custom-radio"
+                                disabled={outOfStock}
+                              />
                             </div>
-                          </IonCardContent>
-                        </IonCard>
-                      </IonCol>
-                    ))}
+                            {outOfStock && (
+                              <div className="out-of-stock-overlay">
+                                <span>Out of Stock</span>
+                              </div>
+                            )}
+                            <IonCardContent className="size-card-content">
+                              <IonImg
+                                src={size.imageUrl}
+                                className="size-image"
+                                alt={size.name}
+                              />
+                              <div className="size-details">
+                                <IonText className="size-name">
+                                  {size.name}
+                                </IonText>
+                                <IonText className="size-dimension">
+                                  {size.dimensions}
+                                </IonText>
+                                <IonText className="size-slices">
+                                  {size.slices} slices
+                                </IonText>
+                                <IonText className="size-price">
+                                  ₱{size.price}
+                                </IonText>
+                                <div className="stock-indicator">
+                                  <IonBadge
+                                    color={
+                                      outOfStock
+                                        ? "danger"
+                                        : isLowStock
+                                        ? "warning"
+                                        : "success"
+                                    }
+                                    className="stock-badge"
+                                  >
+                                    {outOfStock
+                                      ? "Out of Stock"
+                                      : isLowStock
+                                      ? `Low Stock: ${stockAvailable}`
+                                      : `Available: ${stockAvailable}`}
+                                  </IonBadge>
+                                </div>
+                              </div>
+                            </IonCardContent>
+                          </IonCard>
+                        </IonCol>
+                      );
+                    })}
                 </IonRow>
               </IonGrid>
             </IonRadioGroup>

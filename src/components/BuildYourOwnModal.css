@@ -805,3 +805,50 @@ ion-toast {
     transform: rotate(360deg);
   }
 }
+
+.stock-indicator {
+  margin-top: 6px;
+  text-align: center;
+}
+
+.stock-badge {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  width: 100%;
+  display: block;
+}
+
+.out-of-stock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  border-radius: 12px;
+}
+
+.out-of-stock-overlay span {
+  background-color: #d32f2f;
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  transform: rotate(-15deg);
+}
+
+.size-card.out-of-stock {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.size-card.out-of-stock:active {
+  transform: none;
+}

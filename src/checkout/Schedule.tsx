@@ -40,7 +40,7 @@ import "./Schedule.css";
 const Schedule: React.FC = () => {
   const history = useHistory();
 
-  // Initialize pickupOption from localStorage
+  // Initialize pickupOption from localStorage, but we'll update this based on store hours
   const [pickupOption, setPickupOption] = useState<"now" | "later">(() => {
     const saved = localStorage.getItem("pickupOption");
     return saved ? (saved === "now" ? "now" : "later") : "later";
@@ -88,7 +88,7 @@ const Schedule: React.FC = () => {
 
   const allTimeSlots = generateAllTimeSlots();
 
-  // Check if store is currently open
+  // Check if store is currently open and auto-select appropriate pickup option
   const checkStoreHours = () => {
     const now = dayjs();
     const hour = now.hour();
@@ -97,15 +97,30 @@ const Schedule: React.FC = () => {
     const isOpen = hour >= 4 && hour < 18;
     setIsStoreOpen(isOpen);
 
-    if (!isOpen && pickupOption === "now") {
+    // Auto-select "Pickup Now" if store is open
+    if (isOpen) {
+      setPickupOption("now");
+      localStorage.setItem("pickupOption", "now");
+
+      // Set today's date when auto-selecting "Pickup Now"
+      const today = dayjs().format("YYYY-MM-DD");
+      setPickupDate(today);
+      localStorage.setItem("pickupDate", today);
+
+      // Update available time slots for today
+      updateAvailableTimeSlots(today);
+    } else {
+      // Auto-select "Pickup Tomorrow" if store is closed
       setPickupOption("later");
       localStorage.setItem("pickupOption", "later");
 
-      setAlertHeader("Store Closed");
-      setAlertMessage(
-        "Our store is currently closed. Store hours are 4:00 AM to 6:00 PM. Please select 'Schedule Pickup' to schedule a pickup during business hours."
-      );
-      setShowAlert(true);
+      // Set tomorrow's date when auto-selecting "Pickup Tomorrow"
+      const tomorrow = dayjs().add(1, "day").format("YYYY-MM-DD");
+      setPickupDate(tomorrow);
+      localStorage.setItem("pickupDate", tomorrow);
+
+      // Update available time slots for tomorrow
+      updateAvailableTimeSlots(tomorrow);
     }
   };
 

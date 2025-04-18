@@ -12,6 +12,12 @@ http://ionicframework.com/docs/theming/ */
   --secondary-bg-color: #fff9af;
 }
 
+ion-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--ion-color-primary);
+}
+
 /*  --ion-font-family: "Poppins", sans-serif;
   --button-color: #bf5906;
   --header-color: #4f1f0d;

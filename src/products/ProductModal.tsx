@@ -21,6 +21,9 @@ import {
   IonAccordion,
   IonAccordionGroup,
   IonText,
+  IonFooter,
+  IonTitle,
+  IonRouterLink,
 } from "@ionic/react";
 import {
   close,
@@ -33,11 +36,15 @@ import {
   informationCircleOutline,
   snowOutline,
   checkmarkCircle,
+  arrowForward,
+  fastFood,
+  chevronForward,
 } from "ionicons/icons";
 import { collection, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "../firebase-config";
 import "../products/ProductModal.css";
 import { ProductModalProps } from "../interfaces/interfaces";
+import BuildYourOwnModal from "../components/BuildYourOwnModal";
 
 interface Size {
   id: string;
@@ -60,6 +67,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [productDetails, setProductDetails] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [availableSizes, setAvailableSizes] = useState<Size[]>([]);
+  const [showBuildYourOwn, setShowBuildYourOwn] = useState(false);
 
   // Fetch sizes and detailed product information when product changes
   useEffect(() => {
@@ -136,250 +144,304 @@ const ProductModal: React.FC<ProductModalProps> = ({
     onClose();
   };
 
+  const handleBuildYourOwn = () => {
+    setShowBuildYourOwn(true);
+    onClose(); // Close the product modal
+  };
+
+  const handleBuildYourOwnClose = () => {
+    setShowBuildYourOwn(false);
+  };
+
   if (!product || loading) return null;
 
   return (
-    <IonModal
-      className="product-details-modal"
-      isOpen={isOpen}
-      canDismiss={true}
-      onWillDismiss={onClose}
-    >
-      <IonToolbar className="product-details-toolbar">
+    <>
+      <IonModal
+        className="product-details-modal"
+        isOpen={isOpen}
+        canDismiss={true}
+        onWillDismiss={onClose}
+      >
+        <IonHeader>
+          <IonToolbar>
             <IonButtons slot="start">
-          <IonButton
-            className="product-details-back-button"
-            onClick={handleClose}
-          >
-            <IonIcon className="product-details-back-icon" icon={close} />
-          </IonButton>
-        </IonButtons>
-        {/* {productDetails?.bestseller && (
-          <IonChip className="bestseller-chip" slot="end">
-            Bestseller
-          </IonChip>
-        )} */}
-      </IonToolbar>
+              <IonButton onClick={handleClose}>
+                <IonIcon className="close-btn" icon={close}></IonIcon>
+              </IonButton>
+            </IonButtons>
+            <IonTitle>Product Details</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        {/* <IonToolbar className="product-details-toolbar">
+          <IonButtons slot="start">
+            <IonButton
+              className="product-details-back-button"
+              onClick={handleClose}
+            >
+              <IonIcon className="product-details-back-icon" icon={close} />
+            </IonButton>
+            <IonTitle className="title-toolbar">Product Details</IonTitle>
+          </IonButtons>
+          {productDetails?.bestseller && (
+            <IonChip className="bestseller-chip" slot="end">
+              Bestseller
+            </IonChip>
+          )}
+        </IonToolbar> */}
 
-      <IonContent className="product-details-content">
+        <IonContent className="product-details-content">
           <div className="product-details-container">
-          <div className="product-details-img">
-            <IonImg src={product.imageURL} alt={product.name} />
-          </div>
-
-          <div className="product-details-content">
-            <div className="product-details-header">
-              <IonCardTitle>{product.name}</IonCardTitle>
-              {/* <div className="product-rating">
-                <IonIcon icon={star} color="warning" />
-                <span>{productDetails.rating}</span>
-            </div> */}
+            <div className="product-details-img">
+              <IonImg src={product.imageURL} alt={product.name} />
             </div>
 
-            <p className="product-details-description">{product.description}</p>
-
-            {/* <div className="product-details-summary">
-              {productDetails.preparationTime && (
-                <div className="detail-item">
-                  <IonIcon icon={time} />
-                  <span>{productDetails.preparationTime} mins</span>
-                </div>
-              )}
-              {productDetails.nutritionalInfo && (
-                <div className="detail-item">
-                  <IonIcon icon={restaurant} />
-                  <span>
-                    {productDetails.nutritionalInfo.calories} calories
-                  </span>
-          </div>
-        )}
-        </div> */}
-
-            <div className="product-details-section">
-              <div className="product-details-section-title">
-                <IonIcon icon={checkmarkCircle} />
-                <span>Size Options</span>
+            <div className="product-details-content">
+              <div className="product-details-header">
+                <IonCardTitle>{product.name}</IonCardTitle>
+                {/* <div className="product-rating">
+                  <IonIcon icon={star} color="warning" />
+                  <span>{productDetails.rating}</span>
+              </div> */}
               </div>
-              <p className="product-details-section-subtitle">
-                This product is available in different sizes. Each size has
-                specific dimensions and number of servings.
+
+              <p className="product-details-description">
+                {product.description}
               </p>
 
-              {availableSizes.length > 0 ? (
-                <IonGrid className="product-details-sizes-grid">
-                  <IonRow>
-                    {availableSizes
-              .sort((a, b) => b.price - a.price)
-              .map((size) => (
-                        <IonCol size="6" key={size.id}>
-                          <div className="product-details-size-info-card">
-                            <div className="product-details-size-info-name">
-                              {size.name}
-                            </div>
-                            <div className="product-details-size-info-price">
-                              ₱{size.price}
-                            </div>
-                            <div className="product-details-size-info-details">
-                              {size.slices && (
-                                <div className="product-details-size-info-servings">
-                                  {size.slices} slices
-                                </div>
-                              )}
-                              {size.dimensions && (
-                                <div className="product-details-size-info-dimensions">
-                          {size.dimensions}
-                                </div>
-                              )}
-                            </div>
-                      </div>
-                </IonCol>
-              ))}
-          </IonRow>
-                </IonGrid>
-              ) : (
-                <div className="no-sizes-available">
-                  <IonText color="medium">
-                    This product is not currently available in any size.
-                  </IonText>
-                </div>
-              )}
+              {/* <div className="product-details-summary">
+                {productDetails.preparationTime && (
+                  <div className="detail-item">
+                    <IonIcon icon={time} />
+                    <span>{productDetails.preparationTime} mins</span>
+                  </div>
+                )}
+                {productDetails.nutritionalInfo && (
+                  <div className="detail-item">
+                    <IonIcon icon={restaurant} />
+                    <span>
+                      {productDetails.nutritionalInfo.calories} calories
+                    </span>
             </div>
+          )}
+        </div> */}
 
-            {/* {productDetails.ingredients && (
               <div className="product-details-section">
-                <div className="section-title">
-                  <IonIcon icon={nutrition} />
-                  <span>Ingredients</span>
+                <div className="product-details-section-title">
+                  <IonIcon icon={checkmarkCircle} />
+                  <span>{product.name} Sizes</span>
                 </div>
-                <div className="ingredients-list">
-                  {productDetails.ingredients.map(
-                    (ingredient: string, index: number) => (
-                      <IonChip key={index} className="ingredient-chip">
-                        {ingredient}
-                      </IonChip>
-                    )
-                  )}
-                </div>
-              </div>
-            )} */}
-
-            {/* {productDetails.allergens && (
-              <div className="product-details-section">
-                <div className="section-title">
-                  <IonIcon icon={alertCircleOutline} />
-                  <span>Allergen Information</span>
-                </div>
-                <div className="allergen-info">
-                  {productDetails.allergens.map(
-                    (allergen: string, index: number) => (
-                      <div key={index} className="allergen-item">
-                        <span className="allergen-bullet">•</span> {allergen}
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
-            )} */}
-
-            {/* {productDetails.preparation && (
-              <div className="product-details-section">
-                <div className="section-title">
-                  <IonIcon icon={informationCircleOutline} />
-                  <span>Preparation</span>
-                </div>
-                <p className="additional-info-text">
-                  {productDetails.preparation}
+                <p className="product-details-section-subtitle">
+                  This product is included in the following sizes. Each size has
+                  specific dimensions and number of servings:
                 </p>
-              </div>
-            )} */}
 
-            {/* {productDetails.storage && (
-              <div className="product-details-section">
-                <div className="section-title">
-                  <IonIcon icon={snowOutline} />
-                  <span>Storage</span>
-                </div>
-                <p className="additional-info-text">{productDetails.storage}</p>
-              </div>
-            )} */}
-
-            {/* {productDetails.nutritionalInfo && (
-              <div className="product-details-section">
-                <div className="section-title">
-                  <IonIcon icon={nutrition} />
-                  <span>Nutritional Information</span>
-                </div>
-                <IonList className="nutritional-list">
-                  <IonItem>
-                    <IonLabel>Calories</IonLabel>
-                    <IonBadge slot="end">
-                      {productDetails.nutritionalInfo.calories} kcal
-                    </IonBadge>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>Protein</IonLabel>
-                    <IonBadge slot="end">
-                      {productDetails.nutritionalInfo.protein}g
-                    </IonBadge>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>Carbohydrates</IonLabel>
-                    <IonBadge slot="end">
-                      {productDetails.nutritionalInfo.carbs}g
-                    </IonBadge>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>Fats</IonLabel>
-                    <IonBadge slot="end">
-                      {productDetails.nutritionalInfo.fats}g
-                    </IonBadge>
-                  </IonItem>
-                </IonList>
-              </div>
-            )} */}
-
-            {/* <div className="product-details-section">
-              <div className="section-title">
-                <IonIcon icon={restaurant} />
-                <span>You May Also Like</span>
-              </div>
-              <div className="recommended-products">
-            <IonGrid>
-              <IonRow>
-                    
-                    {[1, 2].map((index) => (
-                      <IonCol size="6" key={index}>
-                        <div
-                          className="recommended-product"
-                          onClick={handleClose}
-                        >
-                          <div className="recommended-product-image">
-                            <IonImg
-                              src={`/assets/product${index + 1}.jpg`}
-                              alt={`Recommended product ${index}`}
-                            />
-                          </div>
-                          <div className="recommended-product-info">
-                            <div className="recommended-product-name">
-                              {index === 0
-                                ? "Bibingka Special"
-                                : "Puto Bumbong"}
+                {availableSizes.length > 0 ? (
+                  <IonGrid className="product-details-sizes-grid">
+                    <IonRow>
+                      {availableSizes
+                        .sort((a, b) => b.price - a.price)
+                        .map((size) => (
+                          <IonCol size="6" key={size.id}>
+                            <div className="product-details-size-info-card">
+                              <div className="product-details-size-info-name">
+                                {size.name}
+                              </div>
+                              <div className="product-details-size-info-price">
+                                ₱{size.price}
+                              </div>
+                              <div className="product-details-size-info-details">
+                                {size.slices && (
+                                  <div className="product-details-size-info-servings">
+                                    {size.slices} slices
+                                  </div>
+                                )}
+                                {size.dimensions && (
+                                  <div className="product-details-size-info-dimensions">
+                                    {size.dimensions}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="recommended-product-price">
-                              ₱{(index + 1) * 85}
-                            </div>
-                          </div>
+                          </IonCol>
+                        ))}
+                    </IonRow>
+                  </IonGrid>
+                ) : (
+                  <div className="no-sizes-available">
+                    <IonText color="medium">
+                      This product is not currently available in any size.
+                    </IonText>
+                  </div>
+                )}
+              </div>
+
+              {/* {productDetails.ingredients && (
+                <div className="product-details-section">
+                  <div className="section-title">
+                    <IonIcon icon={nutrition} />
+                    <span>Ingredients</span>
+                  </div>
+                  <div className="ingredients-list">
+                    {productDetails.ingredients.map(
+                      (ingredient: string, index: number) => (
+                        <IonChip key={index} className="ingredient-chip">
+                          {ingredient}
+                        </IonChip>
+                      )
+                    )}
+                  </div>
+                </div>
+              )} */}
+
+              {/* {productDetails.allergens && (
+                <div className="product-details-section">
+                  <div className="section-title">
+                    <IonIcon icon={alertCircleOutline} />
+                    <span>Allergen Information</span>
+                  </div>
+                  <div className="allergen-info">
+                    {productDetails.allergens.map(
+                      (allergen: string, index: number) => (
+                        <div key={index} className="allergen-item">
+                          <span className="allergen-bullet">•</span> {allergen}
                         </div>
-                  </IonCol>
-                ))}
-              </IonRow>
-            </IonGrid>
+                      )
+                    )}
+                  </div>
+                </div>
+              )} */}
+
+              {/* {productDetails.preparation && (
+                <div className="product-details-section">
+                  <div className="section-title">
+                    <IonIcon icon={informationCircleOutline} />
+                    <span>Preparation</span>
+                  </div>
+                  <p className="additional-info-text">
+                    {productDetails.preparation}
+                  </p>
+                </div>
+              )} */}
+
+              {/* {productDetails.storage && (
+                <div className="product-details-section">
+                  <div className="section-title">
+                    <IonIcon icon={snowOutline} />
+                    <span>Storage</span>
+                  </div>
+                  <p className="additional-info-text">{productDetails.storage}</p>
+                </div>
+              )} */}
+
+              {/* {productDetails.nutritionalInfo && (
+                <div className="product-details-section">
+                  <div className="section-title">
+                    <IonIcon icon={nutrition} />
+                    <span>Nutritional Information</span>
+                  </div>
+                  <IonList className="nutritional-list">
+                    <IonItem>
+                      <IonLabel>Calories</IonLabel>
+                      <IonBadge slot="end">
+                        {productDetails.nutritionalInfo.calories} kcal
+                      </IonBadge>
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Protein</IonLabel>
+                      <IonBadge slot="end">
+                        {productDetails.nutritionalInfo.protein}g
+                      </IonBadge>
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Carbohydrates</IonLabel>
+                      <IonBadge slot="end">
+                        {productDetails.nutritionalInfo.carbs}g
+                      </IonBadge>
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>Fats</IonLabel>
+                      <IonBadge slot="end">
+                        {productDetails.nutritionalInfo.fats}g
+                      </IonBadge>
+                    </IonItem>
+                  </IonList>
+                </div>
+              )} */}
+
+              {/* <div className="product-details-section">
+                <div className="section-title">
+                  <IonIcon icon={restaurant} />
+                  <span>You May Also Like</span>
+                </div>
+                <div className="recommended-products">
+              <IonGrid>
+                <IonRow>
+                      
+                      {[1, 2].map((index) => (
+                        <IonCol size="6" key={index}>
+                          <div
+                            className="recommended-product"
+                            onClick={handleClose}
+                          >
+                            <div className="recommended-product-image">
+                              <IonImg
+                                src={`/assets/product${index + 1}.jpg`}
+                                alt={`Recommended product ${index}`}
+                              />
+                            </div>
+                            <div className="recommended-product-info">
+                              <div className="recommended-product-name">
+                                {index === 0
+                                  ? "Bibingka Special"
+                                  : "Puto Bumbong"}
+                              </div>
+                              <div className="recommended-product-price">
+                                ₱{(index + 1) * 85}
+                              </div>
+                            </div>
+                          </div>
+                    </IonCol>
+                  ))}
+                </IonRow>
+              </IonGrid>
+              </div>
+              </div> */}
             </div>
-            </div> */}
           </div>
-        </div>
-      </IonContent>
-    </IonModal>
+        </IonContent>
+
+        <IonFooter className="product-modal-footer">
+          <IonToolbar>
+            <div className="build-your-own-footer">
+              <div className="build-your-own-text">
+                <h4>Want to order?</h4>
+                <p>Mix and match different kakanin</p>
+              </div>
+              <div className="footer-buttons">
+                <IonButton
+                  className="build-your-own-button"
+                  onClick={handleBuildYourOwn}
+                  fill="solid"
+                >
+                  Add To Cart
+                  <IonIcon slot="end" icon={chevronForward} />
+                  <IonIcon slot="start" icon={fastFood} />
+                </IonButton>
+              </div>
+            </div>
+          </IonToolbar>
+        </IonFooter>
+      </IonModal>
+
+      <BuildYourOwnModal
+        isOpen={showBuildYourOwn}
+        onClose={handleBuildYourOwnClose}
+        showToastMessage={(message: string, success: boolean) => {
+          // Handle toast message
+        }}
+      />
+    </>
   );
 };
 

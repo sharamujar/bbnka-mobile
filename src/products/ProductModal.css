@@ -88,7 +88,7 @@
 }
 
 .product-details-content {
-  padding: 0 16px 24px;
+  padding: 0 16px;
   background-color: var(--primary-bg-color);
   border-radius: 24px 24px 0 0;
   margin-top: -28px;
@@ -122,9 +122,6 @@
 }
 
 /* Size Options Section */
-.product-details-section {
-  margin: 28px 0;
-}
 
 .product-details-section-title {
   display: flex;
@@ -357,33 +354,78 @@
   color: var(--button-color);
 }
 
-/* Responsive adjustments */
-@media (min-width: 768px) {
-  .sizes-grid {
-    margin: 0 -12px;
-  }
+/* Build Your Own Footer Styles */
+.product-modal-footer {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--primary-bg-color);
+}
 
-  .size-info-card {
-    padding: 22px;
-  }
+.product-modal-footer ion-toolbar {
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --min-height: auto;
+}
 
-  .size-info-name {
-    font-size: 19px;
-  }
+.build-your-own-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px;
+  gap: 12px;
+}
 
-  .size-info-price {
-    font-size: 22px;
-  }
+.build-your-own-text {
+  flex: 0 1 auto;
+}
 
-  .product-details-img {
-    height: 45vh;
-  }
+.build-your-own-text h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--header-color);
+  line-height: 1.2;
+}
 
-  .product-details-content {
-    padding: 0 24px 30px;
-  }
+.build-your-own-text p {
+  margin: 7px 0 0 0;
+  font-size: 11px;
+  color: var(--text-light);
+  line-height: 1.3;
+}
 
-  .product-details-header ion-card-title {
-    font-size: 28px;
-  }
+.footer-buttons {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.add-to-cart-button,
+.build-your-own-button {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --border-radius: 8px;
+  margin: 0;
+  height: 34px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: none;
+}
+
+.add-to-cart-button {
+  --background: var(--button-color);
+  --color: #fff;
+  --box-shadow: none;
+}
+
+.build-your-own-button {
+  --background: var(--button-color);
+  --color: #fff;
+  --box-shadow: none;
+}
+
+.build-your-own-button ion-icon {
+  font-size: 14px;
+  margin-left: 4px;
 }

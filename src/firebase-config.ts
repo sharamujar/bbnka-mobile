@@ -7,6 +7,7 @@ import {
   setPersistence,
   onAuthStateChanged,
 } from "firebase/auth";
+import { getMessaging } from "firebase/messaging";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -25,7 +26,9 @@ const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
 const auth = getAuth(app);
+// Initialize Firebase Cloud Messaging
+const messaging = getMessaging(app);
 
 setPersistence(auth, browserLocalPersistence);
 
-export { db, auth, onAuthStateChanged };
+export { db, auth, messaging, onAuthStateChanged };

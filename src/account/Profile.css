@@ -3,32 +3,140 @@
   --color: var(--header-color);
 }
 
-.profile-content {
+/* ChangePassword styles copied in full */
+.profile-page {
   --background: var(--primary-bg-color);
-  --padding-top: 16px;
-  --padding-bottom: 24px;
-  --padding-start: 16px;
-  --padding-end: 16px;
+}
+
+.profile-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  border-radius: 12px;
+  min-height: 100%;
+}
+
+.profile-container {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.profile-form-container ion-list {
+  background: transparent;
+}
+
+.profile-heading {
+  color: var(--header-color);
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.profile-subheading {
+  color: var(--text-light);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.profile-item {
+  --background: white;
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
+.input-label {
+  font-weight: 500;
+  color: var(--text-light);
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.profile-input {
+  --padding-start: 0;
+  margin-top: 8px;
+  font-size: 12px;
+  --highlight-color-focused: var(--button-color);
+}
+
+.error-text {
+  font-size: 12px;
+  margin-top: 4px;
+  padding-left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 16px;
+}
+
+.profile-button-wrapper {
+  margin: 20px 10px;
+  margin-top: 24px;
+}
+
+.profile-button {
+  --background: var(--button-color, #bf5906);
+  --border-radius: 8px;
+  --box-shadow: none;
+  height: 48px;
+  font-weight: 500;
+  padding: 2px 8px;
+}
+
+/* Dark mode adjustments */
+.dark .profile-container {
+  background-color: #1e1e1e;
+}
+
+.dark .profile-input {
+  --background: #333;
+  --placeholder-color: #999;
 }
 
 .loading-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100%;
+  color: var(--text-color);
 }
 
-.profile-container {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.loading-container p {
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+/* Toast with validation errors */
+ion-toast.validation-error {
+  --background: var(--ion-color-danger);
+  --color: white;
+  --button-color: white;
 }
 
 .profile-section {
-  background: white;
-  border-radius: 16px;
+  background-color: #ffffff;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin: 0;
+}
+
+.profile-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--header-color);
+  margin: 0;
+  padding: 16px;
 }
 
 .profile-list {
@@ -36,13 +144,8 @@
   padding: 0;
 }
 
-.profile-item {
-  --background: white;
-  --padding-start: 16px;
-  --padding-end: 16px;
-  --padding-top: 16px;
-  --padding-bottom: 16px;
-  --border-color: rgba(0, 0, 0, 0.05);
+.profile-item-error {
+  --border-color: var(--ion-color-danger);
 }
 
 .profile-item ion-label {
@@ -50,13 +153,6 @@
   color: var(--text-light);
   margin-bottom: 8px;
   font-weight: 500;
-}
-
-.profile-input {
-  font-size: 16px;
-  color: var(--header-color);
-  --padding-start: 0;
-  margin-top: 4px;
 }
 
 .profile-input-active {
@@ -69,14 +165,137 @@
   --border-radius: 8px;
 }
 
-.button-container {
-  padding: 16px 0;
+/* .profile-error-message {
+  color: var(--ion-color-danger);
+  font-size: 12px;
+  margin-top: 4px;
+  padding-left: 0;
+  display: flex;
+  align-items: center;
+} */
+
+.profile-error-message {
+  color: var(--ion-color-danger);
+  font-size: 0.75rem;
+  padding: 4px 16px 8px 16px;
+  margin-top: -4px;
 }
 
-.button-container ion-button {
-  --border-radius: 12px;
-  --box-shadow: none;
-  margin: 0;
-  height: 48px;
+.profile-error-message::before {
+  content: "⚠️";
+  margin-right: 4px;
+}
+
+.profile-icon {
+  color: var(--ion-color-primary);
+  font-size: 20px;
+  margin-right: 16px;
+}
+
+.notification-sub-item {
+  --padding-start: 56px; /* Indent sub-items */
+}
+
+.profile-sign-out-button {
+  padding: 16px;
+}
+
+.profile-footer {
+  text-align: center;
+  padding: 20px 0;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.profile-footer p {
+  margin: 4px 0;
+  opacity: 0.7;
+}
+
+ion-toggle {
+  --background: rgba(0, 0, 0, 0.1);
+  --background-checked: var(--ion-color-primary);
+  --handle-background: white;
+  --handle-background-checked: white;
+}
+
+/* Dark mode adjustments */
+.dark .profile-section {
+  background-color: #1e1e1e;
+}
+
+.dark .profile-icon {
+  color: var(--ion-color-primary-tint);
+}
+
+.dark ion-item {
+  --background: #1e1e1e;
+  --color: #ffffff;
+}
+
+.dark .loading-container,
+.dark .profile-section-title {
+  color: #ffffff;
+}
+
+.dark .profile-footer {
+  color: #a0a0a0;
+}
+
+/* Input field styles copied from ChangePassword */
+.input-label {
   font-weight: 500;
+  color: var(--text-light);
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.profile-input-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-error {
+  --border-color: var(--ion-color-danger);
+}
+
+.error-text {
+  font-size: 12px;
+  margin-top: 4px;
+  padding-left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.profile-header {
+  --background: #f8f8f8;
+}
+
+.profile-content {
+  --background: #f8f8f8;
+}
+
+/* Add space below phone number input when button is not visible */
+.profile-input[placeholder*="phone"],
+.profile-input[placeholder*="Phone"] {
+  margin-bottom: 5px; /* Add space below the phone number input */
+}
+
+/* Ensure the spacing doesn't interfere with error messages */
+.error-text + .profile-input[placeholder*="phone"],
+.error-text + .profile-input[placeholder*="Phone"] {
+  margin-top: 8px;
+}
+
+/* Target input wrapper for phone to add space at the bottom */
+ion-item:has(.profile-input[placeholder*="phone"]),
+ion-item:has(.profile-input[placeholder*="Phone"]) {
+  margin-bottom: 16px;
+}
+
+/* Additional space after the phone number field container */
+.profile-input-wrapper:has(.profile-input[placeholder*="phone"]),
+.profile-input-wrapper:has(.profile-input[placeholder*="Phone"]) {
+  padding-bottom: 5px;
 }

@@ -44,6 +44,7 @@ import {
   getDocs,
   writeBatch,
   doc,
+  updateDoc,
 } from "firebase/firestore";
 import "./Orders.css";
 import { useHistory } from "react-router-dom";
@@ -71,6 +72,10 @@ interface Order {
     gcashReference?: string;
     status: string; // User-friendly display name
     orderStatus: string; // Technical status value
+    updatedAt?: string;
+    statusTimestamps?: Record<string, any>; // Timestamps for each status change
+    cancellationReason?: string;
+    cancellationNote?: string;
   };
   userDetails?: {
     firstName: string;
@@ -126,16 +131,23 @@ const Orders: React.FC = () => {
             order.orderDetails.paymentStatus === "approved" &&
             order.orderDetails.orderStatus === "awaiting_payment_verification"
           ) {
+            // Create or update statusTimestamps with current time for Order Confirmed
+            const statusTimestamps = order.orderDetails.statusTimestamps || {};
+            statusTimestamps["Order Confirmed"] = new Date();
+
             // Update the status in the batch
             const orderRef = doc(db, "orders", docSnapshot.id);
             batch.update(orderRef, {
               "orderDetails.status": "Order Confirmed",
               "orderDetails.orderStatus": "Order Confirmed",
+              "orderDetails.updatedAt": new Date().toISOString(),
+              "orderDetails.statusTimestamps": statusTimestamps,
             });
 
             // Update the order in memory too for immediate UI update
             order.orderDetails.status = "Order Confirmed";
             order.orderDetails.orderStatus = "Order Confirmed";
+            order.orderDetails.statusTimestamps = statusTimestamps;
 
             hasPendingUpdates = true;
           }
@@ -187,13 +199,43 @@ const Orders: React.FC = () => {
 
       const snapshot = await getDocs(q);
       const ordersList: Order[] = [];
-      snapshot.docs.forEach((doc) => {
-        const data = doc.data() as Omit<Order, "id">;
+
+      snapshot.docs.forEach((docSnapshot) => {
+        const data = docSnapshot.data() as Omit<Order, "id">;
+
+        // Check if this is a GCash payment that's approved but still in awaiting_payment_verification status
+        if (
+          data.orderDetails.paymentMethod === "gcash" &&
+          data.orderDetails.paymentStatus === "approved" &&
+          data.orderDetails.orderStatus === "awaiting_payment_verification"
+        ) {
+          // Create or update statusTimestamps with current time for Order Confirmed
+          const statusTimestamps = data.orderDetails.statusTimestamps || {};
+          statusTimestamps["Order Confirmed"] = new Date();
+
+          // Update the order in memory for immediate UI update
+          data.orderDetails.status = "Order Confirmed";
+          data.orderDetails.orderStatus = "Order Confirmed";
+          data.orderDetails.statusTimestamps = statusTimestamps;
+
+          // Also update in the database (don't wait for it)
+          const orderRef = doc(db, "orders", docSnapshot.id);
+          updateDoc(orderRef, {
+            "orderDetails.status": "Order Confirmed",
+            "orderDetails.orderStatus": "Order Confirmed",
+            "orderDetails.updatedAt": new Date().toISOString(),
+            "orderDetails.statusTimestamps": statusTimestamps,
+          }).catch((error) => {
+            console.error("Error updating order status:", error);
+          });
+        }
+
         ordersList.push({
-          id: doc.id,
+          id: docSnapshot.id,
           ...data,
         } as Order);
       });
+
       setOrders(ordersList);
     } catch (error) {
       console.error("Error refreshing orders:", error);
@@ -384,6 +426,7 @@ const Orders: React.FC = () => {
 
         const activeInventoryStatuses = [
           "Order Confirmed",
+          "Stock Reserved", // Include Stock Reserved as an active status
           "Preparing Order",
           "Ready for Pickup",
         ];
@@ -431,6 +474,7 @@ const Orders: React.FC = () => {
 
     const activeInventoryStatuses = [
       "Order Confirmed",
+      "Stock Reserved", // Include Stock Reserved in active count
       "Preparing Order",
       "Ready for Pickup",
     ];

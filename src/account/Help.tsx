@@ -17,13 +17,13 @@ import {
   IonInput,
   IonTextarea,
   IonToast,
+  IonSpinner,
 } from "@ionic/react";
 import {
   helpCircleOutline,
   chatbubbleOutline,
   callOutline,
   mailOutline,
-  logoWhatsapp,
   chevronDown,
   navigateOutline,
   documentTextOutline,
@@ -39,6 +39,7 @@ const Help: React.FC = () => {
   const [contactMessage, setContactMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   const handleSubmitMessage = async () => {
     const user = auth.currentUser;
@@ -47,6 +48,8 @@ const Help: React.FC = () => {
       setShowToast(true);
       return;
     }
+
+    setIsSending(true);
 
     try {
       await addDoc(collection(db, "contactMessages"), {
@@ -67,6 +70,8 @@ const Help: React.FC = () => {
       console.error("Error sending message:", error);
       setToastMessage("Failed to send message");
       setShowToast(true);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -77,7 +82,7 @@ const Help: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/account" />
           </IonButtons>
-          <IonTitle>Help & Support</IonTitle>
+          <IonTitle>Help Center</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -92,7 +97,6 @@ const Help: React.FC = () => {
               <IonAccordion value="first">
                 <IonItem slot="header" lines="none" className="faq-item">
                   <IonLabel>How do I track my order?</IonLabel>
-                  <IonIcon icon={chevronDown} slot="end" className="faq-icon" />
                 </IonItem>
                 <div slot="content" className="faq-content">
                   <p>
@@ -106,14 +110,13 @@ const Help: React.FC = () => {
               <IonAccordion value="second">
                 <IonItem slot="header" lines="none" className="faq-item">
                   <IonLabel>How can I cancel my order?</IonLabel>
-                  <IonIcon icon={chevronDown} slot="end" className="faq-icon" />
                 </IonItem>
                 <div slot="content" className="faq-content">
                   <p>
                     To cancel an order, go to the Orders tab, select the order
                     you wish to cancel, and tap the "Cancel Order" button. Note
-                    that orders can only be cancelled within 15 minutes of
-                    placing or before they are marked as "preparing".
+                    that orders can only be cancelled before they are marked as
+                    "Preparing".
                   </p>
                 </div>
               </IonAccordion>
@@ -121,12 +124,11 @@ const Help: React.FC = () => {
               <IonAccordion value="third">
                 <IonItem slot="header" lines="none" className="faq-item">
                   <IonLabel>What payment methods are accepted?</IonLabel>
-                  <IonIcon icon={chevronDown} slot="end" className="faq-icon" />
                 </IonItem>
                 <div slot="content" className="faq-content">
                   <p>
-                    We currently accept GCash for online payments. Cash on
-                    delivery is also available for select locations.
+                    We currently accept GCash for online payments and Cash for
+                    pickup.
                   </p>
                 </div>
               </IonAccordion>
@@ -151,37 +153,7 @@ const Help: React.FC = () => {
                 />
                 <IonLabel>
                   <h3>Phone</h3>
-                  <p>+63 912 345 6789</p>
-                </IonLabel>
-              </IonItem>
-              <IonItem
-                lines="full"
-                className="contact-item"
-                href="mailto:support@bbnka.com"
-              >
-                <IonIcon
-                  icon={mailOutline}
-                  slot="start"
-                  className="contact-icon"
-                />
-                <IonLabel>
-                  <h3>Email</h3>
-                  <p>support@bbnka.com</p>
-                </IonLabel>
-              </IonItem>
-              <IonItem
-                lines="none"
-                className="contact-item"
-                href="https://wa.me/639123456789"
-              >
-                <IonIcon
-                  icon={logoWhatsapp}
-                  slot="start"
-                  className="contact-icon"
-                />
-                <IonLabel>
-                  <h3>WhatsApp</h3>
-                  <p>+63 912 345 6789</p>
+                  <p>(02) 8655 0029</p>
                 </IonLabel>
               </IonItem>
             </IonList>
@@ -194,23 +166,17 @@ const Help: React.FC = () => {
             </h2>
             <div className="location-info">
               <p className="location-address">
-                123 Main Street, Barangay Example
-                <br />
-                Quezon City, Metro Manila
-                <br />
-                Philippines
+                102 Bonifacio Avenue, Cainta, 1900 Rizal
               </p>
               <p className="location-hours">
                 <strong>Opening Hours:</strong>
                 <br />
-                Monday - Saturday: 8:00 AM - 8:00 PM
-                <br />
-                Sunday: 9:00 AM - 5:00 PM
+                Monday - Sunday | 4:00 AM - 6:00 PM
               </p>
               <IonButton
                 expand="block"
                 className="location-map-button"
-                href="https://maps.google.com/?q=Quezon+City,Philippines"
+                href="https://maps.app.goo.gl/hYEa3gbXaYRedCho7"
                 target="_blank"
               >
                 View on Map
@@ -218,45 +184,61 @@ const Help: React.FC = () => {
             </div>
           </div>
 
-          <div className="help-section">
+          {/* <div className="help-section">
             <h2 className="help-section-title">
               <IonIcon icon={documentTextOutline} />
               Send a Message
             </h2>
             <div className="message-form">
               <IonItem lines="full" className="message-input">
-                <IonLabel position="floating">Your Name</IonLabel>
+                <IonLabel position="stacked">Your Name</IonLabel>
                 <IonInput
                   value={contactName}
+                  placeholder="Enter your name"
                   onIonChange={(e) => setContactName(e.detail.value || "")}
+                  className="input-field"
                 />
               </IonItem>
               <IonItem lines="full" className="message-input">
-                <IonLabel position="floating">Email Address</IonLabel>
+                <IonLabel position="stacked">Email Address</IonLabel>
                 <IonInput
                   type="email"
                   value={contactEmail}
+                  placeholder="Enter your email"
                   onIonChange={(e) => setContactEmail(e.detail.value || "")}
+                  className="input-field"
                 />
               </IonItem>
               <IonItem lines="none" className="message-input">
-                <IonLabel position="floating">Message</IonLabel>
+                <IonLabel position="stacked">Message</IonLabel>
                 <IonTextarea
                   rows={4}
                   value={contactMessage}
+                  placeholder="How can we help you?"
                   onIonChange={(e) => setContactMessage(e.detail.value || "")}
+                  className="input-field"
                 />
               </IonItem>
               <IonButton
                 expand="block"
                 className="send-message-button"
                 onClick={handleSubmitMessage}
+                disabled={isSending}
               >
-                Send Message
-                <IonIcon icon={send} slot="end" />
+                {isSending ? (
+                  <>
+                    Sending...
+                    <IonSpinner name="dots" slot="end" />
+                  </>
+                ) : (
+                  <>
+                    Send Message
+                    <IonIcon icon={send} slot="end" />
+                  </>
+                )}
               </IonButton>
             </div>
-          </div>
+          </div> */}
         </div>
 
         <IonToast
@@ -265,6 +247,7 @@ const Help: React.FC = () => {
           message={toastMessage}
           duration={2000}
           position="bottom"
+          color={toastMessage.includes("success") ? "success" : "danger"}
         />
       </IonContent>
     </IonPage>

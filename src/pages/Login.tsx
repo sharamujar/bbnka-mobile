@@ -56,10 +56,19 @@ import "./Login.css";
 import { Link } from "react-router-dom";
 import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
+import { useAuth } from "../contexts/AuthContext";
 
 const Login: React.FC = () => {
+  const { currentUser, isCustomer } = useAuth();
   const history = useHistory(); //for navigation
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (currentUser && isCustomer) {
+      history.replace("/home");
+    }
+  }, [currentUser, isCustomer, history]);
 
   // State variables for email and password
   const [email, setEmail] = useState("");
@@ -77,13 +86,42 @@ const Login: React.FC = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
 
-  useIonViewWillEnter(() => {
+  // Clear form data when unmounting component
+  useEffect(() => {
+    // Clear form fields on unmount
+    return () => {
+      setEmail("");
+      setPassword("");
+      setEmailError("");
+      setPasswordError("");
+      setIsValidationError(false);
+    };
+  }, []);
+
+  // Listen for navigation events to reset form before navigating
+  useEffect(() => {
+    const unlisten = history.listen(() => {
+      // Clear form data immediately when navigation happens
+      setEmail("");
+      setPassword("");
+      setEmailError("");
+      setPasswordError("");
+      setIsValidationError(false);
+    });
+
+    return () => {
+      unlisten();
+    };
+  }, [history]);
+
+  // Replace useIonViewWillEnter with useEffect to ensure it runs consistently
+  useEffect(() => {
     setEmail("");
     setPassword("");
     setEmailError("");
     setPasswordError("");
     setIsValidationError(false);
-  }, []);
+  }, []); // Empty dependency array means this runs once on mount
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -293,11 +331,29 @@ const Login: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Update the Link to use history.push instead of direct Link
+  const navigateToRegister = () => {
+    // First clear all form data
+    setEmail("");
+    setPassword("");
+    setEmailError("");
+    setPasswordError("");
+    setIsValidationError(false);
+
+    // Add a small delay before navigating to ensure form is cleared
+    setTimeout(() => {
+      history.push("/register");
+    }, 10);
+  };
+
   return (
     <IonPage>
       <IonContent className="login-page" fullscreen>
         {/* <LoginContainer /> */}
-        <div className="login-wrapper">
+        <div
+          className="login-wrapper"
+          style={{ paddingTop: "env(safe-area-inset-top, 20px)" }}
+        >
           <div className="login-img-wrapper">
             <IonImg
               className="login-img"
@@ -321,11 +377,11 @@ const Login: React.FC = () => {
                 <div className="login-input-wrapper">
                   <IonItem
                     className={`login-item ${
-                      isValidationError && emailError ? "input-error" : ""
+                      isValidationError && emailError ? "login-input-error" : ""
                     }`}
                     lines="none"
                   >
-                    <IonLabel className="input-label" position="stacked">
+                    <IonLabel className="login-input-label" position="stacked">
                       Email Address
                     </IonLabel>
                     <IonInput
@@ -345,18 +401,20 @@ const Login: React.FC = () => {
                   </IonItem>
 
                   {emailError && isValidationError && (
-                    <IonText color="danger" className="error-text">
+                    <IonText color="danger" className="login-error-text">
                       <IonIcon icon={warningOutline} /> {emailError}
                     </IonText>
                   )}
 
                   <IonItem
                     className={`login-item ${
-                      isValidationError && passwordError ? "input-error" : ""
+                      isValidationError && passwordError
+                        ? "login-input-error"
+                        : ""
                     }`}
                     lines="none"
                   >
-                    <IonLabel className="input-label" position="stacked">
+                    <IonLabel className="login-input-label" position="stacked">
                       Password
                     </IonLabel>
                     <IonInput
@@ -389,7 +447,7 @@ const Login: React.FC = () => {
                   </IonItem>
 
                   {passwordError && isValidationError && (
-                    <IonText color="danger" className="error-text">
+                    <IonText color="danger" className="login-error-text">
                       <IonIcon icon={warningOutline} /> {passwordError}
                     </IonText>
                   )}
@@ -445,11 +503,13 @@ const Login: React.FC = () => {
                   <IonText className="no-account-label">
                     Don't have an account yet?
                   </IonText>
-                  <Link to="/register">
-                    <IonButton fill="clear" className="register-text-button">
-                      REGISTER
-                    </IonButton>
-                  </Link>
+                  <IonButton
+                    fill="clear"
+                    className="register-text-button"
+                    onClick={navigateToRegister}
+                  >
+                    REGISTER
+                  </IonButton>
                 </div>
               </IonToolbar>
             </IonFooter>

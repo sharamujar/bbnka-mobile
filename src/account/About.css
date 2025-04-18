@@ -1,0 +1,200 @@
+.about-page {
+  --background: var(--primary-bg-color, #f8f8f8);
+}
+
+.about-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.about-container {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+}
+
+.about-logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.about-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 16px;
+}
+
+.about-app-name {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--header-color, #333);
+  margin: 8px 0 4px;
+}
+
+.about-app-version {
+  font-size: 14px;
+  color: var(--text-light, #666);
+  margin: 0;
+}
+
+.about-section {
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.about-section:last-child {
+  border-bottom: none;
+}
+
+.about-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--header-color, #333);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+}
+
+.about-section-icon {
+  margin-right: 8px;
+  font-size: 20px;
+  color: var(--button-color, #bf5906);
+}
+
+.about-description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-color, #444);
+  margin: 0;
+}
+
+.about-contact-list {
+  padding: 0;
+  background: transparent;
+}
+
+.about-contact-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --background: transparent;
+  --background-hover: rgba(0, 0, 0, 0.02);
+  margin-bottom: 12px;
+}
+
+.about-contact-icon {
+  color: var(--button-color, #bf5906);
+  font-size: 20px;
+  margin-right: 16px;
+}
+
+.about-contact-item h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--header-color, #333);
+  margin: 0 0 4px;
+}
+
+.about-contact-item p {
+  font-size: 14px;
+  color: var(--text-color, #444);
+  margin: 0;
+}
+
+.about-social-container {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.about-social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--button-color, #bf5906);
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.about-social-link:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.about-social-icon {
+  font-size: 24px;
+}
+
+.about-footer {
+  padding-top: 24px;
+  text-align: center;
+}
+
+.about-footer p {
+  font-size: 12px;
+  color: var(--text-light, #666);
+  margin: 0 0 8px;
+}
+
+.about-footer-links {
+  display: flex;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.about-footer-links a {
+  color: var(--button-color, #bf5906);
+  text-decoration: none;
+}
+
+.about-footer-divider {
+  margin: 0 8px;
+  color: var(--text-light, #666);
+}
+
+/* Dark mode adjustments */
+.dark .about-container {
+  background-color: #1e1e1e;
+}
+
+.dark .about-app-name,
+.dark .about-section-title,
+.dark .about-contact-item h3 {
+  color: #ffffff;
+}
+
+.dark .about-app-version,
+.dark .about-description,
+.dark .about-contact-item p,
+.dark .about-footer p,
+.dark .about-footer-divider {
+  color: #a0a0a0;
+}
+
+.dark .about-section,
+.dark .about-logo-container {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark .about-social-link {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .about-social-link:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}

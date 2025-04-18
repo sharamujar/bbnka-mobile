@@ -37,6 +37,8 @@ import {
   storefront,
   arrowForwardSharp,
   fastFood,
+  chevronForward,
+  chevronForwardSharp,
 } from "ionicons/icons";
 import { collection, doc, onSnapshot } from "firebase/firestore";
 import ProductModal from "../products/ProductModal";
@@ -257,8 +259,17 @@ const Home: React.FC = () => {
                     setBYOKShowModal(true);
                   }}
                 >
+                  <IonIcon
+                    icon={fastFood}
+                    className="home-byok-icon"
+                    slot="start"
+                  ></IonIcon>
                   Add to Cart
-                  <IonIcon icon={fastFood} className="home-byok-icon"></IonIcon>
+                  <IonIcon
+                    icon={chevronForward}
+                    className="home-byok-icon"
+                    slot="end"
+                  ></IonIcon>
                 </IonButton>
               </div>
             </div>

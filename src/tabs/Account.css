@@ -7,7 +7,7 @@
 }
 
 /* Profile Section */
-.profile-section {
+.account-profile-section {
   padding: 24px 16px;
   background: white;
   margin-bottom: 16px;
@@ -105,21 +105,57 @@ ion-list-header {
   color: #333 !important;
 }
 
+/* Notification sub-items */
+.notification-sub-item {
+  --padding-start: 56px; /* Indent sub-items */
+}
+
+/* Toggle styling */
+ion-toggle {
+  --background: rgba(0, 0, 0, 0.1);
+  --background-checked: var(--ion-color-primary);
+  --handle-background: white;
+  --handle-background-checked: white;
+}
+
+/* Footer styling */
+.account-footer {
+  text-align: center;
+  padding: 20px 0;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.account-footer p {
+  margin: 4px 0;
+  opacity: 0.7;
+}
+
 /* Logout Section */
 .logout-section {
   padding: 16px;
   margin-top: 24px;
-  margin-bottom: 32px;
 }
 
 .logout-button {
   --border-radius: 8px;
   --box-shadow: none;
   --border-width: 1px;
+  background-color: #b23b3b !important;
+  color: white !important;
   font-weight: 500;
   font-size: 0.9375rem;
   height: 48px;
   text-transform: none;
+  border-radius: 8px !important;
+}
+
+/* Add this new selector to target the inner button */
+ion-button.logout-button::part(native) {
+  background-color: #b23b3b !important;
+  color: white !important;
+  --border-radius: 8px;
+  border-radius: 8px !important;
 }
 
 .logout-button ion-icon {

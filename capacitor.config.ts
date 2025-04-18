@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appId: "bbnka.mobile",
   appName: "bbnka-mobile",
   webDir: "dist",
+  bundledWebRuntime: false,
   plugins: {
     Keyboard: {
       resize: KeyboardResize.Body,
@@ -20,6 +21,9 @@ const config: CapacitorConfig = {
       serverClientId:
         "214639010070-ukg4a3c95t0tlhov4hpinrcdcbgn829s.apps.googleusercontent.com",
       forceCodeForRefreshToken: true,
+    },
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
     },
   },
 };

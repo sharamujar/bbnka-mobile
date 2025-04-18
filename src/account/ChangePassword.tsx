@@ -15,13 +15,14 @@ import {
   IonIcon,
   IonToast,
   IonLoading,
+  IonText,
 } from "@ionic/react";
 import {
   lockClosed,
   eyeOutline,
   eyeOffOutline,
-  checkmarkCircleOutline,
   arrowForward,
+  warningOutline,
 } from "ionicons/icons";
 import {
   EmailAuthProvider,
@@ -64,6 +65,32 @@ const ChangePassword: React.FC = () => {
     }
     if (password.length < 8) {
       setNewPasswordError("Password must be at least 8 characters");
+      return false;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setNewPasswordError(
+        "Password must contain at least one uppercase letter"
+      );
+      return false;
+    }
+    if (!/[a-z]/.test(password)) {
+      setNewPasswordError(
+        "Password must contain at least one lowercase letter"
+      );
+      return false;
+    }
+    if (!/[0-9]/.test(password)) {
+      setNewPasswordError("Password must contain at least one number");
+      return false;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      setNewPasswordError(
+        "Password must contain at least one special character"
+      );
+      return false;
+    }
+    if (password.length > 128) {
+      setNewPasswordError("Password is too long (maximum 128 characters)");
       return false;
     }
     if (password === currentPassword) {
@@ -158,132 +185,140 @@ const ChangePassword: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar>
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/settings" />
+            <IonBackButton defaultHref="/account" />
           </IonButtons>
           <IonTitle>Change Password</IonTitle>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
-        <div className="change-password-container">
-          <h2 className="page-title">Update your password</h2>
-          <p className="page-description">
-            For security, please enter your current password before setting a
-            new one.
-          </p>
+      <IonContent className="change-password-page">
+        <div className="change-password-wrapper ion-padding">
+          <div className="change-password-container">
+            <div className="change-password-form-container">
+              <IonList>
+                <div className="change-password-input-wrapper">
+                  <IonItem
+                    className={`change-password-item ${
+                      currentPasswordError ? "input-error" : ""
+                    }`}
+                    lines="none"
+                  >
+                    <IonLabel className="input-label" position="stacked">
+                      Current Password
+                    </IonLabel>
+                    <IonInput
+                      className="change-password-input"
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="Enter current password"
+                      value={currentPassword}
+                      fill="outline"
+                      onIonChange={(e) => setCurrentPassword(e.detail.value!)}
+                    >
+                      <IonIcon icon={lockClosed} slot="start"></IonIcon>
+                      <IonIcon
+                        icon={showCurrentPassword ? eyeOffOutline : eyeOutline}
+                        slot="end"
+                        onClick={() =>
+                          setShowCurrentPassword(!showCurrentPassword)
+                        }
+                        style={{ cursor: "pointer", fontSize: "0.9rem" }}
+                      ></IonIcon>
+                    </IonInput>
+                  </IonItem>
+                  {currentPasswordError && (
+                    <IonText color="danger" className="error-text">
+                      <IonIcon icon={warningOutline} /> {currentPasswordError}
+                    </IonText>
+                  )}
 
-          <IonList className="form-list">
-            <IonItem
-              className={`form-item ${currentPasswordError ? "has-error" : ""}`}
-            >
-              <IonIcon icon={lockClosed} slot="start" className="form-icon" />
-              <IonLabel position="floating">Current Password</IonLabel>
-              <IonInput
-                type={showCurrentPassword ? "text" : "password"}
-                value={currentPassword}
-                onIonChange={(e) => setCurrentPassword(e.detail.value!)}
-                className="form-input"
-                required
-              />
-              <IonButton
-                fill="clear"
-                slot="end"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="visibility-button"
-              >
-                <IonIcon
-                  icon={showCurrentPassword ? eyeOffOutline : eyeOutline}
-                  slot="icon-only"
-                />
-              </IonButton>
-            </IonItem>
-            {currentPasswordError && (
-              <div className="error-message">{currentPasswordError}</div>
-            )}
+                  <IonItem
+                    className={`change-password-item ${
+                      newPasswordError ? "input-error" : ""
+                    }`}
+                    lines="none"
+                  >
+                    <IonLabel className="input-label" position="stacked">
+                      New Password
+                    </IonLabel>
+                    <IonInput
+                      className="change-password-input"
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      fill="outline"
+                      style={{ marginTop: "8px" }}
+                      onIonChange={(e) => setNewPassword(e.detail.value!)}
+                    >
+                      <IonIcon icon={lockClosed} slot="start"></IonIcon>
+                      <IonIcon
+                        icon={showNewPassword ? eyeOffOutline : eyeOutline}
+                        slot="end"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        style={{ cursor: "pointer", fontSize: "0.9rem" }}
+                      ></IonIcon>
+                    </IonInput>
+                  </IonItem>
+                  {newPasswordError && (
+                    <IonText color="danger" className="error-text">
+                      <IonIcon icon={warningOutline} /> {newPasswordError}
+                    </IonText>
+                  )}
 
-            <div className="spacer"></div>
+                  <IonItem
+                    className={`change-password-item ${
+                      confirmPasswordError ? "input-error" : ""
+                    }`}
+                    lines="none"
+                  >
+                    <IonLabel className="input-label" position="stacked">
+                      Confirm New Password
+                    </IonLabel>
+                    <IonInput
+                      className="change-password-input"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      fill="outline"
+                      onIonChange={(e) => setConfirmPassword(e.detail.value!)}
+                    >
+                      <IonIcon icon={lockClosed} slot="start"></IonIcon>
+                      <IonIcon
+                        icon={showConfirmPassword ? eyeOffOutline : eyeOutline}
+                        slot="end"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        style={{ cursor: "pointer", fontSize: "0.9rem" }}
+                      ></IonIcon>
+                    </IonInput>
+                  </IonItem>
+                  {confirmPasswordError && (
+                    <IonText color="danger" className="error-text">
+                      <IonIcon icon={warningOutline} /> {confirmPasswordError}
+                    </IonText>
+                  )}
+                </div>
 
-            <IonItem
-              className={`form-item ${newPasswordError ? "has-error" : ""}`}
-            >
-              <IonIcon icon={lockClosed} slot="start" className="form-icon" />
-              <IonLabel position="floating">New Password</IonLabel>
-              <IonInput
-                type={showNewPassword ? "text" : "password"}
-                value={newPassword}
-                onIonChange={(e) => setNewPassword(e.detail.value!)}
-                className="form-input"
-                required
-              />
-              <IonButton
-                fill="clear"
-                slot="end"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="visibility-button"
-              >
-                <IonIcon
-                  icon={showNewPassword ? eyeOffOutline : eyeOutline}
-                  slot="icon-only"
-                />
-              </IonButton>
-            </IonItem>
-            {newPasswordError && (
-              <div className="error-message">{newPasswordError}</div>
-            )}
-
-            <IonItem
-              className={`form-item ${confirmPasswordError ? "has-error" : ""}`}
-            >
-              <IonIcon icon={lockClosed} slot="start" className="form-icon" />
-              <IonLabel position="floating">Confirm New Password</IonLabel>
-              <IonInput
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onIonChange={(e) => setConfirmPassword(e.detail.value!)}
-                className="form-input"
-                required
-              />
-              <IonButton
-                fill="clear"
-                slot="end"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="visibility-button"
-              >
-                <IonIcon
-                  icon={showConfirmPassword ? eyeOffOutline : eyeOutline}
-                  slot="icon-only"
-                />
-              </IonButton>
-            </IonItem>
-            {confirmPasswordError && (
-              <div className="error-message">{confirmPasswordError}</div>
-            )}
-          </IonList>
-
-          <div className="button-container">
-            <IonButton
-              expand="block"
-              onClick={handleChange}
-              className="change-password-button"
-              disabled={
-                !currentPassword ||
-                !newPassword ||
-                !confirmPassword ||
-                isLoading
-              }
-            >
-              {isLoading ? (
-                "Processing..."
-              ) : (
-                <>
-                  Update Password
-                  <IonIcon icon={arrowForward} slot="end" />
-                </>
-              )}
-            </IonButton>
+                <div className="change-password-button-wrapper">
+                  <IonButton
+                    className="change-password-button"
+                    expand="block"
+                    onClick={handleChange}
+                    disabled={
+                      !currentPassword ||
+                      !newPassword ||
+                      !confirmPassword ||
+                      isLoading
+                    }
+                  >
+                    {isLoading ? "Processing..." : <>Update Password</>}
+                  </IonButton>
+                </div>
+              </IonList>
+            </div>
           </div>
         </div>
 

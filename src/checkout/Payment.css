@@ -406,11 +406,11 @@ ion-text.validation-message[color="success"] {
   opacity: 1 !important;
   font-weight: 600 !important;
   letter-spacing: 0.5px;
-  transform: scale(1.02);
+  /* transform: scale(1.02); */
   box-shadow: 0 4px 12px rgba(191, 89, 6, 0.25);
 }
 
-@keyframes validButtonPulse {
+/* @keyframes validButtonPulse {
   0% {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(191, 89, 6, 0.25);
@@ -423,7 +423,7 @@ ion-text.validation-message[color="success"] {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(191, 89, 6, 0.25);
   }
-}
+} */
 
 .verify-button ion-spinner {
   margin-right: 8px;
@@ -724,4 +724,59 @@ ion-text.validation-message[color="success"] {
   color: #666;
   margin: 0;
   line-height: 1.4;
+}
+
+/* Refund Policy Modal Styles */
+.refund-policy-modal {
+  --border-radius: 16px 16px 0 0;
+  --max-width: 420px;
+  --background: #fafafa;
+}
+
+.refund-policy-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+}
+
+.policy-icon {
+  margin-bottom: 0;
+  margin-top: 10px;
+  font-size: 48px;
+}
+
+.refund-policy-content h2 {
+  color: var(--ion-color-danger);
+  margin-bottom: 16px;
+  margin-top: 0;
+  font-weight: 600;
+}
+
+.refund-policy-content p {
+  margin-bottom: 16px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.policy-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.confirm-button {
+  --background: var(--button-color);
+  --border-radius: 8px;
+}
+
+.cancel-button {
+  --background: #f8f8f8;
+  --color: var(--button-color);
+  --border-color: var(--button-color);
+  --border-radius: 8px;
 }

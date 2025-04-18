@@ -280,7 +280,7 @@ const Cart: React.FC = () => {
                 </IonButton>
               </IonRouterLink>
             </IonButtons>
-            <IonTitle className="title-toolbar">Cart</IonTitle>
+            <IonTitle>Cart</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent>
@@ -447,7 +447,8 @@ const Cart: React.FC = () => {
                                         10
                                       );
                                       if (!isNaN(value) && value > 0) {
-                                        setQuantity(value);
+                                        // Update the quantity in Firestore
+                                        updateQuantity(item.id, value);
                                       }
                                     }}
                                     className="quantity-input"

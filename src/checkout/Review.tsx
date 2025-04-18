@@ -52,6 +52,7 @@ import {
 import CheckoutStepProgress from "../components/CheckoutStepProgress";
 import "./Review.css";
 import dayjs from "dayjs";
+import { notificationService } from "../services/NotificationService";
 
 // Cloudinary configuration
 const CLOUDINARY_UPLOAD_PRESET = "bbnka-payment-screenshots"; // Set your upload preset here
@@ -360,6 +361,7 @@ const Review: React.FC = () => {
         notificationMessage += "Your GCash payment is pending verification.";
       }
 
+      // Fix: Use the correct way to access notifications collection
       const notificationsRef = collection(db, "notifications");
       await addDoc(notificationsRef, {
         userId: user.uid,
@@ -388,6 +390,18 @@ const Review: React.FC = () => {
 
       // Show confirmation modal
       setShowConfirmation(true);
+
+      // Add local notification about order placement
+      try {
+        await notificationService.addNotification({
+          title: "Order Placed Successfully",
+          message: notificationMessage,
+          type: "success",
+          orderId: orderRef.id,
+        });
+      } catch (error) {
+        console.error("Error creating local notification:", error);
+      }
     } catch (error) {
       console.error("Error creating order:", error);
       setToastMessage("Failed to place order. Please try again.");
@@ -663,7 +677,7 @@ const Review: React.FC = () => {
                   <div className="detail-content">
                     <div className="review-detail-label">Location</div>
                     <div className="detail-value">
-                      Store Address, City, Philippines
+                      102 Bonifacio Avenue, Cainta, 1900 Rizal
                     </div>
                   </div>
                 </div>

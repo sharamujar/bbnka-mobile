@@ -9,18 +9,14 @@ import {
   IonText,
   IonRefresher,
   IonRefresherContent,
-  IonList,
-  IonItem,
-  IonLabel,
   IonButton,
   IonChip,
   IonCard,
   IonCardContent,
   IonSkeletonText,
-  IonSpinner,
+  IonBadge,
   useIonToast,
   RefresherEventDetail,
-  IonBadge,
 } from "@ionic/react";
 import {
   notificationsOutline,
@@ -33,32 +29,12 @@ import {
   checkmarkDoneOutline,
   closeCircle,
 } from "ionicons/icons";
-import { auth, db } from "../firebase-config";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  getDocs,
-  updateDoc,
-  doc,
-  writeBatch,
-  serverTimestamp,
-} from "firebase/firestore";
-import "./Notifications.css";
 import { useHistory } from "react-router-dom";
-
-interface Notification {
-  id: string;
-  userId: string;
-  title: string;
-  message: string;
-  type: string;
-  isRead: boolean;
-  createdAt: any;
-  orderId?: string;
-}
+import "./Notifications.css";
+import {
+  notificationService,
+  Notification,
+} from "../services/NotificationService";
 
 const Notifications: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -66,135 +42,67 @@ const Notifications: React.FC = () => {
   const [present] = useIonToast();
   const history = useHistory();
 
-  // Fetch notifications
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const notificationsRef = collection(db, "notifications");
-    const q = query(
-      notificationsRef,
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const notificationsList: Notification[] = [];
-
-        snapshot.docs.forEach((docSnapshot) => {
-          // Safely extract the data
-          const data = docSnapshot.data();
-
-          // Make sure createdAt is properly handled
-          const createdAt = data.createdAt?.toDate
-            ? data.createdAt
-            : typeof data.createdAt === "string"
-            ? new Date(data.createdAt)
-            : new Date();
-
-          notificationsList.push({
-            id: docSnapshot.id,
-            userId: data.userId || user.uid,
-            title: data.title || "Notification",
-            message: data.message || "",
-            type: data.type || "info",
-            isRead: data.isRead || false,
-            createdAt: createdAt,
-            orderId: data.orderId || undefined,
-          });
-        });
-
-        // Sort by date (newest first) in case the order was disrupted
-        notificationsList.sort((a, b) => {
-          const dateA =
-            a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-          const dateB =
-            b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-          return dateB.getTime() - dateA.getTime();
-        });
-
-        setNotifications(notificationsList);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error fetching notifications:", error);
-        present({
-          message: "Failed to load notifications. Please try again.",
-          duration: 3000,
-          color: "danger",
-        });
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [present]);
-
-  // Mark notification as read
-  const markAsRead = async (notification: Notification) => {
+  // Fetch notifications using our service
+  const fetchNotifications = async () => {
     try {
-      if (notification.isRead) return;
-
-      const notificationRef = doc(db, "notifications", notification.id);
-      await updateDoc(notificationRef, {
-        isRead: true,
-      });
-
-      // If it has an orderId, navigate to the order details
-      if (notification.orderId) {
-        history.push(`/orders/${notification.orderId}`);
-      }
+      setLoading(true);
+      const allNotifications = await notificationService.getNotifications();
+      setNotifications(allNotifications);
     } catch (error) {
-      console.error("Error marking notification as read:", error);
+      console.error("Error fetching notifications:", error);
       present({
-        message: "Failed to update notification status.",
-        duration: 2000,
+        message: "Failed to load notifications",
+        duration: 3000,
         color: "danger",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // Mark notification as read
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.isRead) {
+      await notificationService.markAsRead(notification.id);
+
+      // Update local state to show the notification as read
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((n) =>
+          n.id === notification.id ? { ...n, isRead: true } : n
+        )
+      );
+    }
+
+    // Navigate to order details if this is an order notification
+    if (notification.orderId) {
+      history.push(`/orders/${notification.orderId}`);
     }
   };
 
   // Mark all notifications as read
   const markAllAsRead = async () => {
     try {
-      const user = auth.currentUser;
-      if (!user) return;
+      await notificationService.markAllAsRead();
 
-      const unreadNotifications = notifications.filter(
-        (notification) => !notification.isRead
+      // Update local state
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((n) => ({ ...n, isRead: true }))
       );
 
-      if (unreadNotifications.length === 0) {
-        present({
-          message: "No unread notifications.",
-          duration: 2000,
-          color: "medium",
-        });
-        return;
-      }
-
-      const batch = writeBatch(db);
-      unreadNotifications.forEach((notification) => {
-        const notificationRef = doc(db, "notifications", notification.id);
-        batch.update(notificationRef, { isRead: true });
-      });
-
-      await batch.commit();
-
       present({
-        message: "All notifications marked as read.",
+        message: "All notifications marked as read",
         duration: 2000,
         color: "success",
       });
     } catch (error) {
-      console.error("Error marking all notifications as read:", error);
+      console.error("Error marking all as read:", error);
       present({
-        message: "Failed to update notifications.",
+        message: "Failed to update notifications",
         duration: 2000,
         color: "danger",
       });
@@ -204,70 +112,13 @@ const Notifications: React.FC = () => {
   // Handle refresh
   const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        event.detail.complete();
-        return;
-      }
-
-      const notificationsRef = collection(db, "notifications");
-      const q = query(
-        notificationsRef,
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
-      );
-
-      const snapshot = await getDocs(q);
-      const notificationsList: Notification[] = [];
-
-      snapshot.docs.forEach((docSnapshot) => {
-        // Safely extract the data
-        const data = docSnapshot.data();
-
-        // Make sure createdAt is properly handled
-        const createdAt = data.createdAt?.toDate
-          ? data.createdAt
-          : typeof data.createdAt === "string"
-          ? new Date(data.createdAt)
-          : new Date();
-
-        notificationsList.push({
-          id: docSnapshot.id,
-          userId: data.userId || user.uid,
-          title: data.title || "Notification",
-          message: data.message || "",
-          type: data.type || "info",
-          isRead: data.isRead || false,
-          createdAt: createdAt,
-          orderId: data.orderId || undefined,
-        });
-      });
-
-      // Sort by date (newest first) in case the order was disrupted
-      notificationsList.sort((a, b) => {
-        const dateA =
-          a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-        const dateB =
-          b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-        return dateB.getTime() - dateA.getTime();
-      });
-
-      setNotifications(notificationsList);
-
+      await fetchNotifications();
       present({
         message: "Notifications refreshed",
         duration: 1500,
         color: "success",
       });
-    } catch (error) {
-      console.error("Error refreshing notifications:", error);
-      present({
-        message: "Failed to refresh notifications. Please try again.",
-        duration: 2000,
-        color: "danger",
-      });
     } finally {
-      // Always complete the refresh
       event.detail.complete();
     }
   };
@@ -339,7 +190,7 @@ const Notifications: React.FC = () => {
   // Format date for display
   const formatDate = (timestamp: any) => {
     try {
-      const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+      const date = new Date(timestamp);
 
       // Calculate time difference
       const now = new Date();
@@ -365,14 +216,13 @@ const Notifications: React.FC = () => {
         });
       }
     } catch (error) {
+      console.error("Error formatting date:", error, timestamp);
       return "Unknown date";
     }
   };
 
   // Get unread count
-  const unreadCount = notifications.filter(
-    (notification) => !notification.isRead
-  ).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   // Extract status attribute for CSS styling
   const getNotificationStatusAttribute = (
@@ -485,7 +335,7 @@ const Notifications: React.FC = () => {
                 className={`notification-card ${
                   notification.isRead ? "read" : "unread"
                 }`}
-                onClick={() => markAsRead(notification)}
+                onClick={() => handleNotificationClick(notification)}
                 data-type={notification.type}
                 data-status={getNotificationStatusAttribute(
                   notification.title,
