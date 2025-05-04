@@ -203,6 +203,62 @@ ion-content {
   font-size: 12px;
 }
 
+/* Forgot Password Modal Styles */
+.forgot-password-modal {
+  --height: 100%;
+  --border-radius: 16px 16px 0 0;
+  --box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.forgot-password-modal-content {
+  padding: 20px;
+}
+
+.forgot-password-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.forgot-password-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+.forgot-password-modal-message {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.forgot-password-form .input-error {
+  --border-color: red;
+  --border-width: 2px;
+  --highlight-color-focused: red;
+}
+
+.reset-email-error {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  margin: 5px 0 10px 16px;
+}
+
+.reset-email-error ion-icon {
+  margin-right: 6px;
+}
+
+.reset-password-button {
+  margin-top: 20px;
+  --background: var(--button-color);
+  font-weight: 600;
+  font-size: 14px;
+}
+
 @media (min-width: 768px) {
   /* Tablets & Web */
   ion-content {

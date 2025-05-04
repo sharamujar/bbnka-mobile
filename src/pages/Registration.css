@@ -133,3 +133,82 @@
   --width: 320px;
   z-index: 9999;
 }
+
+/* Email Verification Modal Styling */
+.verification-modal {
+  --width: 90%;
+  --max-width: 400px;
+  --height: auto;
+  --border-radius: 16px;
+  --box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.verification-modal-content {
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.verification-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background-color: rgba(191, 89, 6, 0.1);
+}
+
+.verification-icon ion-icon {
+  font-size: 40px;
+  color: var(--button-color);
+}
+
+.verification-modal-content h2 {
+  margin: 0 0 16px;
+  color: var(--header-color);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.verification-modal-content p {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.verification-modal-content strong {
+  color: var(--header-color);
+}
+
+.verification-instructions {
+  margin: 20px 0 !important;
+  font-size: 14px !important;
+  color: #666 !important;
+  text-align: left;
+  background-color: rgba(0, 0, 0, 0.03);
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.verification-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.check-verification-button,
+.resend-email-button {
+  --background: var(--button-color);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.goto-login-button {
+  --color: var(--button-color);
+  --border-color: var(--button-color);
+  font-weight: 600;
+  font-size: 14px;
+}

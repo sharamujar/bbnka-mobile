@@ -16,6 +16,8 @@ import {
   IonRoute,
   IonFooter,
   IonToolbar,
+  IonModal,
+  IonSpinner,
 } from "@ionic/react";
 import {
   arrowForward,
@@ -27,6 +29,7 @@ import {
   logoGoogle,
   mail,
   warningOutline,
+  close,
 } from "ionicons/icons";
 import { useEffect, useState } from "react";
 import { useHistory } from "react-router";
@@ -41,6 +44,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import {
   collection,
@@ -62,6 +66,13 @@ const Login: React.FC = () => {
   const { currentUser, isCustomer } = useAuth();
   const history = useHistory(); //for navigation
   const [loading, setLoading] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false); // New state for login button loading
+
+  // States for forgot password modal
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetEmailError, setResetEmailError] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -160,6 +171,9 @@ const Login: React.FC = () => {
       return;
     }
 
+    // Set loading state
+    setIsLoggingIn(true);
+
     try {
       // Clear previous errors
       setEmailError("");
@@ -187,6 +201,7 @@ const Login: React.FC = () => {
         );
         setIsSuccess(false);
         setShowToast(true);
+        setIsLoggingIn(false); // Reset loading state
         return;
       }
     } catch (error: any) {
@@ -212,6 +227,7 @@ const Login: React.FC = () => {
         setShowToast(true);
       }
       setIsValidationError(true);
+      setIsLoggingIn(false); // Reset loading state on error
     }
   };
 
@@ -331,19 +347,57 @@ const Login: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Update the Link to use history.push instead of direct Link
-  const navigateToRegister = () => {
-    // First clear all form data
+  // Update the navigation to register to use React Router without double navigation
+  const navigateToRegister = (e: React.MouseEvent) => {
+    // Prevent default button behavior
+    e.preventDefault();
+
+    // Clear form data
     setEmail("");
     setPassword("");
     setEmailError("");
     setPasswordError("");
     setIsValidationError(false);
 
-    // Add a small delay before navigating to ensure form is cleared
-    setTimeout(() => {
-      history.push("/register");
-    }, 10);
+    // Use React Router for smooth navigation without page refresh
+    history.replace("/register");
+  };
+
+  // Handle forgot password modal opening
+  const openForgotPasswordModal = () => {
+    setResetEmail(email); // Pre-fill with current email if available
+    setResetEmailError("");
+    setShowForgotPasswordModal(true);
+  };
+
+  // Handle password reset
+  const handleForgotPassword = async () => {
+    // Validate email first
+    const emailError = validateEmail(resetEmail);
+    if (emailError) {
+      setResetEmailError(emailError);
+      return;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setToastMessage("Password reset email sent. Check your inbox.");
+      setIsSuccess(true);
+      setShowToast(true);
+      setShowForgotPasswordModal(false); // Close the modal
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      if (error.code === "auth/user-not-found") {
+        setToastMessage("No account found with this email address");
+      } else {
+        setToastMessage("Failed to send reset email. Try again later.");
+      }
+      setIsSuccess(false);
+      setShowToast(true);
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   return (
@@ -454,7 +508,7 @@ const Login: React.FC = () => {
                 </div>
 
                 <div className="forgot-password-wrapper">
-                  <IonButton fill="clear">
+                  <IonButton fill="clear" onClick={openForgotPasswordModal}>
                     <IonRouterLink className="forgot-password">
                       Forgot Password?
                     </IonRouterLink>
@@ -465,8 +519,15 @@ const Login: React.FC = () => {
                     className="login-button"
                     expand="block"
                     onClick={handleLogin}
+                    disabled={isLoggingIn}
                   >
-                    Login
+                    {isLoggingIn ? (
+                      <>
+                        <IonSpinner name="dots" /> Logging in...
+                      </>
+                    ) : (
+                      "Login"
+                    )}
                   </IonButton>
                   {/* Google Login Button */}
                   <div className="social-login-divider">
@@ -506,7 +567,7 @@ const Login: React.FC = () => {
                   <IonButton
                     fill="clear"
                     className="register-text-button"
-                    onClick={navigateToRegister}
+                    onClick={(e) => navigateToRegister(e)}
                   >
                     REGISTER
                   </IonButton>
@@ -524,6 +585,64 @@ const Login: React.FC = () => {
         duration={2000}
         color={isSuccess ? "success" : "danger"} // Green for success, Red for error
       />
+
+      {/* Forgot Password Modal */}
+      <IonModal
+        isOpen={showForgotPasswordModal}
+        onDidDismiss={() => setShowForgotPasswordModal(false)}
+        className="forgot-password-modal"
+        breakpoints={[0, 0.4]}
+        initialBreakpoint={0.4}
+      >
+        <div className="forgot-password-modal-content">
+          <div className="forgot-password-modal-header">
+            <h3>Reset Password</h3>
+            <IonButton
+              fill="clear"
+              onClick={() => setShowForgotPasswordModal(false)}
+            >
+              <IonIcon icon={close} />
+            </IonButton>
+          </div>
+          <p className="forgot-password-modal-message">
+            Enter your email address and we'll send you a link to reset your
+            password.
+          </p>
+          <div className="forgot-password-form">
+            <IonItem className={resetEmailError ? "input-error" : ""}>
+              <IonInput
+                label="Email Address"
+                labelPlacement="stacked"
+                type="email"
+                value={resetEmail}
+                onIonInput={(e) => setResetEmail(e.detail.value || "")}
+                placeholder="your@email.com"
+              >
+                <IonIcon icon={mail} slot="start"></IonIcon>
+              </IonInput>
+            </IonItem>
+            {resetEmailError && (
+              <IonText color="danger" className="reset-email-error">
+                <IonIcon icon={warningOutline} /> {resetEmailError}
+              </IonText>
+            )}
+            <IonButton
+              expand="block"
+              className="reset-password-button"
+              onClick={handleForgotPassword}
+              disabled={isResettingPassword}
+            >
+              {isResettingPassword ? (
+                <>
+                  <IonSpinner name="dots" /> Sending...
+                </>
+              ) : (
+                "Send Reset Link"
+              )}
+            </IonButton>
+          </div>
+        </div>
+      </IonModal>
     </IonPage>
   );
 };

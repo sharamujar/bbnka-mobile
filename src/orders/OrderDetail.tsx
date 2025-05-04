@@ -1063,7 +1063,7 @@ const OrderDetail: React.FC = () => {
                   <>
                     <div className="order-detail-header">
                       <div className="order-detail-id">
-                        <h4>Order #{order.id.slice(0, 6)}</h4>
+                        <h4>Order #{order.id}</h4>
                         <p className="order-detail-date">
                           {formatTimestamp(order.createdAt)}
                         </p>
@@ -1290,7 +1290,16 @@ const OrderDetail: React.FC = () => {
                     </div>
                   </IonAvatar>
                   <div className="order-detail-customer-details">
-                    <h3>{order.customerName || "Customer"}</h3>
+                    <h3>
+                      {order.userDetails?.firstName &&
+                      order.userDetails?.lastName
+                        ? `${order.userDetails.firstName} ${order.userDetails.lastName}`
+                        : order.userDetails?.name
+                        ? order.userDetails.name
+                        : order.customerName
+                        ? order.customerName
+                        : "Customer"}
+                    </h3>
                     {order.userDetails?.email && (
                       <p>{order.userDetails.email}</p>
                     )}

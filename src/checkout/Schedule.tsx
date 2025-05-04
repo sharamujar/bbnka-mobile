@@ -32,6 +32,7 @@ import {
   storefront,
   walk,
   walkOutline,
+  chevronBack,
 } from "ionicons/icons";
 import dayjs from "dayjs";
 import CheckoutStepProgress from "../components/CheckoutStepProgress";
@@ -345,7 +346,7 @@ const Schedule: React.FC = () => {
                     >
                       <IonLabel>
                         <IonText>
-                          <strong>Pickup Today</strong>
+                          <strong>Pickup Later</strong>
                         </IonText>
                         <IonText color="medium">
                           <small>
@@ -507,7 +508,7 @@ const Schedule: React.FC = () => {
                 localStorage.removeItem("pickupTime");
               }}
             >
-              <IonIcon icon={chevronBackCircleOutline} slot="start" />
+              <IonIcon icon={chevronBack} slot="start" />
               Back
             </IonButton>
 

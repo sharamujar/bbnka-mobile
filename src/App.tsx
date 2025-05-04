@@ -32,7 +32,9 @@ import { onAuthStateChanged } from "firebase/auth";
 import { pushNotificationService } from "./services/PushNotificationService";
 import { notificationService } from "./services/NotificationService";
 import About from "./account/About";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { doc, getDoc } from "firebase/firestore";
+import EmailVerificationModal from "./components/EmailVerificationModal";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -47,31 +49,32 @@ import Schedule from "./checkout/Schedule";
 import Review from "./checkout/Review";
 
 // Configure StatusBar immediately on app load
-try {
-  StatusBar.setStyle({ style: Style.Dark });
-  StatusBar.setBackgroundColor({ color: "#000000" });
-  StatusBar.show();
-  StatusBar.setOverlaysWebView({ overlay: true }); // Changed to true to allow content under status bar
-} catch (error) {
-  console.log("StatusBar not available on this platform");
-}
+// try {
+//   StatusBar.setStyle({ style: Style.Dark });
+//   StatusBar.setBackgroundColor({ color: "#000000" });
+//   StatusBar.show();
+//   StatusBar.setOverlaysWebView({ overlay: true }); // Changed to true to allow content under status bar
+// } catch (error) {
+//   console.log("StatusBar not available on this platform");
+// }
 
 setupIonicReact();
 
-const App: React.FC = () => {
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showSplash, setShowSplash] = useState(true);
+// AppContent component to access AuthContext
+const AppContent: React.FC = () => {
+  const { currentUser, hasUnverifiedEmail, isLoading } = useAuth();
 
-  // Check authentication state
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showSplash, setShowSplash] = useState(true);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+
+  // Check if we need to show the verification modal when app reopens
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+    // Only show the verification modal once auth is loaded and we have a user with unverified email
+    if (!isLoading && currentUser && hasUnverifiedEmail) {
+      setShowVerificationModal(true);
+    }
+  }, [isLoading, currentUser, hasUnverifiedEmail]);
 
   // Handle splash screen timing separately
   useEffect(() => {
@@ -85,14 +88,8 @@ const App: React.FC = () => {
 
   // Only fetch notifications when authenticated
   useEffect(() => {
-    // Skip if not authenticated or authentication state is still unknown
-    if (!isAuthenticated) {
-      setUnreadCount(0);
-      return;
-    }
-
-    const user = auth.currentUser;
-    if (!user) {
+    // Skip if not authenticated
+    if (!currentUser) {
       setUnreadCount(0);
       return;
     }
@@ -104,7 +101,7 @@ const App: React.FC = () => {
 
     // Return cleanup function
     return () => unsubscribe();
-  }, [isAuthenticated]); // Add isAuthenticated as a dependency
+  }, [currentUser]);
 
   useEffect(() => {
     // Initialize push notifications
@@ -113,121 +110,106 @@ const App: React.FC = () => {
     });
   }, []);
 
-  // Refresh StatusBar config when app component mounts
-  useEffect(() => {
-    try {
-      // Re-apply StatusBar settings to ensure they take effect
-      StatusBar.setStyle({ style: Style.Dark });
-      StatusBar.setBackgroundColor({ color: "#000000" });
-      StatusBar.show();
-      StatusBar.setOverlaysWebView({ overlay: true }); // Changed to true to allow content under status bar
-    } catch (error) {
-      console.log("StatusBar not available on this platform");
-    }
-  }, []);
-
   // Show splash screen while loading or during initial 3 seconds
   if (showSplash) {
     return <SplashScreen />;
   }
 
   return (
+    <IonApp>
+      <IonReactRouter>
+        <IonRouterOutlet>
+          <Route exact path="/">
+            {currentUser ? <Redirect to="/home" /> : <Login />}
+          </Route>
+          <Route exact path="/register" key="register-route">
+            {currentUser ? <Redirect to="/home" /> : <Registration />}
+          </Route>
+          <Route exact path="/login" key="login-route">
+            {currentUser ? <Redirect to="/home" /> : <Login />}
+          </Route>
+          <IonTabs>
+            <IonRouterOutlet>
+              <Route exact path="/home">
+                {!currentUser ? <Redirect to="/login" /> : <Home />}
+              </Route>
+              <Route exact path="/orders">
+                {!currentUser ? <Redirect to="/login" /> : <Orders />}
+              </Route>
+              <Route exact path="/orders/:id">
+                {!currentUser ? <Redirect to="/login" /> : <OrderDetail />}
+              </Route>
+              <Route exact path="/notifications">
+                {!currentUser ? <Redirect to="/login" /> : <Notifications />}
+              </Route>
+              <Route exact path="/account">
+                {!currentUser ? <Redirect to="/login" /> : <Account />}
+              </Route>
+              <Route exact path="/home/cart">
+                {!currentUser ? <Redirect to="/login" /> : <Cart />}
+              </Route>
+              <Route exact path="/home/cart/schedule">
+                {!currentUser ? <Redirect to="/login" /> : <Schedule />}
+              </Route>
+              <Route exact path="/home/cart/schedule/payment">
+                {!currentUser ? <Redirect to="/login" /> : <Payment />}
+              </Route>
+              <Route exact path="/home/cart/schedule/payment/review">
+                {!currentUser ? <Redirect to="/login" /> : <Review />}
+              </Route>
+              <Route exact path="/profile">
+                {!currentUser ? <Redirect to="/login" /> : <Profile />}
+              </Route>
+              <Route exact path="/settings">
+                {!currentUser ? <Redirect to="/login" /> : <Settings />}
+              </Route>
+              <Route exact path="/change-password">
+                {!currentUser ? <Redirect to="/login" /> : <ChangePassword />}
+              </Route>
+              <Route exact path="/help">
+                {!currentUser ? <Redirect to="/login" /> : <Help />}
+              </Route>
+              <Route exact path="/about">
+                {!currentUser ? <Redirect to="/login" /> : <About />}
+              </Route>
+              <Redirect from="/" to="/home" exact />
+            </IonRouterOutlet>
+            <IonTabBar slot="bottom">
+              <IonTabButton tab="home" href="/home">
+                <IonIcon icon={home} />
+              </IonTabButton>
+              <IonTabButton tab="orders" href="/orders">
+                <IonIcon icon={bag} />
+              </IonTabButton>
+              <IonTabButton tab="notifications" href="/notifications">
+                <IonIcon icon={notifications} />
+                {unreadCount > 0 && (
+                  <IonBadge color="danger" className="notification-badge">
+                    {unreadCount}
+                  </IonBadge>
+                )}
+              </IonTabButton>
+              <IonTabButton tab="account" href="/account">
+                <IonIcon icon={person} />
+              </IonTabButton>
+            </IonTabBar>
+          </IonTabs>
+        </IonRouterOutlet>
+      </IonReactRouter>
+
+      {/* Email verification modal when reopening the app with unverified email */}
+      <EmailVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+      />
+    </IonApp>
+  );
+};
+
+const App: React.FC = () => {
+  return (
     <AuthProvider>
-      {" "}
-      {/* Wrap entire app with AuthProvider */}
-      <IonApp>
-        <IonReactRouter>
-          <IonRouterOutlet>
-            <Route exact path="/">
-              {isAuthenticated ? <Redirect to="/home" /> : <Login />}
-            </Route>
-            <Route exact path="/register" key="register-route">
-              {isAuthenticated ? <Redirect to="/home" /> : <Registration />}
-            </Route>
-            <Route exact path="/login" key="login-route">
-              {isAuthenticated ? <Redirect to="/home" /> : <Login />}
-            </Route>
-            <IonTabs>
-              <IonRouterOutlet>
-                <Route exact path="/home">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Home />}
-                </Route>
-                <Route exact path="/orders">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Orders />}
-                </Route>
-                <Route exact path="/orders/:id">
-                  {!isAuthenticated ? (
-                    <Redirect to="/login" />
-                  ) : (
-                    <OrderDetail />
-                  )}
-                </Route>
-                <Route exact path="/notifications">
-                  {!isAuthenticated ? (
-                    <Redirect to="/login" />
-                  ) : (
-                    <Notifications />
-                  )}
-                </Route>
-                <Route exact path="/account">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Account />}
-                </Route>
-                <Route exact path="/home/cart">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Cart />}
-                </Route>
-                <Route exact path="/home/cart/schedule">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Schedule />}
-                </Route>
-                <Route exact path="/home/cart/schedule/payment">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Payment />}
-                </Route>
-                <Route exact path="/home/cart/schedule/payment/review">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Review />}
-                </Route>
-                <Route exact path="/profile">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Profile />}
-                </Route>
-                <Route exact path="/settings">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Settings />}
-                </Route>
-                <Route exact path="/change-password">
-                  {!isAuthenticated ? (
-                    <Redirect to="/login" />
-                  ) : (
-                    <ChangePassword />
-                  )}
-                </Route>
-                <Route exact path="/help">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <Help />}
-                </Route>
-                <Route exact path="/about">
-                  {!isAuthenticated ? <Redirect to="/login" /> : <About />}
-                </Route>
-                <Redirect from="/" to="/home" exact />
-              </IonRouterOutlet>
-              <IonTabBar slot="bottom">
-                <IonTabButton tab="home" href="/home">
-                  <IonIcon icon={home} />
-                </IonTabButton>
-                <IonTabButton tab="orders" href="/orders">
-                  <IonIcon icon={bag} />
-                </IonTabButton>
-                <IonTabButton tab="notifications" href="/notifications">
-                  <IonIcon icon={notifications} />
-                  {unreadCount > 0 && (
-                    <IonBadge color="danger" className="notification-badge">
-                      {unreadCount}
-                    </IonBadge>
-                  )}
-                </IonTabButton>
-                <IonTabButton tab="account" href="/account">
-                  <IonIcon icon={person} />
-                </IonTabButton>
-              </IonTabBar>
-            </IonTabs>
-          </IonRouterOutlet>
-        </IonReactRouter>
-      </IonApp>
+      <AppContent />
     </AuthProvider>
   );
 };

@@ -641,9 +641,7 @@ const Orders: React.FC = () => {
                   <IonCardContent>
                     <div className="mini-card-content">
                       <div className="mini-card-row">
-                        <div className="mini-order-id">
-                          #{order.id.slice(0, 6)}
-                        </div>
+                        <div className="mini-order-id">#{order.id}</div>
                         <IonBadge
                           color={getStatusBadgeColor(
                             order.orderDetails.orderStatus,

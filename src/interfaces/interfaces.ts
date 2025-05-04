@@ -7,6 +7,7 @@ export interface Product {
   varieties: string;
   price: number;
   imageURL: string;
+  status: "pending" | "approved" | "rejected";
 }
 
 export interface Category {
@@ -18,6 +19,7 @@ export interface Promotion {
   id: string;
   name: string;
   imageUrl: string;
+  status: "active" | "inactive";
 }
 
 export interface Size {
@@ -30,6 +32,7 @@ export interface Size {
   varieties: string[];
   price: number;
   maxVarieties: number;
+  status: "pending" | "approved" | "rejected";
 }
 
 export interface Varieties {

@@ -20,6 +20,7 @@ interface AuthContextType {
   currentUser: User | null;
   isCustomer: boolean;
   isLoading: boolean;
+  hasUnverifiedEmail: boolean; // Add this to track unverified email status
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
@@ -41,6 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isCustomer, setIsCustomer] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [hasUnverifiedEmail, setHasUnverifiedEmail] = useState<boolean>(false);
 
   useEffect(() => {
     // Set up listener for authentication state changes
@@ -49,6 +51,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (user) {
         try {
+          // Check if this is a Google-authenticated user
+          const isGoogleUser = user.providerData.some(
+            (provider) => provider.providerId === "google.com"
+          );
+
+          // Check if email is verified or if it's a Google user (already verified)
+          if (!user.emailVerified && !isGoogleUser) {
+            // Check if a customer record exists in Firestore
+            const customerDoc = await getDoc(doc(db, "customers", user.uid));
+
+            // If the user exists in Firestore but email is not verified, set hasUnverifiedEmail to true
+            if (customerDoc.exists()) {
+              setHasUnverifiedEmail(true);
+            } else {
+              setHasUnverifiedEmail(false);
+            }
+          } else {
+            setHasUnverifiedEmail(false);
+          }
+
           // Check if the user is a customer
           const q = query(
             collection(db, "customers"),
@@ -57,11 +79,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           const querySnapshot = await getDocs(q);
           setIsCustomer(!querySnapshot.empty);
         } catch (error) {
-          console.error("Error checking customer status:", error);
+          console.error("Error checking user status:", error);
           setIsCustomer(false);
+          setHasUnverifiedEmail(false);
         }
       } else {
         setIsCustomer(false);
+        setHasUnverifiedEmail(false);
       }
 
       setIsLoading(false);
@@ -113,6 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     currentUser,
     isCustomer,
     isLoading,
+    hasUnverifiedEmail,
     login,
     register,
     logout,

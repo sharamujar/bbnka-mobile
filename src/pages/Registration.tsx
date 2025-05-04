@@ -11,6 +11,7 @@ import {
   IonModal,
   IonPage,
   IonRouterLink,
+  IonSpinner,
   IonText,
   IonToast,
   IonToolbar,
@@ -41,6 +42,7 @@ import {
   signInWithCredential,
   signInWithPopup,
   signInWithRedirect,
+  sendEmailVerification,
 } from "firebase/auth";
 import {
   collection,
@@ -85,6 +87,23 @@ const Registration: React.FC = () => {
 
   const history = useHistory(); //for navigation
   const [loading, setLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  // Email verification modal state
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isInVerificationProcess, setIsInVerificationProcess] = useState(false);
+
+  // Store registration data for after email verification
+  const [registrationData, setRegistrationData] = useState<{
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    email: string | null;
+    uid: string;
+  } | null>(null);
 
   // Clear form data when unmounting component
   useEffect(() => {
@@ -246,6 +265,10 @@ const Registration: React.FC = () => {
   };
 
   const handleRegistration = async () => {
+    // Prevent multiple submissions
+    if (isRegistering) return;
+
+    setIsRegistering(true);
     setFirstNameError("");
     setLastNameError("");
     setPhoneNumberError("");
@@ -277,10 +300,15 @@ const Registration: React.FC = () => {
       setPasswordError(passwordValidationError);
       setConfirmPasswordError(confirmPasswordValidationError);
       setIsValidationError(true);
+      setIsRegistering(false); // Reset registering state on validation error
       return;
     }
 
     try {
+      // Set verification process flag to true
+      setIsInVerificationProcess(true);
+
+      // Create the user account but don't store in Firestore yet
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -288,30 +316,53 @@ const Registration: React.FC = () => {
       );
       const user = userCredential.user;
 
+      // Send email verification immediately
+      await sendEmailVerification(user);
+
+      // Store verification email and show modal
+      setVerificationEmail(email);
+
       // Format the full name properly with correct spacing
       const fullName = `${firstName} ${lastName}`.trim();
 
-      const userRef = doc(db, "customers", user.uid);
-      await setDoc(userRef, {
-        firstName: firstName,
-        lastName: lastName,
+      console.log("About to store user data in Firestore with fields:", {
+        firstName,
+        lastName,
         name: fullName,
-        phoneNumber: phoneNumber,
-        email: user.email,
+        phoneNumber,
+        email: user.email || email,
         uid: user.uid,
-        createdAt: serverTimestamp(),
+        emailVerified: false,
       });
 
-      console.log("Registration Success!:", user);
+      // Store user data in Firestore immediately
+      await setDoc(doc(db, "customers", user.uid), {
+        firstName,
+        lastName,
+        name: fullName,
+        phoneNumber,
+        email: user.email || email,
+        uid: user.uid,
+        createdAt: serverTimestamp(),
+        emailVerified: false, // Track verification status in Firestore
+      });
 
-      // Clear form fields
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
+      console.log("User data successfully stored in Firestore");
 
-      // Navigate to home page immediately
-      history.replace("/home");
+      // Store registration data in state for later use
+      setRegistrationData({
+        firstName,
+        lastName,
+        phoneNumber,
+        email: user.email || email,
+        uid: user.uid,
+      });
+
+      // Show the verification modal
+      setShowVerificationModal(true);
     } catch (error: any) {
+      // Set verification process flag to false on error
+      setIsInVerificationProcess(false);
       console.error("Registration Error", error.message);
 
       if (error.code === "auth/email-already-in-use") {
@@ -322,6 +373,7 @@ const Registration: React.FC = () => {
         setPasswordError("Something went wrong. Please try again later");
       }
       setIsValidationError(true);
+      setIsRegistering(false); // Reset registering state on error
     }
   };
 
@@ -385,6 +437,12 @@ const Registration: React.FC = () => {
       if (user) {
         console.log("User signed in:", user.email);
 
+        // Skip the phone number check if we're in the verification process
+        if (isInVerificationProcess) {
+          console.log("In verification process, skipping phone number check");
+          return;
+        }
+
         // Check if the user exists in Firestore
         const q = query(
           collection(db, "customers"),
@@ -399,8 +457,7 @@ const Registration: React.FC = () => {
           // If no phone number or not a Philippine phone number, we can't create account
           if (!user.phoneNumber || !user.phoneNumber.startsWith("+63")) {
             console.warn("Phone number required for registration");
-            // TODO: Redirect to a page to collect phone number
-            // For now we'll just sign out the user
+            // Don't show verification modal if we're showing the error
             await auth.signOut();
             setToastMessage(
               "Phone number is required to complete registration"
@@ -432,6 +489,7 @@ const Registration: React.FC = () => {
             name: fullName,
             phoneNumber: user.phoneNumber || "",
             createdAt: serverTimestamp(),
+            emailVerified: true, // Mark Google users as verified
           });
 
           setToastMessage("Welcome! Your account has been created.");
@@ -444,29 +502,13 @@ const Registration: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isInVerificationProcess, history]); // Add missing dependencies
 
   // Update the Link to use history.push instead of direct Link
   const navigateToLogin = () => {
-    // First clear all form data
-    setFirstName("");
-    setLastName("");
-    setPhoneNumber("");
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-    setFirstNameError("");
-    setLastNameError("");
-    setPhoneNumberError("");
-    setEmailError("");
-    setPasswordError("");
-    setConfirmPasswordError("");
-    setIsValidationError(false);
-
-    // Add a small delay before navigating to ensure form is cleared
-    setTimeout(() => {
-      history.push("/login");
-    }, 10);
+    // No need to clear fields manually - the Registration component will unmount
+    // Just navigate directly without setTimeout
+    history.push("/login");
   };
 
   return (
@@ -735,8 +777,15 @@ const Registration: React.FC = () => {
                     className="register-button"
                     expand="block"
                     onClick={handleRegistration}
+                    disabled={isRegistering}
                   >
-                    Register
+                    {isRegistering ? (
+                      <>
+                        <IonSpinner name="dots" /> Registering...
+                      </>
+                    ) : (
+                      "Register"
+                    )}
                   </IonButton>
 
                   {/* Google Registration Button */}
@@ -804,6 +853,139 @@ const Registration: React.FC = () => {
           },
         ]}
       />
+
+      {/* Email Verification Modal */}
+      <IonModal
+        isOpen={showVerificationModal}
+        onDidDismiss={() => {
+          setShowVerificationModal(false);
+          // Sign out the user if they close the modal without verifying
+          auth.signOut();
+          history.push("/login");
+        }}
+        className="verification-modal"
+      >
+        <div className="verification-modal-content">
+          <div className="verification-icon">
+            <IonIcon icon={mail} />
+          </div>
+          <h2>Verify Your Email</h2>
+          <p>
+            We've sent a verification email to: <br />
+            <strong>{verificationEmail}</strong>
+          </p>
+          <p className="verification-instructions">
+            Please check your inbox and click the verification link to activate
+            your account. If you don't see the email, check your spam folder.
+          </p>
+
+          <div className="verification-buttons">
+            <IonButton
+              expand="block"
+              className="check-verification-button"
+              onClick={async () => {
+                if (isVerifying) return;
+
+                setIsVerifying(true);
+                try {
+                  // Reload the current user to check verification status
+                  if (auth.currentUser) {
+                    await auth.currentUser.reload();
+
+                    if (auth.currentUser.emailVerified) {
+                      // Email is verified, now ensure the Firestore document is properly updated
+                      if (registrationData) {
+                        const { firstName, lastName, phoneNumber, email, uid } =
+                          registrationData;
+
+                        // Format the full name properly with correct spacing
+                        const fullName = `${firstName} ${lastName}`.trim();
+
+                        // Update the document with all required fields consistently
+                        await setDoc(doc(db, "customers", uid), {
+                          firstName,
+                          lastName,
+                          name: fullName,
+                          phoneNumber,
+                          email,
+                          uid,
+                          emailVerified: true, // Mark as verified
+                          createdAt: serverTimestamp(),
+                          updatedAt: serverTimestamp(),
+                        });
+
+                        console.log(
+                          "User profile updated after email verification"
+                        );
+
+                        // Show success toast and navigate to home
+                        setToastMessage(
+                          "Welcome! Your account has been verified."
+                        );
+                        setIsSuccess(true);
+                        setShowToast(true);
+
+                        // Close modal and navigate to home
+                        setShowVerificationModal(false);
+                        history.replace("/home");
+                      }
+                    } else {
+                      // Not verified yet
+                      setToastMessage(
+                        "Email not verified yet. Please check your inbox and click the verification link."
+                      );
+                      setIsSuccess(false);
+                      setShowToast(true);
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error checking verification status:", error);
+                  setToastMessage(
+                    "Failed to check verification status. Please try again."
+                  );
+                  setIsSuccess(false);
+                  setShowToast(true);
+                } finally {
+                  setIsVerifying(false);
+                }
+              }}
+              disabled={isVerifying}
+            >
+              {isVerifying ? "Checking..." : "I've Verified My Email"}
+            </IonButton>
+
+            <IonButton
+              expand="block"
+              className="resend-email-button"
+              onClick={async () => {
+                if (isResendingEmail) return;
+
+                setIsResendingEmail(true);
+                try {
+                  // Current user should be the one who just registered
+                  const user = auth.currentUser;
+                  if (user) {
+                    await sendEmailVerification(user);
+                    setToastMessage("Verification email resent!");
+                    setIsSuccess(true);
+                    setShowToast(true);
+                  }
+                } catch (error) {
+                  console.error("Error resending verification email:", error);
+                  setToastMessage("Failed to resend verification email");
+                  setIsSuccess(false);
+                  setShowToast(true);
+                } finally {
+                  setIsResendingEmail(false);
+                }
+              }}
+              disabled={isResendingEmail}
+            >
+              {isResendingEmail ? "Sending..." : "Resend Verification Email"}
+            </IonButton>
+          </div>
+        </div>
+      </IonModal>
     </IonPage>
   );
 };

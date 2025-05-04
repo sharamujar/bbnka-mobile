@@ -87,21 +87,31 @@ const Account: React.FC = () => {
   const fetchUserProfile = async () => {
     const user = auth.currentUser;
     if (user) {
+      setLoading(true);
       try {
-        // First try to get the user from the customers collection
+        console.log("Fetching user profile for:", user.uid);
+        // Check the customers collection first
         const customerDoc = await getDoc(doc(db, "customers", user.uid));
 
         if (customerDoc.exists()) {
           const customerData = customerDoc.data();
-          setUserProfile({
-            displayName:
+          console.log("Customer data found:", customerData);
+
+          // Properly construct the display name from firstName and lastName if available
+          let displayName;
+          if (customerData.firstName && customerData.lastName) {
+            displayName =
+              `${customerData.firstName} ${customerData.lastName}`.trim();
+          } else {
+            displayName =
               customerData.name ||
-              `${customerData.firstName || ""} ${
-                customerData.lastName || ""
-              }`.trim() ||
               user.displayName ||
               user.email?.split("@")[0] ||
-              "Guest",
+              "Guest";
+          }
+
+          setUserProfile({
+            displayName: displayName,
             email: user.email || customerData.email || "",
             phoneNumber: customerData.phoneNumber || "",
             photoURL: user.photoURL || "",
@@ -275,7 +285,7 @@ const Account: React.FC = () => {
                   onClick={() => navigateTo("/profile")}
                 >
                   <IonIcon icon={personOutline} slot="start" />
-                  <IonLabel>Personal Information</IonLabel>
+                  <IonLabel>Profile</IonLabel>
                   <IonIcon icon={chevronForward} slot="end" size="small" />
                   <IonRippleEffect />
                 </IonItem>
@@ -317,7 +327,7 @@ const Account: React.FC = () => {
                 </IonItem>
               </IonList>
 
-              <IonList lines="none" className="account-list">
+              {/* <IonList lines="none" className="account-list">
                 <IonListHeader>Notification Preferences</IonListHeader>
                 <IonItem className="account-item">
                   <IonIcon icon={notificationsOutline} slot="start" />
@@ -383,7 +393,7 @@ const Account: React.FC = () => {
                     </IonItem>
                   </>
                 )}
-              </IonList>
+              </IonList> */}
 
               <IonList lines="none" className="account-list">
                 <IonListHeader>Support</IonListHeader>

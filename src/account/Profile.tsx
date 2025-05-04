@@ -87,26 +87,46 @@ const Profile: React.FC = () => {
     if (!user) return;
 
     try {
+      console.log("============= PROFILE DATA DEBUGGING =============");
+      console.log("Current user:", user.uid, user.email);
+
       // Try to get user data from customers collection first
       const customerDoc = await getDoc(doc(db, "customers", user.uid));
+      console.log("Customer document exists:", customerDoc.exists());
+
       if (customerDoc.exists()) {
         const data = customerDoc.data();
-        setUserData({
-          displayName:
-            data.name ||
-            `${data.firstName || ""} ${data.lastName || ""}`.trim() ||
-            user.displayName ||
-            "",
+        console.log("Raw Firestore customer data:", data);
+        console.log("Found firstName:", data.firstName);
+        console.log("Found lastName:", data.lastName);
+        console.log("Found name:", data.name);
+        console.log("Found phoneNumber:", data.phoneNumber);
+
+        // Prioritize constructing name from firstName and lastName if available
+        const fullName =
+          data.firstName && data.lastName
+            ? `${data.firstName} ${data.lastName}`.trim()
+            : data.name || user.displayName || "";
+
+        const userData = {
+          displayName: fullName,
           email: user.email || data.email || "",
           phoneNumber: data.phoneNumber || "",
           address: data.address || "",
-        });
+        };
+
+        console.log("Setting user data to:", userData);
+        setUserData(userData);
       } else {
         // If not in customers, check users collection
         const userDoc = await getDoc(doc(db, "users", user.uid));
+        console.log("User document exists:", userDoc.exists());
+
         if (userDoc.exists()) {
           const data = userDoc.data();
-          setUserData({
+          console.log("Raw Firestore user data:", data);
+
+          const userData = {
             displayName:
               data.fullName ||
               data.name ||
@@ -116,17 +136,26 @@ const Profile: React.FC = () => {
             email: user.email || "",
             phoneNumber: data.phoneNumber || "",
             address: data.address || "",
-          });
+          };
+
+          console.log("Setting user data to:", userData);
+          setUserData(userData);
         } else {
           // Use auth data if no documents exist
-          setUserData({
+          console.log("No documents found. Using auth data only.");
+
+          const userData = {
             displayName: user.displayName || "",
             email: user.email || "",
             phoneNumber: user.phoneNumber || "",
             address: "",
-          });
+          };
+
+          console.log("Setting user data to:", userData);
+          setUserData(userData);
         }
       }
+      console.log("============= END PROFILE DATA DEBUGGING =============");
     } catch (error) {
       console.error("Error fetching user data:", error);
     } finally {
@@ -142,41 +171,78 @@ const Profile: React.FC = () => {
     const user = auth.currentUser;
     if (!user) return;
 
-    // Validate phone number before saving
-    const phoneError = validatePhoneNumber(userData.phoneNumber);
-    if (phoneError) {
-      setPhoneNumberError(phoneError);
-      setHasValidationError(true);
-      setToastMessage(phoneError);
-      setShowToast(true);
-      return;
+    // Only validate phone number if it has been modified
+    if (userData.phoneNumber) {
+      const phoneError = validatePhoneNumber(userData.phoneNumber);
+      if (phoneError) {
+        setPhoneNumberError(phoneError);
+        setHasValidationError(true);
+        setToastMessage(phoneError);
+        setShowToast(true);
+        return;
+      }
     }
 
     setUpdating(true); // Use updating state instead of loading for save operations
     try {
+      // Prepare update data - only include fields that have values
+      const updateData: Record<string, string> = {};
+
+      if (userData.displayName) {
+        // Split the display name into firstName and lastName for consistency
+        const nameParts = userData.displayName.trim().split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+
+        // Store all variations of the name for maximum compatibility
+        updateData.name = userData.displayName.trim();
+        updateData.firstName = firstName;
+        updateData.lastName = lastName;
+
+        console.log("Updating name fields:", {
+          name: updateData.name,
+          firstName,
+          lastName,
+        });
+      }
+
+      if (userData.phoneNumber) {
+        updateData.phoneNumber = userData.phoneNumber;
+        console.log("Updating phone number:", userData.phoneNumber);
+      }
+
+      if (userData.address) {
+        updateData.address = userData.address;
+      }
+
       // Try to update in customers collection first
       const customerRef = doc(db, "customers", user.uid);
       const customerDoc = await getDoc(customerRef);
 
       if (customerDoc.exists()) {
-        await updateDoc(customerRef, {
-          name: userData.displayName,
-          phoneNumber: userData.phoneNumber,
-          address: userData.address,
-        });
+        console.log("Updating customer document with:", updateData);
+        await updateDoc(customerRef, updateData);
+        console.log("Customer document updated successfully");
       } else {
-        // If not in customers, update in users collection
+        // If not in customers, update in users collection with appropriate field names
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
 
         if (userDoc.exists()) {
-          await updateDoc(userRef, {
-            displayName: userData.displayName,
-            phoneNumber: userData.phoneNumber,
-            address: userData.address,
-          });
+          // Rename 'name' to 'displayName' for users collection if needed
+          if (updateData.name) {
+            updateData.displayName = updateData.name;
+            // Keep firstName and lastName
+          }
+
+          console.log("Updating user document with:", updateData);
+          await updateDoc(userRef, updateData);
+          console.log("User document updated successfully");
         }
       }
+
+      // Refresh the user data after update
+      fetchUserData();
 
       setToastMessage("Profile updated successfully");
       setShowToast(true);
@@ -203,7 +269,7 @@ const Profile: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/account" />
           </IonButtons>
-          <IonTitle>Personal Information</IonTitle>
+          <IonTitle>Profile</IonTitle>
           <IonButtons slot="end">
             {!editMode ? (
               <IonButton onClick={toggleEditMode}>

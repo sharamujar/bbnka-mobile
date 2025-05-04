@@ -100,7 +100,16 @@ const Home: React.FC = () => {
           id: doc.id,
           ...doc.data(),
         }));
-        setProducts(productList);
+
+        // Filter products to only show approved ones with runtime check
+        const approvedProducts = productList.filter(
+          (product) =>
+            product &&
+            typeof product === "object" &&
+            "status" in product &&
+            product.status === "approved"
+        );
+        setProducts(approvedProducts);
       }
     );
 
@@ -218,7 +227,8 @@ const Home: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen className="home-content">
         <IonCard className="banner-container">
-          {promotions.length > 0 && (
+          {promotions.filter((promo) => promo.status === "active").length >
+            0 && (
             <Swiper
               className="banner-scroll"
               modules={[Pagination, Autoplay]}
@@ -228,15 +238,17 @@ const Home: React.FC = () => {
               slidesPerView={1}
               centeredSlides={true}
             >
-              {promotions.map((promo, index) => (
-                <SwiperSlide key={index} className="banner-card">
-                  <IonImg
-                    src={promo.imageUrl}
-                    className="banner-img"
-                    alt="Promotion"
-                  />
-                </SwiperSlide>
-              ))}
+              {promotions
+                .filter((promo) => promo.status === "active")
+                .map((promo, index) => (
+                  <SwiperSlide key={index} className="banner-card">
+                    <IonImg
+                      src={promo.imageUrl}
+                      className="banner-img"
+                      alt="Promotion"
+                    />
+                  </SwiperSlide>
+                ))}
             </Swiper>
           )}
         </IonCard>

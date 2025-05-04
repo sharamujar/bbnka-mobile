@@ -47,6 +47,7 @@ import {
   arrowForwardOutline,
   arrowForward,
   alertCircleOutline,
+  addOutline,
 } from "ionicons/icons";
 import {
   collection,
@@ -72,11 +73,14 @@ interface Stock {
   size: string;
   variety?: string;
   slices: number;
+  bilao?: number; // Add bilao property for variety stocks
   minimumStock: number;
   criticalLevel: number;
   minimumSlices?: number;
   criticalSlices?: number;
   totalSlices?: number;
+  productionDate?: string; // Add production date
+  expiryDate?: string; // Add expiry date
   lastUpdated?: string;
 }
 
@@ -92,8 +96,9 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
   const [varieties, setVarieties] = useState<Varieties[]>([]);
   const [filteredVarieties, setFilteredVarieties] = useState<Varieties[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  // Add state for size stocks
-  const [sizeStocks, setSizeStocks] = useState<Stock[]>([]);
+  // Remove sizeStocks state
+  // Add state for variety stocks
+  const [varietyStocks, setVarietyStocks] = useState<Stock[]>([]);
 
   // Selected options
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -137,7 +142,16 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
           };
         }) as Size[];
         console.log("BYOM - All sizes data:", sizesData);
-        setSizes(sizesData);
+
+        // More robust filtering with runtime checks for production build
+        const approvedSizes = sizesData.filter(
+          (size) =>
+            size &&
+            typeof size === "object" &&
+            "status" in size &&
+            size.status === "approved"
+        );
+        setSizes(approvedSizes);
       } catch (error) {
         console.error("Error fetching sizes:", error);
         showToastMessage("Failed to load sizes", false);
@@ -165,24 +179,35 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
           id: doc.id,
           ...doc.data(),
         })) as Product[];
-        setProducts(productsData);
+
+        // More robust filtering with runtime checks for production build
+        const approvedProducts = productsData.filter(
+          (product) =>
+            product &&
+            typeof product === "object" &&
+            "status" in product &&
+            product.status === "approved"
+        );
+        setProducts(approvedProducts);
       } catch (error) {
         console.error("Error fetching products:", error);
         showToastMessage("Failed to load products", false);
       }
     };
 
-    const fetchSizeStocks = async () => {
+    const fetchVarietyStocks = async () => {
       try {
-        const sizeStocksSnapshot = await getDocs(collection(db, "sizeStocks"));
-        const sizeStocksData = sizeStocksSnapshot.docs.map((doc) => ({
+        const varietyStocksSnapshot = await getDocs(
+          collection(db, "varietyStocks")
+        );
+        const varietyStocksData = varietyStocksSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Stock[];
-        console.log("BYOM - Size stocks data:", sizeStocksData);
-        setSizeStocks(sizeStocksData);
+        console.log("BYOM - Variety stocks data:", varietyStocksData);
+        setVarietyStocks(varietyStocksData);
       } catch (error) {
-        console.error("Error fetching size stocks:", error);
+        console.error("Error fetching variety stocks:", error);
       }
     };
 
@@ -190,7 +215,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
       fetchSizes();
       fetchVarieties();
       fetchProducts();
-      fetchSizeStocks();
+      fetchVarietyStocks(); // Fetch variety stocks when modal opens
     }
   }, [isOpen, showToastMessage]);
 
@@ -488,17 +513,6 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                   {[...sizes]
                     .sort((a, b) => b.price - a.price)
                     .map((size) => {
-                      // Find stock for this size
-                      const sizeStock = sizeStocks.find(
-                        (stock) => stock.size === size.name
-                      );
-                      const stockAvailable = sizeStock?.slices || 0;
-                      const isLowStock =
-                        sizeStock &&
-                        (stockAvailable <= sizeStock.minimumStock ||
-                          stockAvailable <= sizeStock.criticalLevel);
-                      const outOfStock = stockAvailable === 0;
-
                       return (
                         <IonCol key={size.sizeId} size="6" size-md="4">
                           <IonCard
@@ -506,23 +520,15 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                               selectedSize === size.sizeId
                                 ? "selected-size"
                                 : ""
-                            } ${outOfStock ? "out-of-stock" : ""}`}
-                            onClick={() =>
-                              !outOfStock && setSelectedSize(size.sizeId)
-                            }
+                            }`}
+                            onClick={() => setSelectedSize(size.sizeId)}
                           >
                             <div className="size-radio-container">
                               <IonRadio
                                 value={size.sizeId}
                                 className="custom-radio"
-                                disabled={outOfStock}
                               />
                             </div>
-                            {outOfStock && (
-                              <div className="out-of-stock-overlay">
-                                <span>Out of Stock</span>
-                              </div>
-                            )}
                             <IonCardContent className="size-card-content">
                               <IonImg
                                 src={size.imageUrl}
@@ -542,24 +548,6 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                                 <IonText className="size-price">
                                   ₱{size.price}
                                 </IonText>
-                                <div className="stock-indicator">
-                                  <IonBadge
-                                    color={
-                                      outOfStock
-                                        ? "danger"
-                                        : isLowStock
-                                        ? "warning"
-                                        : "success"
-                                    }
-                                    className="stock-badge"
-                                  >
-                                    {outOfStock
-                                      ? "Out of Stock"
-                                      : isLowStock
-                                      ? `Low Stock: ${stockAvailable}`
-                                      : `Available: ${stockAvailable}`}
-                                  </IonBadge>
-                                </div>
                               </div>
                             </IonCardContent>
                           </IonCard>
@@ -587,6 +575,18 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
               <IonText className="byok-step-description">{description}</IonText>
             </div>
 
+            {selectedSize && (
+              <div className="selected-size-badge">
+                <span>
+                  Size Selected:{" "}
+                  {sizes.find((s) => s.sizeId === selectedSize)?.name}
+                </span>
+                <span>
+                  ₱{sizes.find((s) => s.sizeId === selectedSize)?.price}
+                </span>
+              </div>
+            )}
+
             {selectedSize ? (
               <IonGrid className="byok-variety-grid">
                 <IonRow className="byok-variety-selection-row">
@@ -599,19 +599,44 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                     const canSelect =
                       selectedVarieties.length < maxVarieties || isSelected;
 
+                    // Find stock for this variety
+                    const varietyStock = varietyStocks.find(
+                      (stock) => stock.variety === variety.name
+                    );
+                    const stockAvailable = varietyStock?.bilao || 0;
+                    const isLowStock =
+                      varietyStock &&
+                      stockAvailable <= varietyStock.minimumStock &&
+                      stockAvailable > varietyStock.criticalLevel;
+                    const isCriticalStock =
+                      varietyStock &&
+                      stockAvailable <= varietyStock.criticalLevel &&
+                      stockAvailable > 0;
+                    const outOfStock = !stockAvailable || stockAvailable === 0;
+
                     return (
                       <IonCol key={variety.id} size="6">
                         <IonCard
                           className={`byok-variety-card ${
                             isSelected ? "selected-variety" : ""
-                          } ${!canSelect ? "disabled-variety" : ""}`}
+                          } ${
+                            !canSelect || outOfStock ? "disabled-variety" : ""
+                          }`}
                           onClick={() =>
-                            canSelect && toggleVarietySelection(variety.id)
+                            canSelect &&
+                            !outOfStock &&
+                            toggleVarietySelection(variety.id)
                           }
                         >
                           {isSelected && (
                             <div className="selected-badge">
                               <IonIcon icon={checkmarkCircle} />
+                            </div>
+                          )}
+
+                          {outOfStock && (
+                            <div className="out-of-stock-overlay">
+                              <span>Out of Stock</span>
                             </div>
                           )}
 
@@ -630,6 +655,34 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                               <IonText className="byok-variety-name">
                                 {variety.name}
                               </IonText>
+                              <div className="stock-indicator">
+                                <IonBadge
+                                  color={
+                                    outOfStock
+                                      ? "danger"
+                                      : isCriticalStock
+                                      ? "danger"
+                                      : isLowStock
+                                      ? "warning"
+                                      : "success"
+                                  }
+                                  className="stock-badge"
+                                >
+                                  {outOfStock
+                                    ? "Out of Stock"
+                                    : isCriticalStock
+                                    ? `Very Low: ${Math.round(
+                                        stockAvailable
+                                      )} units`
+                                    : isLowStock
+                                    ? `Limited: ${Math.round(
+                                        stockAvailable
+                                      )} units`
+                                    : `Available: ${Math.round(
+                                        stockAvailable
+                                      )} units`}
+                                </IonBadge>
+                              </div>
                             </div>
                           </IonCardContent>
                         </IonCard>
@@ -839,7 +892,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                 onClick={prevStep}
                 disabled={isAddingToCart}
               >
-                <IonIcon icon={arrowBackOutline} slot="start" />
+                <IonIcon icon={chevronBack} slot="start" />
                 Back
               </IonButton>
             )}
@@ -851,7 +904,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                 onClick={nextStep}
               >
                 Next
-                <IonIcon icon={arrowForwardOutline} slot="end" />
+                <IonIcon icon={chevronForward} slot="end" />
               </IonButton>
             )}
 
@@ -893,7 +946,8 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                 onClick={closeSuccessOverlay}
                 className="add-more-button"
               >
-                Add More Items
+                Add Items
+                <IonIcon slot="end" icon={addOutline} />
               </IonButton>
               <IonButton onClick={goToCart} className="view-cart-button">
                 Go to Cart

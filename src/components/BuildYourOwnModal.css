@@ -503,7 +503,6 @@ ion-toast {
   align-items: center;
   padding: 40px 20px;
   text-align: center;
-  background-color: #f9f9f9;
   border-radius: 12px;
   margin: 20px;
   color: #666;
@@ -543,6 +542,24 @@ ion-toast {
 .no-size-selected ion-button {
   --color: var(--button-color);
   --border-color: var(--button-color);
+}
+
+/* Selected Size Badge in Step 2 */
+.selected-size-badge {
+  display: flex;
+  justify-content: space-between;
+  background-color: var(--button-color);
+  color: white;
+  padding: 8px 16px;
+  margin: 0 15px 15px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(191, 89, 6, 0.2);
+}
+
+.selected-size-badge span:last-child {
+  font-weight: 700;
 }
 
 /* Responsive Adjustments */

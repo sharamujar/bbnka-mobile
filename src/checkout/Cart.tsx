@@ -51,6 +51,7 @@ import {
   cardOutline,
   cart,
   cartOutline,
+  chevronForward,
   chevronForwardCircle,
   close,
   remove,
@@ -64,6 +65,7 @@ import {
 import { useHistory } from "react-router";
 import { Link } from "react-router-dom";
 import "./Cart.css";
+import BuildYourOwnModal from "../components/BuildYourOwnModal";
 
 const Cart: React.FC = () => {
   const user = auth.currentUser;
@@ -72,8 +74,15 @@ const Cart: React.FC = () => {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showBYOKModal, setShowBYOKModal] = useState(false);
 
   const [quantity, setQuantity] = useState(1);
+
+  // Toast message handler for BuildYourOwnModal
+  const handleShowToastMessage = (message: string, success: boolean) => {
+    console.log("Toast message (not shown):", message, success);
+    // We're not showing a toast here, but the BuildYourOwnModal requires this prop
+  };
 
   useEffect(() => {
     console.log("Cart component mounted");
@@ -342,10 +351,10 @@ const Cart: React.FC = () => {
             <IonButton
               className="browse-button"
               expand="block"
-              routerLink="/home"
+              onClick={() => setShowBYOKModal(true)}
             >
               Add Items to Cart
-              <IonIcon slot="end" icon={arrowForward} />
+              <IonIcon slot="end" icon={chevronForward} />
             </IonButton>
           </div>
         ) : (
@@ -505,7 +514,7 @@ const Cart: React.FC = () => {
                   <IonButton className="footer-action-button schedule-button">
                     Checkout
                     <IonIcon slot="start" icon={bag} />
-                    <IonIcon slot="end" icon={chevronForwardCircle} />
+                    <IonIcon slot="end" icon={chevronForward} />
                   </IonButton>
                 </Link>
               </div>
@@ -513,6 +522,13 @@ const Cart: React.FC = () => {
           </IonToolbar>
         </IonFooter>
       )}
+
+      {/* Build Your Own Kakanin Modal */}
+      <BuildYourOwnModal
+        isOpen={showBYOKModal}
+        onClose={() => setShowBYOKModal(false)}
+        showToastMessage={handleShowToastMessage}
+      />
     </IonPage>
   );
 };

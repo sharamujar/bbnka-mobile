@@ -56,6 +56,7 @@ interface Size {
   maxVarieties: number;
   imageUrl: string;
   varieties: string[];
+  status: "pending" | "approved" | "rejected";
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({
@@ -84,17 +85,29 @@ const ProductModal: React.FC<ProductModalProps> = ({
           ...doc.data(),
           varieties: doc.data().varieties || [],
         }));
-        setSizes(sizeList as Size[]);
+
+        // More robust filtering with runtime checks for production build
+        const approvedSizes = sizeList.filter(
+          (size) =>
+            size &&
+            typeof size === "object" &&
+            "status" in size &&
+            size.status === "approved"
+        );
+        setSizes(approvedSizes as Size[]);
 
         // Filter sizes that have varieties for this product
         const productName = product.name;
-        const filteredSizes = (sizeList as Size[]).filter(
-          (size: Size) =>
-            // Check if this product's name is in the size's varieties array
-            size.varieties && size.varieties.includes(productName)
+        const filteredSizes = approvedSizes.filter(
+          (size) =>
+            size &&
+            typeof size === "object" &&
+            "varieties" in size &&
+            Array.isArray(size.varieties) &&
+            size.varieties.includes(productName)
         );
 
-        setAvailableSizes(filteredSizes);
+        setAvailableSizes(filteredSizes as Size[]);
       } catch (error) {
         console.error("Error fetching sizes:", error);
       }

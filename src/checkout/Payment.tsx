@@ -48,6 +48,7 @@ import {
   cameraOutline,
   trash,
   informationCircleOutline,
+  chevronBack,
 } from "ionicons/icons";
 import CheckoutStepProgress from "../components/CheckoutStepProgress";
 import "./Payment.css";
@@ -206,18 +207,8 @@ const Payment: React.FC = () => {
     // Update order status
     updateOrderStatus(paymentMethod, pickupOption);
 
-    // For GCash, we need a valid reference number
-    if (paymentMethod === "gcash") {
-      const savedReference = localStorage.getItem("gcashReference");
-
-      // If no valid reference exists, show modal
-      if (!savedReference) {
-        setShowGcashModal(true);
-        return;
-      }
-    }
-
-    // If we have a valid payment method, proceed to review
+    // Always proceed to review page regardless of payment method
+    // We'll handle GCash verification after the review page
     nextStep();
   };
 
@@ -516,16 +507,20 @@ const Payment: React.FC = () => {
                 <IonCardContent>
                   <IonList lines="none">
                     <IonItem>
+                      <IonText>1. Complete your order review first</IonText>
+                    </IonItem>
+                    <IonItem>
                       <IonText>
-                        1. Click "Pay with GCash" to see our QR code
+                        2. Click the "GCash Payment" button to proceed
                       </IonText>
                     </IonItem>
                     <IonItem>
-                      <IonText>2. Scan the QR code with your GCash app</IonText>
+                      <IonText>
+                        3. Enter the reference number/Upload the screenshot of
+                        your payment reference number when prompted
+                      </IonText>
                     </IonItem>
-                    <IonItem>
-                      <IonText>3. Enter your payment reference number</IonText>
-                    </IonItem>
+                    <br></br>
                     <IonItem>
                       <IonText color="medium">
                         Note: Your order will be processed after our staff
@@ -533,13 +528,6 @@ const Payment: React.FC = () => {
                       </IonText>
                     </IonItem>
                   </IonList>
-                  <IonButton
-                    expand="block"
-                    className="gcash-button"
-                    onClick={() => setShowRefundPolicyModal(true)}
-                  >
-                    Pay with GCash
-                  </IonButton>
                 </IonCardContent>
               </IonCard>
             )}
@@ -976,17 +964,13 @@ const Payment: React.FC = () => {
                 localStorage.removeItem("gcashReference");
               }}
             >
-              <IonIcon icon={chevronBackCircleOutline} slot="start" />
+              <IonIcon icon={chevronBack} slot="start" />
               Back
             </IonButton>
 
             <IonButton
               className="footer-action-button review-button"
               onClick={handlePayment}
-              disabled={
-                paymentMethod === "gcash" &&
-                !localStorage.getItem("gcashReference")
-              }
             >
               <IonIcon icon={documentTextSharp} slot="start" />
               Review
