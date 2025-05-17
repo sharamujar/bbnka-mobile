@@ -6,8 +6,9 @@ export interface Product {
   size: string;
   varieties: string;
   price: number;
-  imageURL: string;
+  imageUrl: string;
   status: "pending" | "approved" | "rejected";
+  published?: boolean; // Keep only the published field
 }
 
 export interface Category {
@@ -33,6 +34,7 @@ export interface Size {
   price: number;
   maxVarieties: number;
   status: "pending" | "approved" | "rejected";
+  type?: string; // Added type field to match with testStocks collection
 }
 
 export interface Varieties {

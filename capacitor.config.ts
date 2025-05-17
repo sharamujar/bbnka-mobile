@@ -25,6 +25,17 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],
     },
+    StatusBar: {
+      backgroundColor: "#000000",
+      style: "dark",
+      overlaysWebView: false,
+    },
+  },
+  android: {
+    navigationBarColor: "#000000",
+    navigationBarDividerColor: "#000000",
+    navigationBarLight: false,
+    layoutInDisplayCutoutMode: "shortEdges",
   },
 };
 

@@ -48,6 +48,7 @@ import {
   arrowForward,
   alertCircleOutline,
   addOutline,
+  calendarOutline, // Added missing calendarOutline icon
 } from "ionicons/icons";
 import {
   collection,
@@ -68,20 +69,27 @@ import { Product } from "../interfaces/interfaces";
 
 // Add Stock interface
 interface Stock {
-  id: string;
-  type: "size" | "variety";
-  size: string;
-  variety?: string;
-  slices: number;
-  bilao?: number; // Add bilao property for variety stocks
-  minimumStock: number;
+  id?: string;
   criticalLevel: number;
-  minimumSlices?: number;
-  criticalSlices?: number;
-  totalSlices?: number;
-  productionDate?: string; // Add production date
-  expiryDate?: string; // Add expiry date
-  lastUpdated?: string;
+  minimumStock: number;
+  productId: string;
+  quantity: number;
+  sizeId: string;
+  type: string;
+}
+
+// Add FixedSizeStock interface
+interface FixedSizeStock {
+  id: string;
+  criticalLevel: number;
+  expiryDate: string;
+  lastUpdated: string;
+  minimumStock: number;
+  productionDate: string;
+  quantity: number;
+  size: string;
+  type: string;
+  variety: string;
 }
 
 const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
@@ -99,6 +107,8 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
   // Remove sizeStocks state
   // Add state for variety stocks
   const [varietyStocks, setVarietyStocks] = useState<Stock[]>([]);
+  // Add state for fixed size stocks
+  const [fixedSizeStocks, setFixedSizeStocks] = useState<FixedSizeStock[]>([]);
 
   // Selected options
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -132,26 +142,29 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
   useEffect(() => {
     const fetchSizes = async () => {
       try {
-        const sizesSnapshot = await getDocs(collection(db, "sizes"));
+        // Using testSizes collection
+        const sizesSnapshot = await getDocs(collection(db, "testSizes"));
         const sizesData = sizesSnapshot.docs.map((doc) => {
           const data = doc.data();
           console.log(`BYOM - Size ${doc.id} data:`, data);
           return {
             sizeId: doc.id,
             ...data,
+            // Check both potential field names for varieties and ensure it's always an array
+            varieties: data.varieties || data.variety || [],
           };
         }) as Size[];
         console.log("BYOM - All sizes data:", sizesData);
 
         // More robust filtering with runtime checks for production build
-        const approvedSizes = sizesData.filter(
+        const approvedPublishedSizes = sizesData.filter(
           (size) =>
             size &&
             typeof size === "object" &&
-            "status" in size &&
-            size.status === "approved"
+            (("published" in size && size.published === true) ||
+              ("isPublished" in size && size.isPublished === true))
         );
-        setSizes(approvedSizes);
+        setSizes(approvedPublishedSizes);
       } catch (error) {
         console.error("Error fetching sizes:", error);
         showToastMessage("Failed to load sizes", false);
@@ -174,21 +187,21 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
 
     const fetchProducts = async () => {
       try {
-        const productsSnapshot = await getDocs(collection(db, "products"));
+        const productsSnapshot = await getDocs(collection(db, "testProducts"));
         const productsData = productsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Product[];
 
-        // More robust filtering with runtime checks for production build
-        const approvedProducts = productsData.filter(
+        // Filter for only published products
+        const publishedProducts = productsData.filter(
           (product) =>
             product &&
             typeof product === "object" &&
-            "status" in product &&
-            product.status === "approved"
+            "published" in product &&
+            product.published === true
         );
-        setProducts(approvedProducts);
+        setProducts(publishedProducts);
       } catch (error) {
         console.error("Error fetching products:", error);
         showToastMessage("Failed to load products", false);
@@ -197,17 +210,43 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
 
     const fetchVarietyStocks = async () => {
       try {
-        const varietyStocksSnapshot = await getDocs(
-          collection(db, "varietyStocks")
-        );
-        const varietyStocksData = varietyStocksSnapshot.docs.map((doc) => ({
+        // Fetch all stock data from testStocks collection
+        const stocksSnapshot = await getDocs(collection(db, "testStocks"));
+        const stocksData = stocksSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Stock[];
-        console.log("BYOM - Variety stocks data:", varietyStocksData);
-        setVarietyStocks(varietyStocksData);
+
+        console.log("BYOM - Stocks data:", stocksData);
+        setVarietyStocks(stocksData);
       } catch (error) {
-        console.error("Error fetching variety stocks:", error);
+        console.error("Error fetching stocks:", error);
+      }
+    };
+
+    // Add function to fetch fixed size stocks for bibingka in small and solo sizes
+    const fetchFixedSizeStocks = async () => {
+      try {
+        // Create a query to get fixed size stocks for bibingka in small and solo sizes
+        const q = query(
+          collection(db, "testStocks"),
+          where("variety", "==", "Bibingka"),
+          where("type", "==", "fixed")
+        );
+
+        const fixedStocksSnapshot = await getDocs(q);
+        const fixedStocksData = fixedStocksSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as FixedSizeStock[];
+
+        console.log(
+          "BYOM - Fixed size stocks data for Bibingka:",
+          fixedStocksData
+        );
+        setFixedSizeStocks(fixedStocksData);
+      } catch (error) {
+        console.error("Error fetching fixed size stocks:", error);
       }
     };
 
@@ -216,34 +255,108 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
       fetchVarieties();
       fetchProducts();
       fetchVarietyStocks(); // Fetch variety stocks when modal opens
+      fetchFixedSizeStocks(); // Fetch fixed size stocks for bibingka
     }
   }, [isOpen, showToastMessage]);
 
   useEffect(() => {
-    if (selectedSize) {
-      const selectedSizeObj = sizes.find(
-        (size) => size.sizeId === selectedSize
-      );
+    const fetchProductsForSelectedSize = async () => {
+      if (selectedSize) {
+        console.log("🔍 Selected size ID:", selectedSize);
 
-      if (selectedSizeObj && selectedSizeObj.varieties) {
-        const varietiesForDisplay = selectedSizeObj.varieties.map(
-          (varietyName, index) => ({
-            id: `${selectedSize}-variety-${index}`,
-            name: varietyName,
-            price: 0, // Set appropriate price if needed
-            sizeId: selectedSize,
-          })
+        // Get the selected size object
+        const selectedSizeObj = sizes.find(
+          (size) => size.sizeId === selectedSize
         );
+        console.log("📏 Selected size object:", selectedSizeObj);
 
-        setFilteredVarieties(varietiesForDisplay);
-      } else {
-        setFilteredVarieties([]);
+        if (selectedSizeObj) {
+          // Get varieties directly from Firestore for the selected size
+          try {
+            // Use the products state variable that's already filtered for published items
+            // instead of fetching again from Firestore
+            console.log("🍰 Using filtered published products:", products);
+
+            // Get the varieties array from the selected size
+            let varietyNames: string[] = [];
+
+            if (selectedSizeObj.varieties) {
+              if (Array.isArray(selectedSizeObj.varieties)) {
+                // Handle direct array of strings
+                varietyNames = selectedSizeObj.varieties.filter(
+                  (v) => typeof v === "string"
+                );
+
+                // If it's an empty array or non-string values, try checking if it has numeric indices
+                if (varietyNames.length === 0) {
+                  varietyNames = Object.values(
+                    selectedSizeObj.varieties
+                  ).filter((value) => typeof value === "string");
+                }
+              } else if (typeof selectedSizeObj.varieties === "object") {
+                // Handle object with properties like {0: "Bibingka", 1: "Kalamay", ...}
+                varietyNames = Object.values(selectedSizeObj.varieties).filter(
+                  (value) => typeof value === "string"
+                );
+              }
+            }
+
+            console.log("🔤 Extracted variety names:", varietyNames);
+
+            // Sort variety names alphabetically
+            varietyNames.sort();
+
+            console.log("🔤 Sorted variety names:", varietyNames);
+
+            // Match products with variety names - using the already filtered products state
+            const matchingProducts = products.filter((product) =>
+              varietyNames.includes(product.name)
+            );
+
+            console.log("🔍 Matching products found:", matchingProducts);
+
+            if (matchingProducts.length > 0) {
+              // Create varieties objects for display
+              const varietiesForDisplay = matchingProducts.map((product) => ({
+                id: `${selectedSize}-${product.id}`,
+                name: product.name,
+                productId: product.id, // Store the actual product ID to match with stocks
+                sizeId: selectedSize,
+                // Store image URL in a custom property that TypeScript knows about
+                _imageURL: product.imageUrl || "/assets/default.png",
+              }));
+
+              // Sort varieties alphabetically by name
+              varietiesForDisplay.sort((a, b) => a.name.localeCompare(b.name));
+
+              console.log(
+                "✅ Final varieties for display:",
+                varietiesForDisplay
+              );
+              setFilteredVarieties(varietiesForDisplay);
+            } else {
+              console.log(
+                "❌ No matching products found for varieties:",
+                varietyNames
+              );
+              setFilteredVarieties([]);
+            }
+          } catch (error) {
+            console.error("❌ Error fetching products for varieties:", error);
+            setFilteredVarieties([]);
+          }
+        } else {
+          console.log("❌ Selected size not found in sizes array");
+          setFilteredVarieties([]);
+        }
+
+        // Reset selected varieties when size changes
+        setSelectedVarieties([]);
       }
+    };
 
-      // Reset selected variety when size changes
-      setSelectedVarieties([]);
-    }
-  }, [selectedSize, sizes]);
+    fetchProductsForSelectedSize();
+  }, [selectedSize, sizes, products]);
 
   // Calculate total price
   useEffect(() => {
@@ -411,6 +524,59 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
     setSpecialInstructions("");
   };
 
+  // Helper function to get fixed size stock for Bibingka
+  const getBibingkaStock = (sizeName: string): FixedSizeStock | undefined => {
+    return fixedSizeStocks.find(
+      (stock) =>
+        stock.variety === "Bibingka" &&
+        stock.size.toLowerCase() === sizeName.toLowerCase()
+    );
+  };
+
+  // Helper function to determine stock status
+  const getStockStatus = (stock: FixedSizeStock | undefined) => {
+    if (!stock) return { status: "unavailable", text: "Unavailable" };
+
+    const { quantity, minimumStock, criticalLevel } = stock;
+
+    if (quantity <= 0) {
+      return { status: "outOfStock", text: "Out of Stock" };
+    } else if (quantity <= criticalLevel) {
+      return {
+        status: "critical",
+        text: `Low: ${Math.round(quantity)} in stock`,
+        color: "danger",
+      };
+    } else if (quantity <= minimumStock) {
+      return {
+        status: "low",
+        text: `Limited: ${Math.round(quantity)} in stock`,
+        color: "warning",
+      };
+    } else {
+      return {
+        status: "available",
+        text: `Available: ${Math.round(quantity)} in stock`,
+        color: "success",
+      };
+    }
+  };
+
+  // Helper function to get stock information for a product based on type and product ID
+  const getProductStock = (
+    productName: string,
+    sizeType: string
+  ): Stock | undefined => {
+    // Extract product ID from filteredVarieties
+    const product = products.find((p) => p.name === productName);
+    if (!product) return undefined;
+
+    // Find stock that matches product ID and type
+    return varietyStocks.find(
+      (stock) => stock.productId === product.id && stock.type === sizeType
+    );
+  };
+
   // Render step indicator
   const renderStepIndicator = () => {
     const steps = ["Size", "Variety", "Review"];
@@ -513,6 +679,17 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                   {[...sizes]
                     .sort((a, b) => b.price - a.price)
                     .map((size) => {
+                      // For Bibingka in small and solo sizes, get stock information
+                      const isBibingkaSize = ["small", "solo"].includes(
+                        size.name.toLowerCase()
+                      );
+                      const stockInfo = isBibingkaSize
+                        ? getBibingkaStock(size.name)
+                        : undefined;
+                      const stockStatus = stockInfo
+                        ? getStockStatus(stockInfo)
+                        : undefined;
+
                       return (
                         <IonCol key={size.sizeId} size="6" size-md="4">
                           <IonCard
@@ -520,13 +697,34 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                               selectedSize === size.sizeId
                                 ? "selected-size"
                                 : ""
+                            } ${
+                              stockStatus &&
+                              (stockStatus.status === "outOfStock" ||
+                                stockStatus.status === "unavailable")
+                                ? "disabled-size"
+                                : ""
                             }`}
-                            onClick={() => setSelectedSize(size.sizeId)}
+                            onClick={() => {
+                              if (
+                                !(
+                                  stockStatus &&
+                                  (stockStatus.status === "outOfStock" ||
+                                    stockStatus.status === "unavailable")
+                                )
+                              ) {
+                                setSelectedSize(size.sizeId);
+                              }
+                            }}
                           >
                             <div className="size-radio-container">
                               <IonRadio
                                 value={size.sizeId}
                                 className="custom-radio"
+                                disabled={
+                                  stockStatus &&
+                                  (stockStatus.status === "outOfStock" ||
+                                    stockStatus.status === "unavailable")
+                                }
                               />
                             </div>
                             <IonCardContent className="size-card-content">
@@ -543,11 +741,27 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                                   {size.dimensions}
                                 </IonText>
                                 <IonText className="size-slices">
-                                  {size.slices} slices
+                                  {size.shape}
                                 </IonText>
                                 <IonText className="size-price">
                                   ₱{size.price}
                                 </IonText>
+
+                                {/* Show out of stock overlay if applicable */}
+                                {stockStatus &&
+                                  stockStatus.status === "outOfStock" && (
+                                    <div className="out-of-stock-overlay">
+                                      <span>Out of Stock</span>
+                                    </div>
+                                  )}
+
+                                {/* Show unavailable overlay if applicable */}
+                                {stockStatus &&
+                                  stockStatus.status === "unavailable" && (
+                                    <div className="out-of-stock-overlay unavailable-overlay">
+                                      <span>Unavailable</span>
+                                    </div>
+                                  )}
                               </div>
                             </IonCardContent>
                           </IonCard>
@@ -599,32 +813,88 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                     const canSelect =
                       selectedVarieties.length < maxVarieties || isSelected;
 
-                    // Find stock for this variety
-                    const varietyStock = varietyStocks.find(
-                      (stock) => stock.variety === variety.name
-                    );
-                    const stockAvailable = varietyStock?.bilao || 0;
-                    const isLowStock =
-                      varietyStock &&
-                      stockAvailable <= varietyStock.minimumStock &&
-                      stockAvailable > varietyStock.criticalLevel;
-                    const isCriticalStock =
-                      varietyStock &&
-                      stockAvailable <= varietyStock.criticalLevel &&
-                      stockAvailable > 0;
-                    const outOfStock = !stockAvailable || stockAvailable === 0;
+                    // Get the size type from the selected size object
+                    const sizeType = selectedSizeObj?.type || "bilao"; // Default to "bilao" if no type specified
+
+                    // Get product ID directly from variety object if available (from our updated code)
+                    // or find it from the products array as a fallback
+                    const productId =
+                      (variety as any).productId ||
+                      products.find((p) => p.name === variety.name)?.id;
+
+                    // Find stock information using productId
+                    const stockInfo = productId
+                      ? varietyStocks.find(
+                          (stock) =>
+                            stock.productId === productId &&
+                            stock.type === sizeType
+                        )
+                      : undefined;
+
+                    console.log(`Stock lookup for ${variety.name}:`, {
+                      productId,
+                      sizeType,
+                      stockFound: !!stockInfo,
+                      stockDetails: stockInfo,
+                    });
+
+                    // Determine stock availability status
+                    let stockStatus = {
+                      status: "unavailable",
+                      text: "Unavailable",
+                    };
+                    let stockColor = "medium";
+
+                    if (stockInfo) {
+                      const { quantity, minimumStock, criticalLevel } =
+                        stockInfo;
+
+                      if (quantity <= 0) {
+                        stockStatus = {
+                          status: "outOfStock",
+                          text: "Out of Stock",
+                        };
+                        stockColor = "danger";
+                      } else if (quantity <= criticalLevel) {
+                        stockStatus = {
+                          status: "critical",
+                          text: `Low: ${Math.round(quantity)} left`,
+                        };
+                        stockColor = "danger";
+                      } else if (quantity <= minimumStock) {
+                        stockStatus = {
+                          status: "low",
+                          text: `Limited: ${Math.round(quantity)} left`,
+                        };
+                        stockColor = "warning";
+                      } else {
+                        stockStatus = {
+                          status: "available",
+                          text: `Available: ${Math.round(quantity)} in stock`,
+                        };
+                        stockColor = "success";
+                      }
+                    }
+
+                    const outOfStock = stockInfo && stockInfo.quantity <= 0;
 
                     return (
                       <IonCol key={variety.id} size="6">
+                        {" "}
                         <IonCard
-                          className={`byok-variety-card ${
-                            isSelected ? "selected-variety" : ""
+                          className={`size-card ${
+                            isSelected ? "selected-size" : ""
                           } ${
-                            !canSelect || outOfStock ? "disabled-variety" : ""
+                            !canSelect ||
+                            outOfStock ||
+                            stockStatus.status === "unavailable"
+                              ? "disabled-size"
+                              : ""
                           }`}
                           onClick={() =>
                             canSelect &&
                             !outOfStock &&
+                            stockStatus.status !== "unavailable" &&
                             toggleVarietySelection(variety.id)
                           }
                         >
@@ -640,48 +910,42 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                             </div>
                           )}
 
-                          <IonCardContent className="byok-variety-card-content">
-                            <div className="byok-variety-image-container">
-                              <IonImg
-                                src={
-                                  products.find(
-                                    (product) => product.name === variety.name
-                                  )?.imageURL || "default-image-url.jpg"
-                                }
-                                className="byok-variety-image"
-                              />
-                            </div>
-                            <div className="variety-details">
-                              <IonText className="byok-variety-name">
+                          {stockStatus.status === "unavailable" &&
+                            !outOfStock && (
+                              <div className="out-of-stock-overlay unavailable-overlay">
+                                <span>Unavailable</span>
+                              </div>
+                            )}
+
+                          <IonCardContent className="size-card-content">
+                            <IonImg
+                              src={
+                                (variety as any)._imageURL ||
+                                "/assets/default.png"
+                              }
+                              className="size-image"
+                              alt={variety.name}
+                            />
+                            <div className="size-details">
+                              <IonText className="size-name">
                                 {variety.name}
                               </IonText>
                               <div className="stock-indicator">
-                                <IonBadge
-                                  color={
-                                    outOfStock
-                                      ? "danger"
-                                      : isCriticalStock
-                                      ? "danger"
-                                      : isLowStock
-                                      ? "warning"
-                                      : "success"
-                                  }
-                                  className="stock-badge"
-                                >
-                                  {outOfStock
-                                    ? "Out of Stock"
-                                    : isCriticalStock
-                                    ? `Very Low: ${Math.round(
-                                        stockAvailable
-                                      )} units`
-                                    : isLowStock
-                                    ? `Limited: ${Math.round(
-                                        stockAvailable
-                                      )} units`
-                                    : `Available: ${Math.round(
-                                        stockAvailable
-                                      )} units`}
-                                </IonBadge>
+                                {stockInfo ? (
+                                  <IonBadge
+                                    color={stockColor}
+                                    className="stock-badge"
+                                  >
+                                    {stockStatus.text}
+                                  </IonBadge>
+                                ) : (
+                                  <IonBadge
+                                    color="medium"
+                                    className="stock-badge"
+                                  >
+                                    Unavailable
+                                  </IonBadge>
+                                )}
                               </div>
                             </div>
                           </IonCardContent>
@@ -751,6 +1015,76 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                       : "None selected"}
                   </span>
                 </div>
+
+                {/* If Bibingka is selected and size is small or solo, display stock info */}
+                {selectedVarieties.some((varietyId) => {
+                  const variety = filteredVarieties.find(
+                    (v) => v.id === varietyId
+                  );
+                  return variety?.name === "Bibingka";
+                }) &&
+                  selectedSize &&
+                  (() => {
+                    const selectedSizeObj = sizes.find(
+                      (s) => s.sizeId === selectedSize
+                    );
+                    const sizeName = selectedSizeObj?.name.toLowerCase() || "";
+                    if (["small", "solo"].includes(sizeName)) {
+                      const stockInfo = getBibingkaStock(sizeName);
+                      const stockStatus = getStockStatus(stockInfo);
+
+                      if (stockInfo) {
+                        // return (
+                        //   <div className="review-detail review-stock-info">
+                        //     <span className="review-label">Stock Info:</span>
+                        //     <IonBadge
+                        //       color={stockStatus.color || "medium"}
+                        //       className="review-stock-badge"
+                        //     >
+                        //       {stockStatus.text}
+                        //     </IonBadge>
+                        //   </div>
+                        // );
+                      }
+                    }
+                    return null;
+                  })()}
+
+                {/* Display expiry date for Bibingka if available */}
+                {selectedVarieties.some((varietyId) => {
+                  const variety = filteredVarieties.find(
+                    (v) => v.id === varietyId
+                  );
+                  return variety?.name === "Bibingka";
+                }) &&
+                  selectedSize &&
+                  (() => {
+                    const selectedSizeObj = sizes.find(
+                      (s) => s.sizeId === selectedSize
+                    );
+                    const sizeName = selectedSizeObj?.name.toLowerCase() || "";
+                    if (["small", "solo"].includes(sizeName)) {
+                      const stockInfo = getBibingkaStock(sizeName);
+
+                      if (stockInfo && stockInfo.expiryDate) {
+                        // return (
+                        //   <div className="review-detail">
+                        //     <span className="review-label">
+                        //       <IonIcon
+                        //         icon={calendarOutline}
+                        //         className="calendar-icon"
+                        //       />
+                        //       Best Before:
+                        //     </span>
+                        //     <span className="review-value">
+                        //       {stockInfo.expiryDate}
+                        //     </span>
+                        //   </div>
+                        // );
+                      }
+                    }
+                    return null;
+                  })()}
               </div>
 
               {/* <div className="quantity-section">
@@ -919,7 +1253,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                 ) : (
                   <>
                     <IonIcon icon={cartOutline} slot="start" />
-                    Add to Cart
+                    ADD TO CART
                   </>
                 )}
               </IonButton>

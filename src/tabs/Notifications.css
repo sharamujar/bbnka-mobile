@@ -41,7 +41,8 @@
   line-height: 1.4;
 }
 
-.notifications-list {
+.notifications-list,
+.announcements-list {
   padding: 12px;
 }
 
@@ -142,6 +143,10 @@
   border-left: 4px solid var(--ion-color-primary);
 }
 
+.notification-card[data-type="danger"] {
+  border-left: 4px solid var(--ion-color-danger);
+}
+
 /* Order status specific styles */
 .notification-card[data-status="completed"],
 .notification-card[data-status="ready"] {
@@ -164,4 +169,122 @@
 .notification-card[data-payment="approved"] {
   border-left: 4px solid var(--ion-color-success);
   background-color: rgba(45, 211, 111, 0.05);
+}
+
+.notification-card[data-payment="rejected"] {
+  border-left: 4px solid var(--ion-color-danger);
+  background-color: rgba(235, 68, 90, 0.05);
+}
+
+/* Styles for the payment status indicator in notifications */
+.payment-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 4px;
+}
+
+.payment-status-indicator.rejected {
+  color: var(--ion-color-danger);
+  background-color: rgba(235, 68, 90, 0.1);
+}
+
+.payment-status-indicator.approved {
+  color: var(--ion-color-success);
+  background-color: rgba(45, 211, 111, 0.1);
+}
+
+.payment-status-indicator.pending {
+  color: var(--ion-color-warning);
+  background-color: rgba(255, 196, 9, 0.1);
+}
+
+/* Announcement Styles */
+.announcement-card {
+  margin: 10px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid var(--button-color);
+  background-color: white;
+}
+
+.announcement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 5px 0;
+}
+
+.announcement-title-container {
+  display: flex;
+  align-items: center;
+}
+
+.announcement-icon {
+  font-size: 22px;
+  margin-right: 10px;
+}
+
+.announcement-title {
+  font-size: 18px !important;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+.announcement-time {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  display: flex;
+  align-items: center;
+}
+
+.announcement-content {
+  margin: 8px 0;
+  color: var(--ion-color-dark);
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.announcement-expiry {
+  text-align: right;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.announcement-image-container {
+  margin: 10px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.announcement-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+}
+
+/* Segment Control Styling */
+.notifications-segment {
+  --background: var(--primary-bg-color);
+}
+
+.notifications-segment ion-segment-button {
+  --background: var(--primary-bg-color);
+
+  --color: var(--header-color);
+  --color-checked: var(--button-color);
+  --indicator-color: var(--button-color);
+  font-family: var(--ion-font-family);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.notifications-segment ion-segment-button::part(indicator) {
+  height: 3px;
 }

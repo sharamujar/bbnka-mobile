@@ -51,6 +51,7 @@ import {
   closeCircle,
   cashOutline,
   chevronBack,
+  download,
 } from "ionicons/icons";
 import { auth, db } from "../firebase-config";
 import {
@@ -365,25 +366,129 @@ const Review: React.FC = () => {
     console.log("Order Details updated:", orderDetails);
   }, [orderDetails]);
 
-  // Fetch cart items
-  useEffect(() => {
+  // Function to refresh cart items from Firebase based on selection in localStorage
+  const refreshCartItems = () => {
     const user = auth.currentUser;
     if (!user) {
       setLoading(false);
       return;
     }
 
-    const cartRef = collection(db, "customers", user.uid, "cart");
-    const unsubscribe = onSnapshot(cartRef, (querySnapshot) => {
-      const items: any[] = [];
-      querySnapshot.forEach((doc) => {
-        items.push({ ...doc.data(), id: doc.id });
-      });
-      setCartItems(items);
-      setLoading(false);
-    });
+    // Get selected items from localStorage
+    const selectedItemsJson = localStorage.getItem("selectedCartItems");
 
-    return () => unsubscribe();
+    if (selectedItemsJson) {
+      try {
+        // First, immediately update from localStorage for instant feedback
+        const selectedItems = JSON.parse(selectedItemsJson);
+
+        // Set the cart items directly from localStorage
+        setCartItems(selectedItems);
+        setLoading(false);
+
+        // Then, also refresh from Firestore to ensure data is current
+        const cartRef = collection(db, "customers", user.uid, "cart");
+        const unsubscribe = onSnapshot(cartRef, (querySnapshot) => {
+          const firestoreItems: any[] = [];
+          const selectedItemIds = selectedItems.map((item: any) => item.id);
+
+          querySnapshot.forEach((doc) => {
+            const item = { ...doc.data(), id: doc.id };
+            // Only include items that were selected in the cart
+            if (selectedItemIds.includes(item.id)) {
+              firestoreItems.push(item);
+            }
+          });
+
+          // Update with the latest data from Firestore
+          setCartItems(firestoreItems);
+          setLoading(false);
+        });
+
+        return unsubscribe;
+      } catch (error) {
+        console.error("Error parsing selected items from localStorage:", error);
+        setCartItems([]);
+        setLoading(false);
+      }
+    } else {
+      // If no selected items in localStorage, show empty cart
+      setCartItems([]);
+      setLoading(false);
+    }
+  };
+
+  // Update cart items whenever component becomes visible or active
+  useEffect(() => {
+    // Initial load
+    const unsubscribe = refreshCartItems();
+
+    // Set up visibility change handler to refresh when navigating back to this page
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshCartItems();
+      }
+    };
+
+    // Set up focus handler to refresh when window regains focus
+    const handleFocus = () => {
+      refreshCartItems();
+    };
+
+    // Event for when the route changes within the app
+    const handleRouteChange = () => {
+      refreshCartItems();
+    };
+
+    // Add event listeners
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    // Use router history to detect navigation
+    const originalPushState = history.push;
+    history.push = (...args: Parameters<typeof originalPushState>) => {
+      handleRouteChange();
+      return originalPushState.apply(history, args);
+    };
+
+    // Clean up all listeners when component unmounts
+    return () => {
+      if (unsubscribe) unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.addEventListener("focus", handleFocus);
+      history.push = originalPushState;
+    };
+  }, [history]);
+
+  // Force refresh when coming back to this page
+  useEffect(() => {
+    // This will run when the component is focused
+    const refreshOnFocus = () => {
+      if (document.visibilityState === "visible") {
+        // Force refresh state from localStorage
+        const pickupOptionFromStorage = localStorage.getItem("pickupOption");
+
+        // Update order details
+        setOrderDetails({
+          pickupDate: localStorage.getItem("pickupDate") || "",
+          pickupTime: localStorage.getItem("pickupTime") || "",
+          paymentMethod: localStorage.getItem("paymentMethod") || "cash",
+          gcashReference: localStorage.getItem("gcashReference") || "",
+          pickupOption: pickupOptionFromStorage === "now" ? "now" : "later",
+        });
+
+        // Re-fetch cart items when page becomes visible again
+        refreshCartItems();
+      }
+    };
+
+    document.addEventListener("visibilitychange", refreshOnFocus);
+    window.addEventListener("focus", refreshOnFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", refreshOnFocus);
+      window.removeEventListener("focus", refreshOnFocus);
+    };
   }, []);
 
   // Calculate totals
@@ -633,12 +738,35 @@ const Review: React.FC = () => {
       orderDetails.paymentMethod === "gcash" &&
       !orderDetails.gcashReference
     ) {
-      setShowRefundPolicyModal(true);
+      setShowGcashModal(true);
       return;
     }
 
     // Otherwise proceed with order placement
     createOrder();
+  };
+
+  // Function to download the GCash QR code
+  const downloadQRCode = () => {
+    const qrCodeElement = document.querySelector(
+      ".gcash-qr"
+    ) as HTMLImageElement;
+    if (qrCodeElement && qrCodeElement.src) {
+      // Create a temporary anchor element
+      const downloadLink = document.createElement("a");
+      downloadLink.href = qrCodeElement.src;
+      downloadLink.download = "bbnka-gcash-qr.jpg"; // Set the filename
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+
+      // Show toast message
+      setToastMessage("QR Code downloaded successfully");
+      setShowToast(true);
+    } else {
+      setToastMessage("Failed to download QR Code");
+      setShowToast(true);
+    }
   };
 
   const nextStep = () => {
@@ -1113,9 +1241,7 @@ const Review: React.FC = () => {
                     }
                   />
                   <span>
-                    {orderDetails.pickupOption === "now"
-                      ? "Today"
-                      : "Scheduled"}
+                    {orderDetails.pickupOption === "now" ? "Later" : "Tomorrow"}
                   </span>
                 </div>
               </div>
@@ -1171,7 +1297,7 @@ const Review: React.FC = () => {
       </IonModal>
 
       {/* No Refund Policy Modal */}
-      <IonModal
+      {/* <IonModal
         isOpen={showRefundPolicyModal}
         onDidDismiss={() => setShowRefundPolicyModal(false)}
         className="refund-policy-modal"
@@ -1223,7 +1349,7 @@ const Review: React.FC = () => {
             </div>
           </div>
         </IonContent>
-      </IonModal>
+      </IonModal> */}
 
       {/* GCash Payment Modal */}
       <IonModal
@@ -1303,13 +1429,21 @@ const Review: React.FC = () => {
               <>
                 <div className="qr-container">
                   <img
-                    src="https://via.placeholder.com/200x200?text=GCash+QR+Code"
+                    src="../assets/gcash.jpg"
                     alt="GCash QR Code"
                     className="gcash-qr"
                   />
                   <IonText className="qr-instruction">
                     <p>Scan this QR code with your GCash app to pay</p>
                   </IonText>
+                  <IonButton
+                    fill="outline"
+                    className="download-qr-button"
+                    onClick={downloadQRCode}
+                  >
+                    <IonIcon icon={download} slot="start" />
+                    Download QR Code
+                  </IonButton>
                 </div>
 
                 <IonCard className="payment-account-details">
@@ -1328,7 +1462,7 @@ const Review: React.FC = () => {
                       <IonItem>
                         <IonLabel>
                           <IonText>
-                            <strong>Account Number:</strong> 09123456789
+                            <strong>Account Number:</strong> +639608021774
                           </IonText>
                         </IonLabel>
                         <IonButton
@@ -1336,7 +1470,7 @@ const Review: React.FC = () => {
                           fill="clear"
                           size="small"
                           onClick={() => {
-                            navigator.clipboard.writeText("09123456789");
+                            navigator.clipboard.writeText("+639608021774");
                             setToastMessage(
                               "Account number copied to clipboard"
                             );

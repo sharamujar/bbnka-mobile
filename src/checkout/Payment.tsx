@@ -169,6 +169,13 @@ const Payment: React.FC = () => {
   }, []);
 
   const handleCardClick = (value: any) => {
+    // If switching to GCash, show the refund policy first
+    if (value === "gcash") {
+      setShowRefundPolicyModal(true);
+      // Don't set the payment method yet - we'll do that after they accept the policy
+      return;
+    }
+
     setPaymentMethod(value);
     localStorage.setItem("paymentMethod", value);
 
@@ -570,8 +577,18 @@ const Payment: React.FC = () => {
                   expand="block"
                   className="confirm-button"
                   onClick={() => {
+                    // First set payment method to gcash
+                    setPaymentMethod("gcash");
+                    localStorage.setItem("paymentMethod", "gcash");
+
+                    // Update order status
+                    updateOrderStatus("gcash", pickupOption);
+
+                    // Close the refund policy modal
                     setShowRefundPolicyModal(false);
-                    setShowGcashModal(true);
+
+                    // Show the GCash modal for payment
+                    // setShowGcashModal(true);
                   }}
                 >
                   I Accept

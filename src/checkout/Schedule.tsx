@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import {
   IonPage,
   IonHeader,
@@ -40,6 +40,8 @@ import "./Schedule.css";
 
 const Schedule: React.FC = () => {
   const history = useHistory();
+  const location = useLocation();
+  const [selectedCartItems, setSelectedCartItems] = useState<any[]>([]);
 
   // Initialize pickupOption from localStorage, but we'll update this based on store hours
   const [pickupOption, setPickupOption] = useState<"now" | "later">(() => {
@@ -134,6 +136,26 @@ const Schedule: React.FC = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Get selected cart items from the location state
+  useEffect(() => {
+    if (location.state && (location.state as any).selectedItems) {
+      const items = (location.state as any).selectedItems;
+      setSelectedCartItems(items);
+
+      // Save selected items to localStorage so they persist across navigation
+      localStorage.setItem("selectedCartItems", JSON.stringify(items));
+    } else {
+      // Try to load from localStorage if not in location state (e.g., on page refresh)
+      const savedItems = localStorage.getItem("selectedCartItems");
+      if (savedItems) {
+        setSelectedCartItems(JSON.parse(savedItems));
+      } else {
+        // If no selected items, redirect back to cart
+        history.replace("/home/cart");
+      }
+    }
+  }, [location.state, history]);
 
   // Save to localStorage whenever values change
   useEffect(() => {
@@ -439,7 +461,7 @@ const Schedule: React.FC = () => {
             {availableTimeSlots.length === 0 && (
               <div className="no-slots-container">
                 <IonText className="no-slots-message">
-                  No available time slots for today. Please use Schedule Pickup
+                  No available time slots for today. Please use Pickup Tomorrow
                   option.
                 </IonText>
               </div>

@@ -4,7 +4,18 @@ ion-tab-button ion-icon {
   font-size: 22px;
 }
 
+/* Default label color (inactive) */
+ion-tab-button ion-label {
+  color: #b3b3b3;
+  font-size: 12px;
+}
+
 ion-tab-button.tab-selected ion-icon {
+  color: var(--button-color);
+}
+
+/* Selected label color */
+ion-tab-button.tab-selected ion-label {
   color: var(--button-color);
 }
 
@@ -38,4 +49,32 @@ ion-tab-button:active ion-icon {
 
 ion-tab-button {
   position: relative;
+}
+
+/* Handle system insets properly */
+ion-app {
+  /* Ensure the app respects safe areas */
+  --ion-safe-area-top: env(safe-area-inset-top);
+  --ion-safe-area-bottom: env(safe-area-inset-bottom);
+}
+
+/* Fix for bottom tab bar to respect safe areas */
+ion-tab-bar {
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(56px + env(safe-area-inset-bottom)) !important;
+}
+
+/* Ensure content scrolls properly and doesn't get hidden */
+ion-content {
+  --padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Specific fix for Android navigation bar overlap */
+.md ion-tab-bar {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Ensure full page content doesn't get cut off at the bottom */
+.ion-page {
+  padding-bottom: var(--ion-safe-area-bottom);
 }

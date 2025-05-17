@@ -87,6 +87,7 @@ ion-item-sliding {
   flex-direction: column;
   margin-top: 0;
   background-color: #fff;
+  width: 100%;
 }
 
 .cart-size-text {
@@ -167,7 +168,8 @@ ion-item-sliding {
 }
 
 .cart-badge-container {
-  margin-right: 16px;
+  margin-left: 6px; /* Add spacing from checkbox container */
+  margin-right: 14px;
   display: flex;
   align-items: center;
   flex-direction: column;
@@ -508,4 +510,407 @@ ion-col {
   max-width: 260px;
   margin: 0 auto;
   font-weight: 500;
+}
+
+.cart-stock-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.cart-stock-badge {
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  --background: transparent;
+}
+
+.cart-stock-badge[color="success"] {
+  background-color: rgba(45, 211, 111, 0.1);
+  color: #2a9d54;
+}
+
+.cart-stock-badge[color="warning"] {
+  background-color: rgba(255, 196, 9, 0.1);
+  color: #d6a206;
+}
+
+.cart-stock-badge[color="danger"] {
+  background-color: rgba(235, 68, 90, 0.1);
+  color: #cf3c4f;
+}
+
+/* Remove the circle dots before stock badges */
+.cart-stock-badge::before {
+  display: none; /* Hide the circular dot */
+}
+
+.cart-stock-badge[color="success"] {
+  color: #2a9d54;
+}
+
+.cart-stock-badge[color="warning"] {
+  color: #d6a206;
+}
+
+.cart-stock-badge[color="danger"] {
+  color: #cf3c4f;
+}
+
+.cart-varieties-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cart-item-out-of-stock {
+  position: relative;
+  opacity: 0.7;
+  background-color: #fff;
+}
+
+.cart-item-out-of-stock::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.01),
+    rgba(0, 0, 0, 0.01) 10px,
+    rgba(0, 0, 0, 0.03) 10px,
+    rgba(0, 0, 0, 0.03) 20px
+  );
+  border-radius: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.out-of-stock-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 16px;
+  padding: 10px 16px;
+  background-color: rgba(255, 73, 73, 0.1);
+  border-left: 3px solid var(--ion-color-danger);
+  border-radius: 4px;
+}
+
+.out-of-stock-warning-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.out-of-stock-warning-icon {
+  color: var(--ion-color-danger);
+  font-size: 24px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.out-of-stock-message {
+  color: var(--ion-color-danger);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.out-of-stock-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 16px 16px;
+}
+
+.out-of-stock-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  font-weight: 500;
+  font-size: 12px !important;
+}
+
+.out-of-stock-checkout-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+  color: var(--ion-color-danger);
+  background-color: rgba(255, 73, 73, 0.08) !important;
+  font-size: 12px;
+  width: 100%;
+  gap: 6px;
+}
+
+.out-of-stock-checkout-note ion-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* Modern Checkbox Styling */
+.modern-checkbox-container {
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  margin-right: 8px; /* Add spacing between checkbox and badge */
+}
+
+.modern-checkbox-container ion-checkbox {
+  margin: 0;
+  --border-radius: 4px;
+  --size: 18px; /* Reduce size from 20px to 18px */
+  --checkbox-background-checked: var(--button-color, #3880ff);
+  --border-color-checked: var(--button-color, #3880ff);
+  --checkmark-color: white;
+  --border-color: #d1d1d1;
+  --border-width: 1.5px;
+  --transition: all 0.2s ease;
+}
+
+.modern-checkbox-container ion-label {
+  margin-left: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+}
+
+/* Select All Button Styling */
+.select-all-container {
+  padding-right: 8px;
+}
+
+.select-all-container ion-item {
+  --inner-padding-end: 0;
+  --inner-padding-start: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  --min-height: 32px;
+  --background: transparent;
+  width: auto;
+}
+
+.select-all-toggle {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 16px;
+  background-color: #f9f9f9;
+  border: 1px solid #eeeeee;
+  transition: all 0.2s ease;
+  margin-right: 8px;
+}
+
+.select-all-toggle.active {
+  background-color: rgba(var(--button-color-rgb, 56, 128, 255), 0.08);
+  border: 1px solid rgba(var(--button-color-rgb, 56, 128, 255), 0.2);
+}
+
+.select-all-toggle ion-label {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0 6px 0 0;
+  color: #555;
+}
+
+.select-all-toggle.active ion-label {
+  color: var(--button-color, #3880ff);
+}
+
+.select-all-toggle ion-checkbox {
+  --size: 16px; /* Reduce size from 18px to 16px */
+  margin: 0;
+}
+
+/* Cart item checkbox styling */
+.cart-item-checkbox {
+  --size: 18px; /* Reduce size from 22px to 18px */
+  margin: 0; /* Remove default margin */
+  --border-radius: 4px;
+  --checkbox-background-checked: var(--button-color, #3880ff);
+  --border-color-checked: var(--button-color, #3880ff);
+  --checkmark-color: white;
+  --border-color: #d1d1d1;
+  --border-width: 1.5px;
+  --checkmark-width: 2px;
+}
+
+/* Add subtle animation to checkbox */
+ion-checkbox {
+  --transition: transform 0.15s ease;
+}
+
+ion-checkbox:active {
+  transform: scale(0.92);
+}
+
+/* Header Row - Product Name and Delete Button */
+.cart-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 0 0 4px 0;
+  width: 100%;
+}
+
+.product-name-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+
+.cart-name-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+/* Updated stock indicator styling for horizontal layout */
+.cart-header-stock {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Details Row - Varieties */
+.cart-details-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+/* Stock Information Styles */
+.stock-info-container {
+  margin-top: 8px;
+  padding: 4px 0;
+  font-size: 14px;
+  width: 100%;
+}
+
+.variety-stock-info {
+  margin-bottom: 8px;
+}
+
+.variety-stock-info:last-child {
+  margin-bottom: 0;
+}
+
+.variety-name {
+  font-weight: bold;
+  margin-bottom: 2px;
+  font-size: 13px;
+}
+
+.stock-level {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background-color: #f7f7f7;
+}
+
+.stock-level.normal {
+  background-color: rgba(52, 199, 89, 0.1);
+}
+
+.stock-level.low {
+  background-color: rgba(255, 204, 0, 0.1);
+}
+
+.stock-level.critical {
+  background-color: rgba(255, 69, 58, 0.1);
+}
+
+.stock-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #666;
+}
+
+.stock-text ion-icon {
+  font-size: 16px;
+}
+
+.stock-text span {
+  margin-right: 8px;
+}
+
+.min-stock,
+.critical-level {
+  font-size: 11px;
+  color: #888;
+  padding: 1px 6px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.stock-info-pending {
+  font-style: italic;
+  color: #888;
+  font-size: 13px;
+  margin-top: 8px;
+  padding: 6px;
+  background-color: #f7f7f7;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.stock-info-none {
+  color: #888;
+  font-size: 13px;
+  margin-top: 8px;
+  padding: 6px;
+  background-color: #f7f7f7;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.cart-varieties-text {
+  display: flex;
+  flex-wrap: wrap;
+  /* gap: 1px; */
+}
+
+/* These styles have been replaced with text-based styles above */
+
+.variety-stock-text {
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 12px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+  display: inline-block;
+}
+
+.variety-stock-normal {
+  background-color: rgba(45, 211, 111, 0.15);
+  color: #2dd36f;
+}
+
+.variety-stock-low {
+  background-color: rgba(255, 196, 9, 0.15);
+  color: #ffc409;
+}
+
+.variety-stock-critical {
+  background-color: rgba(235, 68, 90, 0.15);
+  color: #eb445a;
+}
+
+.variety-stock-pending,
+.variety-stock-unknown {
+  background-color: rgba(153, 153, 153, 0.15);
+  color: #999;
 }

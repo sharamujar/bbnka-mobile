@@ -59,8 +59,10 @@ import {
 import "./Registration.css";
 import { Link, useHistory } from "react-router-dom";
 import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 const Registration: React.FC = () => {
+  const { markVerificationModalAsShown } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   // input fields
@@ -88,6 +90,7 @@ const Registration: React.FC = () => {
   const history = useHistory(); //for navigation
   const [loading, setLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isCheckingPhoneNumber, setIsCheckingPhoneNumber] = useState(false); // Check if we're currently validating the phone number
 
   // Email verification modal state
   const [showVerificationModal, setShowVerificationModal] = useState(false);
@@ -211,6 +214,11 @@ const Registration: React.FC = () => {
       return "Phone number must start with +63";
     }
 
+    // Ensure that after +63, the next digit must be 9
+    if (!cleanedPhoneNumber.startsWith("+639")) {
+      return "After +63, the next digit must be 9";
+    }
+
     // After +63 prefix, should have 10 digits (Philippine mobile format)
     const digitsPart = cleanedPhoneNumber.substring(3); // Skip the +63 part
 
@@ -219,6 +227,27 @@ const Registration: React.FC = () => {
     }
 
     return "";
+  };
+
+  // Check if phone number already exists in database
+  const checkPhoneNumberExists = async (phoneNumber: string) => {
+    if (!phoneNumber) return false;
+
+    // Clean the phone number for consistent comparison
+    const cleanedPhoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, "");
+
+    try {
+      const q = query(
+        collection(db, "customers"),
+        where("phoneNumber", "==", cleanedPhoneNumber)
+      );
+
+      const querySnapshot = await getDocs(q);
+      return !querySnapshot.empty;
+    } catch (error) {
+      console.error("Error checking phone number:", error);
+      return false;
+    }
   };
 
   const validateEmail = (email: string) => {
@@ -304,6 +333,24 @@ const Registration: React.FC = () => {
       return;
     }
 
+    // Check if phone number already exists
+    setIsCheckingPhoneNumber(true);
+    try {
+      const phoneExists = await checkPhoneNumberExists(phoneNumber);
+      if (phoneExists) {
+        setPhoneNumberError("This phone number is already registered");
+        setIsValidationError(true);
+        setIsRegistering(false);
+        setIsCheckingPhoneNumber(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking phone number:", error);
+      // Continue with registration even if phone check fails
+    } finally {
+      setIsCheckingPhoneNumber(false);
+    }
+
     try {
       // Set verification process flag to true
       setIsInVerificationProcess(true);
@@ -358,6 +405,9 @@ const Registration: React.FC = () => {
         uid: user.uid,
       });
 
+      // Mark that we're showing the verification modal so it doesn't appear twice
+      markVerificationModalAsShown();
+
       // Show the verification modal
       setShowVerificationModal(true);
     } catch (error: any) {
@@ -397,21 +447,8 @@ const Registration: React.FC = () => {
         );
         const querySnapshot = await getDocs(q);
 
-        // If user doesn't exist yet, we need to check for a valid Philippine phone number
-        if (
-          querySnapshot.empty &&
-          (!result.user.phoneNumber ||
-            !result.user.phoneNumber.startsWith("+63"))
-        ) {
-          setToastMessage("Phone number is required to complete registration");
-          setIsSuccess(false);
-          setShowToast(true);
-
-          // Show a modal or redirect to a page to collect phone number
-          // For now, we'll just show a toast message
-          setLoading(false);
-          return;
-        }
+        // For Google sign-in, we don't need to validate phone number
+        // User will be allowed to sign up without a phone number
       }
 
       if (result.credential) {
@@ -437,6 +474,15 @@ const Registration: React.FC = () => {
       if (user) {
         console.log("User signed in:", user.email);
 
+        // Skip any redirections if the verification modal is already showing
+        // This prevents the duplicate email verification popup
+        if (showVerificationModal) {
+          console.log(
+            "Verification modal is already showing, skipping auth state handling"
+          );
+          return;
+        }
+
         // Skip the phone number check if we're in the verification process
         if (isInVerificationProcess) {
           console.log("In verification process, skipping phone number check");
@@ -454,19 +500,7 @@ const Registration: React.FC = () => {
           console.log("User found in customers collection. Logging in...");
           history.replace("/home");
         } else {
-          // If no phone number or not a Philippine phone number, we can't create account
-          if (!user.phoneNumber || !user.phoneNumber.startsWith("+63")) {
-            console.warn("Phone number required for registration");
-            // Don't show verification modal if we're showing the error
-            await auth.signOut();
-            setToastMessage(
-              "Phone number is required to complete registration"
-            );
-            setIsSuccess(false);
-            setShowToast(true);
-            return;
-          }
-
+          // For Google sign-in, we don't need to check for phone number anymore
           console.warn("User not found in customers collection:", user.email);
           console.log("New user detected. Creating account...");
 
@@ -502,13 +536,13 @@ const Registration: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [isInVerificationProcess, history]); // Add missing dependencies
+  }, [isInVerificationProcess, history, showVerificationModal]);
 
   // Update the Link to use history.push instead of direct Link
   const navigateToLogin = () => {
     // No need to clear fields manually - the Registration component will unmount
     // Just navigate directly without setTimeout
-    history.push("/login");
+    history.replace("/login");
   };
 
   return (
@@ -777,9 +811,9 @@ const Registration: React.FC = () => {
                     className="register-button"
                     expand="block"
                     onClick={handleRegistration}
-                    disabled={isRegistering}
+                    disabled={isRegistering || isCheckingPhoneNumber}
                   >
-                    {isRegistering ? (
+                    {isRegistering || isCheckingPhoneNumber ? (
                       <>
                         <IonSpinner name="dots" /> Registering...
                       </>
@@ -844,7 +878,7 @@ const Registration: React.FC = () => {
         message={toastMessage}
         duration={3000}
         color={isSuccess ? "success" : "danger"}
-        position="middle"
+        position="bottom"
         cssClass="registration-toast"
         buttons={[
           {
@@ -857,6 +891,7 @@ const Registration: React.FC = () => {
       {/* Email Verification Modal */}
       <IonModal
         isOpen={showVerificationModal}
+        backdropDismiss={false}
         onDidDismiss={() => {
           setShowVerificationModal(false);
           // Sign out the user if they close the modal without verifying

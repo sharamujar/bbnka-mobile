@@ -1,5 +1,13 @@
-import { Storage } from "@capacitor/storage";
-import { auth } from "../firebase-config";
+import { Preferences } from "@capacitor/preferences";
+import { auth, db } from "../firebase-config";
+import {
+  addDoc,
+  collection,
+  serverTimestamp,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 
 export interface Notification {
   id: string;
@@ -12,6 +20,19 @@ export interface Notification {
   orderId?: string;
 }
 
+// Interface for announcements
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  status: "active" | "inactive";
+  createdAt: string;
+  updatedAt: string;
+  publishDate: string;
+  expiryDate: string;
+  imageUrl: string;
+}
+
 // Add a type for notification counter event listeners
 type NotificationCountListener = (count: number) => void;
 
@@ -20,6 +41,7 @@ type NotificationCountListener = (count: number) => void;
  */
 class NotificationService {
   private STORAGE_KEY = "notifications";
+  private FIRESTORE_COLLECTION = "orderNotifications"; // Updated to match the collection used in Review.tsx
   private notificationCounter = 0;
   private countListeners: NotificationCountListener[] = [];
 
@@ -79,9 +101,15 @@ class NotificationService {
       const updatedNotifications = [newNotification, ...notifications];
 
       // Save to storage
-      await Storage.set({
+      await Preferences.set({
         key: this.getUserStorageKey(),
         value: JSON.stringify(updatedNotifications),
+      });
+
+      // Save to Firestore
+      await addDoc(collection(db, this.FIRESTORE_COLLECTION), {
+        ...newNotification,
+        createdAt: serverTimestamp(),
       });
 
       // Notify listeners of the unread count change
@@ -105,7 +133,7 @@ class NotificationService {
       }
 
       // Get notifications from storage
-      const { value } = await Storage.get({
+      const { value } = await Preferences.get({
         key: this.getUserStorageKey(),
       });
 
@@ -142,7 +170,7 @@ class NotificationService {
       );
 
       // Save to storage
-      await Storage.set({
+      await Preferences.set({
         key: this.getUserStorageKey(),
         value: JSON.stringify(updatedNotifications),
       });
@@ -171,7 +199,7 @@ class NotificationService {
       }));
 
       // Save to storage
-      await Storage.set({
+      await Preferences.set({
         key: this.getUserStorageKey(),
         value: JSON.stringify(updatedNotifications),
       });
@@ -199,7 +227,7 @@ class NotificationService {
       );
 
       // Save to storage
-      await Storage.set({
+      await Preferences.set({
         key: this.getUserStorageKey(),
         value: JSON.stringify(updatedNotifications),
       });
@@ -220,7 +248,7 @@ class NotificationService {
   async clearAllNotifications() {
     try {
       // Just set an empty array
-      await Storage.set({
+      await Preferences.set({
         key: this.getUserStorageKey(),
         value: JSON.stringify([]),
       });
@@ -276,6 +304,66 @@ class NotificationService {
 
     const count = await this.getUnreadCount();
     this.countListeners.forEach((listener) => listener(count));
+  }
+
+  /**
+   * Fetch announcements from the database
+   * Only returns active announcements by default
+   */
+  async getAnnouncements(
+    includeInactive: boolean = false
+  ): Promise<Announcement[]> {
+    try {
+      let announcementsQuery = query(collection(db, "announcements"));
+
+      // Filter by status if we don't want inactive announcements
+      if (!includeInactive) {
+        announcementsQuery = query(
+          collection(db, "announcements"),
+          where("status", "==", "active")
+        );
+      }
+
+      const snapshot = await getDocs(announcementsQuery);
+
+      // Return empty array if no documents found
+      if (snapshot.empty) {
+        console.log("No announcements found");
+        return [];
+      }
+
+      // Map Firestore documents to Announcement objects
+      const announcements: Announcement[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log("Announcement data:", data);
+
+        announcements.push({
+          id: doc.id,
+          title: data.title || "",
+          content: data.content || "",
+          status: data.status || "inactive",
+          createdAt: data.createdAt || "",
+          updatedAt: data.updatedAt || "",
+          publishDate: data.publishDate || "",
+          expiryDate: data.expiryDate || "",
+          imageUrl: data.imageUrl || "",
+        });
+      });
+
+      console.log("Parsed announcements:", announcements);
+
+      // Sort by date (newest first)
+      return announcements.sort((a, b) => {
+        // Use publishDate for sorting
+        const dateA = new Date(a.publishDate);
+        const dateB = new Date(b.publishDate);
+        return dateB.getTime() - dateA.getTime();
+      });
+    } catch (error) {
+      console.error("Error fetching announcements:", error);
+      return [];
+    }
   }
 }
 

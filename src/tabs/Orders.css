@@ -168,6 +168,11 @@
   color: var(--ion-color-warning);
 }
 
+.payment-status.rejected {
+  color: var(--ion-color-danger);
+  font-weight: 500;
+}
+
 .items-row {
   padding-top: 8px;
   border-top: 1px solid rgba(0, 0, 0, 0.06);

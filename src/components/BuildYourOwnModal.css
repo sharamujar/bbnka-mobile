@@ -425,6 +425,35 @@
   opacity: 0.8;
 }
 
+/* Fix for ADD TO CART button to ensure it has proper color when enabled */
+.add-to-cart-button {
+  --background: var(--button-color);
+  position: relative;
+  width: 100%;
+}
+
+.add-to-cart-button:not(:disabled) {
+  --background: var(--button-color);
+  --color: white;
+  opacity: 1;
+}
+
+.button-hint {
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  color: #666;
+  font-weight: normal;
+}
+
+.footer-back-action-button:disabled {
+  --background: #cccccc;
+  opacity: 0.8;
+}
+
 .add-next-button {
   --background: #4eb15c;
 }
@@ -824,7 +853,6 @@ ion-toast {
 }
 
 .stock-indicator {
-  margin-top: 6px;
   text-align: center;
 }
 
@@ -861,11 +889,55 @@ ion-toast {
   transform: rotate(-15deg);
 }
 
+.out-of-stock-overlay.unavailable-overlay span {
+  background-color: #777777;
+}
+
 .size-card.out-of-stock {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
 .size-card.out-of-stock:active {
+  transform: none;
+}
+
+/* Stock Indicator Styling */
+.stock-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.stock-badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  --background: transparent;
+}
+
+.stock-badge[color="success"] {
+  background-color: rgba(45, 211, 111, 0.1);
+  color: #2a9d54;
+}
+
+.stock-badge[color="warning"] {
+  background-color: rgba(255, 196, 9, 0.1);
+  color: #d6a206;
+}
+
+.stock-badge[color="danger"] {
+  background-color: rgba(235, 68, 90, 0.1);
+  color: #cf3c4f;
+}
+
+.size-card.disabled-size {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.size-card.disabled-size:active {
   transform: none;
 }

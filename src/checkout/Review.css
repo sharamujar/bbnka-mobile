@@ -618,3 +618,39 @@
   font-family: monospace;
   font-weight: 500;
 } */
+
+.qr-container {
+  text-align: center;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(79, 31, 13, 0.08);
+  width: 100%;
+  max-width: 280px;
+  padding: 16px;
+}
+
+.gcash-qr {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: white;
+}
+
+.qr-instruction {
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.download-qr-button {
+  --border-color: var(--button-color);
+  --color: var(--button-color);
+  font-size: 12px;
+  margin-top: 8px;
+  width: 100%;
+}

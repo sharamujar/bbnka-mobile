@@ -1,5 +1,5 @@
 import React from "react";
-import { IonPage, IonContent, IonSpinner, IonText } from "@ionic/react";
+import { IonPage, IonContent, IonSpinner, IonText, IonImg } from "@ionic/react";
 import "./SplashScreen.css";
 
 const SplashScreen: React.FC = () => {
@@ -7,6 +7,11 @@ const SplashScreen: React.FC = () => {
     <IonPage>
       <IonContent className="splash-screen">
         <div className="splash-container">
+          <IonImg
+            src="/assets/bbnka-logo.png"
+            alt="BBNKA Logo"
+            className="splash-logo"
+          />
           <IonText className="app-title">BBNKA</IonText>
           <IonSpinner name="crescent" className="splash-spinner" />
         </div>

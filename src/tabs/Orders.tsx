@@ -76,6 +76,8 @@ interface Order {
     statusTimestamps?: Record<string, any>; // Timestamps for each status change
     cancellationReason?: string;
     cancellationNote?: string;
+    hasAppealed?: boolean; // Track if payment has been appealed
+    appealTimestamp?: any; // Timestamp when appeal was submitted
   };
   userDetails?: {
     firstName: string;
@@ -257,8 +259,12 @@ const Orders: React.FC = () => {
   ) => {
     // Special case for GCash payments
     if (paymentMethod === "gcash") {
+      // Rejected payment shows as danger/red
+      if (paymentStatus === "rejected") {
+        return "danger";
+      }
       // Pending payment verification shows as warning/yellow
-      if (paymentStatus !== "approved") {
+      else if (paymentStatus !== "approved") {
         return "warning";
       }
       // Approved payment but still in verification status shows as primary/blue
@@ -305,13 +311,26 @@ const Orders: React.FC = () => {
     status: string,
     paymentMethod?: string,
     paymentStatus?: string,
-    pickupOption?: string
+    pickupOption?: string,
+    hasAppealed?: boolean
   ) => {
+    // First check if the order is already cancelled - this should override other status displays
+    if (status === "cancelled" || status === "Cancelled") {
+      return "Cancelled";
+    }
+
     // Special case for GCash payments
     if (paymentMethod === "gcash") {
+      // Rejected payment shows as "Cancelled" if it had been appealed and rejected
+      if (paymentStatus === "rejected") {
+        if (hasAppealed) {
+          return "Cancelled";
+        }
+        return "Rejected - Action Required";
+      }
       // Pending payment shows as "Pending"
-      if (paymentStatus !== "approved") {
-        return "Pending";
+      else if (paymentStatus !== "approved") {
+        return "Pending Verification";
       }
       // Approved payment but still in verification status shows as "Order Confirmed"
       else if (status === "awaiting_payment_verification") {
@@ -327,7 +346,6 @@ const Orders: React.FC = () => {
       case "Preparing Order":
       case "Ready for Pickup":
       case "Completed":
-      case "Cancelled":
         return status;
 
       // Mobile app status values
@@ -337,8 +355,6 @@ const Orders: React.FC = () => {
         return "Ready for Pickup";
       case "completed":
         return "Completed";
-      case "cancelled":
-        return "Cancelled";
       case "awaiting_payment_verification":
         return "Pending";
       case "scheduled":
@@ -394,7 +410,9 @@ const Orders: React.FC = () => {
             getStatusText(
               order.orderDetails.orderStatus,
               order.orderDetails.paymentMethod,
-              order.orderDetails.paymentStatus
+              order.orderDetails.paymentStatus,
+              undefined,
+              order.orderDetails.hasAppealed
             )
               .toLowerCase()
               .includes(searchText.toLowerCase())
@@ -406,6 +424,15 @@ const Orders: React.FC = () => {
       return searchFiltered.filter((order) => {
         // Get effective status from orderDetails.orderStatus
         const status = order.orderDetails.orderStatus;
+
+        // Check if this is a rejected GCash appeal - treat as cancelled
+        if (
+          order.orderDetails.paymentMethod === "gcash" &&
+          order.orderDetails.paymentStatus === "rejected" &&
+          order.orderDetails.hasAppealed
+        ) {
+          return false; // Don't include in active tab
+        }
 
         // Special case for GCash payments that have been approved but status not updated
         if (
@@ -444,7 +471,22 @@ const Orders: React.FC = () => {
     } else {
       return searchFiltered.filter((order) => {
         const status = order.orderDetails.orderStatus;
-        return status === "cancelled" || status === "Cancelled";
+
+        // Include orders that are explicitly cancelled
+        if (status === "cancelled" || status === "Cancelled") {
+          return true;
+        }
+
+        // Also include rejected GCash appeals as cancelled
+        if (
+          order.orderDetails.paymentMethod === "gcash" &&
+          order.orderDetails.paymentStatus === "rejected" &&
+          order.orderDetails.hasAppealed
+        ) {
+          return true;
+        }
+
+        return false;
       });
     }
   };
@@ -454,6 +496,15 @@ const Orders: React.FC = () => {
   // Get counts for each tab
   const activeCounts = orders.filter((order) => {
     const status = order.orderDetails.orderStatus;
+
+    // Don't count rejected GCash appeals as active
+    if (
+      order.orderDetails.paymentMethod === "gcash" &&
+      order.orderDetails.paymentStatus === "rejected" &&
+      order.orderDetails.hasAppealed
+    ) {
+      return false;
+    }
 
     // Special case for GCash payments that have been approved but status not updated
     if (
@@ -492,7 +543,22 @@ const Orders: React.FC = () => {
 
   const cancelledCounts = orders.filter((order) => {
     const status = order.orderDetails.orderStatus;
-    return status === "cancelled" || status === "Cancelled";
+
+    // Count explicitly cancelled orders
+    if (status === "cancelled" || status === "Cancelled") {
+      return true;
+    }
+
+    // Also count rejected GCash appeals as cancelled
+    if (
+      order.orderDetails.paymentMethod === "gcash" &&
+      order.orderDetails.paymentStatus === "rejected" &&
+      order.orderDetails.hasAppealed
+    ) {
+      return true;
+    }
+
+    return false;
   }).length;
 
   return (
@@ -657,7 +723,9 @@ const Orders: React.FC = () => {
                             : getStatusText(
                                 order.orderDetails.orderStatus,
                                 order.orderDetails.paymentMethod,
-                                order.orderDetails.paymentStatus
+                                order.orderDetails.paymentStatus,
+                                order.orderDetails.pickupOption,
+                                order.orderDetails.hasAppealed
                               )}
                         </IonBadge>
                       </div>
@@ -690,13 +758,30 @@ const Orders: React.FC = () => {
                               : "GCash"}
                             {order.orderDetails.paymentStatus && (
                               <span
-                                className={`payment-status ${order.orderDetails.paymentStatus}`}
+                                className={`payment-status ${
+                                  order.orderDetails.paymentMethod === "cash" &&
+                                  (order.orderDetails.orderStatus ===
+                                    "completed" ||
+                                    order.orderDetails.orderStatus ===
+                                      "Completed")
+                                    ? "approved" // Use "approved" class for cash payments on completed orders
+                                    : order.orderDetails.paymentStatus
+                                }`}
                               >
                                 •{" "}
-                                {order.orderDetails.paymentStatus === "approved"
+                                {/* Show "Paid" for cash payments when order is completed */}
+                                {order.orderDetails.paymentMethod === "cash" &&
+                                (order.orderDetails.orderStatus ===
+                                  "completed" ||
+                                  order.orderDetails.orderStatus ===
+                                    "Completed")
                                   ? "Paid"
-                                  : order.orderDetails.paymentMethod === "cash"
-                                  ? "Pending"
+                                  : order.orderDetails.paymentStatus ===
+                                    "approved"
+                                  ? "Paid"
+                                  : order.orderDetails.paymentStatus ===
+                                    "rejected"
+                                  ? "Rejected"
                                   : "Pending"}
                               </span>
                             )}

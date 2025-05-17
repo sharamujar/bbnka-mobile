@@ -29,6 +29,9 @@ import {
   IonTitle,
   IonToolbar,
   useIonAlert,
+  IonToast,
+  IonCheckbox,
+  IonProgressBar,
 } from "@ionic/react";
 import React, { useEffect, useState } from "react";
 import { auth, db } from "../firebase-config";
@@ -61,6 +64,8 @@ import {
   trashBin,
   trashBinOutline,
   trashSharp,
+  alertCircleOutline,
+  informationCircleOutline,
 } from "ionicons/icons";
 import { useHistory } from "react-router";
 import { Link } from "react-router-dom";
@@ -75,6 +80,11 @@ const Cart: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showBYOKModal, setShowBYOKModal] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [selectedItems, setSelectedItems] = useState<string[]>([]); // Track selected item IDs
+  const [selectAll, setSelectAll] = useState(false); // Track select all state
+  const [productStocks, setProductStocks] = useState<Record<string, any>>({});
 
   const [quantity, setQuantity] = useState(1);
 
@@ -82,6 +92,80 @@ const Cart: React.FC = () => {
   const handleShowToastMessage = (message: string, success: boolean) => {
     console.log("Toast message (not shown):", message, success);
     // We're not showing a toast here, but the BuildYourOwnModal requires this prop
+  };
+
+  // Function to fetch stock information for a specific product
+  const fetchStockInfo = async (productId: string, productType: string) => {
+    try {
+      const stocksRef = collection(db, "testStocks");
+      let q = query(stocksRef, where("productId", "==", productId));
+
+      // If product type is available, add it to the query
+      if (productType) {
+        q = query(
+          stocksRef,
+          where("productId", "==", productId),
+          where("type", "==", productType.toLowerCase())
+        );
+      }
+
+      const stocksSnapshot = await getDocs(q);
+
+      if (!stocksSnapshot.empty) {
+        const stockData = stocksSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        return stockData;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching stock info:", error);
+      return null;
+    }
+  };
+
+  // Function to update stock information for all cart items
+  const updateStockInfo = async () => {
+    const stocksMap: Record<string, any> = {};
+
+    for (const item of cartItems) {
+      if (item.productId) {
+        // For regular products
+        const stockInfo = await fetchStockInfo(
+          item.productId,
+          item.productType
+        );
+        if (stockInfo) {
+          stocksMap[item.id] = stockInfo;
+        }
+      } else if (item.productIds && Array.isArray(item.productIds)) {
+        // For bilao products with multiple varieties
+        const multiStockInfo = [];
+        for (let i = 0; i < item.productIds.length; i++) {
+          const productId = item.productIds[i];
+          const productVariety = item.productVarieties?.[i] || null;
+
+          if (productId) {
+            const stockInfo = await fetchStockInfo(productId, item.productType);
+            if (stockInfo) {
+              multiStockInfo.push({
+                variety: productVariety,
+                stockInfo: stockInfo,
+              });
+            }
+          }
+        }
+
+        if (multiStockInfo.length > 0) {
+          stocksMap[item.id] = multiStockInfo;
+        }
+      }
+    }
+
+    setProductStocks(stocksMap);
+    console.log("Updated stock information:", stocksMap);
   };
 
   useEffect(() => {
@@ -139,10 +223,188 @@ const Cart: React.FC = () => {
     };
   }, [user]);
 
-  // Calculate cart totals
+  // Update stock information whenever cart items change
+  useEffect(() => {
+    if (cartItems.length > 0 && !loading) {
+      updateStockInfo();
+    }
+  }, [cartItems, loading]);
+
+  // Fetch product IDs by name to match with stocks
+  const [productNameToIdMap, setProductNameToIdMap] = useState<
+    Record<string, string>
+  >({});
+
+  // Load product names and IDs from testProducts collection for mapping
+  useEffect(() => {
+    const fetchProductsForMapping = async () => {
+      try {
+        const productsSnapshot = await getDocs(collection(db, "testProducts"));
+        const productsMap: Record<string, string> = {};
+
+        productsSnapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          if (data.name) {
+            productsMap[data.name.toLowerCase()] = doc.id;
+          }
+        });
+
+        console.log("Product name to ID mapping:", productsMap);
+        setProductNameToIdMap(productsMap);
+      } catch (error) {
+        console.error("Error fetching products for mapping:", error);
+      }
+    };
+
+    fetchProductsForMapping();
+  }, []);
+
+  // Add function to update cart items with missing product IDs
+  useEffect(() => {
+    // Wait until we have both cart items and product mapping
+    if (
+      cartItems.length > 0 &&
+      Object.keys(productNameToIdMap).length > 0 &&
+      user
+    ) {
+      const updateCartItemsWithProductIds = async () => {
+        console.log("Checking cart items for missing product IDs...");
+
+        const updates = [];
+
+        for (const item of cartItems) {
+          // Skip items that already have a productId or productIds
+          if (
+            item.productId ||
+            (item.productIds &&
+              Array.isArray(item.productIds) &&
+              item.productIds.length > 0)
+          ) {
+            continue;
+          }
+
+          // If item has productVarieties, try to map them to productIds
+          if (
+            item.productVarieties &&
+            Array.isArray(item.productVarieties) &&
+            item.productVarieties.length > 0
+          ) {
+            const productIds = item.productVarieties
+              .map((name: string) => {
+                const id = productNameToIdMap[name.toLowerCase()];
+                if (id) {
+                  console.log(`Found product ID ${id} for variety ${name}`);
+                  return id;
+                }
+                return null;
+              })
+              .filter(Boolean);
+
+            if (productIds.length > 0) {
+              console.log(
+                `Updating cart item ${item.id} with product IDs:`,
+                productIds
+              );
+              updates.push({
+                itemId: item.id,
+                data: {
+                  productIds: productIds,
+                  // Also set productType if missing
+                  productType: item.productType || "bilao",
+                },
+              });
+            }
+          } else if (typeof item.productName === "string") {
+            // For items with productName but no productId
+            const productId =
+              productNameToIdMap[item.productName.toLowerCase()];
+            if (productId) {
+              console.log(
+                `Updating cart item ${item.id} with product ID ${productId} based on name`
+              );
+              updates.push({
+                itemId: item.id,
+                data: {
+                  productId: productId,
+                  // Also set productType if missing
+                  productType: item.productType || "bilao",
+                },
+              });
+            }
+          }
+        }
+
+        // Apply updates to Firestore
+        for (const update of updates) {
+          try {
+            await updateDoc(
+              doc(db, "customers", user.uid, "cart", update.itemId),
+              update.data
+            );
+            console.log(`Successfully updated cart item ${update.itemId}`);
+          } catch (error) {
+            console.error(
+              `Failed to update cart item ${update.itemId}:`,
+              error
+            );
+          }
+        }
+      };
+
+      updateCartItemsWithProductIds();
+    }
+  }, [cartItems, productNameToIdMap, user]);
+
+  // Selection handling functions
+  const toggleItemSelection = (itemId: string) => {
+    setSelectedItems((prev) => {
+      if (prev.includes(itemId)) {
+        // If item is already selected, unselect it
+        return prev.filter((id) => id !== itemId);
+      } else {
+        // Otherwise add it to selected items
+        return [...prev, itemId];
+      }
+    });
+  };
+
+  const toggleSelectAll = () => {
+    // If all items are currently selected, unselect all
+    if (selectAll) {
+      setSelectedItems([]);
+    } else {
+      // Otherwise select all items
+      const allItemIds = cartItems.map((item) => item.id);
+      setSelectedItems(allItemIds);
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // Effect to keep selectAll state in sync with individual selections
+  useEffect(() => {
+    // Set selectAll to true if all items are selected
+    setSelectAll(
+      cartItems.length > 0 &&
+        cartItems.every((item) => selectedItems.includes(item.id))
+    );
+  }, [selectedItems, cartItems]);
+
+  // Initialize selected items when cart loads
+  useEffect(() => {
+    if (!loading && cartItems.length > 0) {
+      // By default, select all items
+      const allItemIds = cartItems.map((item) => item.id);
+      setSelectedItems(allItemIds);
+    }
+  }, [loading, cartItems]);
+
+  // Calculate cart totals for selected items only
   const subtotal = cartItems.reduce((total, item) => {
-    console.log("Calculating total for item:", item);
-    return total + (item.productPrice || 0);
+    // Only include the item in the total if it's selected
+    if (selectedItems.includes(item.id)) {
+      return total + (item.productPrice || 0);
+    }
+    return total;
   }, 0);
   const discountPercentage = 0;
   const discountAmount = (subtotal * discountPercentage) / 100;
@@ -214,11 +476,154 @@ const Cart: React.FC = () => {
     }
   };
 
+  // Helper function to get stock status for a single variety
+  const getStockStatusForVariety = (itemId: string, varietyName: string) => {
+    const stockData = productStocks[itemId];
+    if (!stockData || !Array.isArray(stockData)) {
+      return { status: "pending", quantity: 0 };
+    }
+
+    // Find the stock data for this specific variety
+    const varietyStock = stockData.find(
+      (stock) => stock.variety === varietyName
+    );
+    if (
+      !varietyStock ||
+      !varietyStock.stockInfo ||
+      varietyStock.stockInfo.length === 0
+    ) {
+      return { status: "unknown", quantity: 0 };
+    }
+
+    const stockItem = varietyStock.stockInfo[0];
+    const stockLevel = stockItem.quantity || 0;
+    const minStock = stockItem.minimumStock || 0;
+    const criticalLevel = stockItem.criticalLevel || 0;
+
+    let status = "normal";
+    if (stockLevel <= criticalLevel) {
+      status = "critical";
+    } else if (stockLevel <= minStock) {
+      status = "low";
+    }
+
+    return {
+      status,
+      quantity: stockLevel,
+      color:
+        status === "critical"
+          ? "danger"
+          : status === "low"
+          ? "warning"
+          : "success",
+    };
+  };
+
   const sortedCartItems = [...cartItems].sort((a, b) => {
     const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return timeB - timeA;
   });
+
+  // Helper function to render stock information
+  const renderStockInfo = (itemId: string) => {
+    const stockData = productStocks[itemId];
+
+    if (!stockData) {
+      return (
+        <IonText className="stock-info-pending">Loading stock info...</IonText>
+      );
+    }
+
+    if (Array.isArray(stockData)) {
+      // Multiple varieties
+      return (
+        <div className="stock-info-container">
+          {stockData.map((stock, index) => {
+            if (!stock.stockInfo || stock.stockInfo.length === 0) return null;
+
+            const stockItem = stock.stockInfo[0];
+            const stockLevel = stockItem.quantity || 0;
+            const minStock = stockItem.minimumStock || 0;
+            const criticalLevel = stockItem.criticalLevel || 0;
+            const stockPercent = Math.min((stockLevel / minStock) * 100, 100);
+
+            let stockStatus = "normal";
+            if (stockLevel <= criticalLevel) {
+              stockStatus = "critical";
+            } else if (stockLevel <= minStock) {
+              stockStatus = "low";
+            }
+
+            return (
+              <div key={index} className="variety-stock-info">
+                {stock.variety && (
+                  <div className="variety-name">{stock.variety}</div>
+                )}
+                <div className={`stock-level ${stockStatus}`}>
+                  <div className="stock-text">
+                    <IonIcon icon={informationCircleOutline} />
+                    <span>Stock: {stockLevel.toFixed(2)}</span>
+                  </div>
+                  <IonProgressBar
+                    value={stockPercent / 100}
+                    color={
+                      stockStatus === "critical"
+                        ? "danger"
+                        : stockStatus === "low"
+                        ? "warning"
+                        : "success"
+                    }
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    } else if (stockData && stockData.length > 0) {
+      // Single item
+      const stockItem = stockData[0];
+      const stockLevel = stockItem.quantity || 0;
+      const minStock = stockItem.minimumStock || 0;
+      const criticalLevel = stockItem.criticalLevel || 0;
+      const stockPercent = Math.min((stockLevel / minStock) * 100, 100);
+
+      let stockStatus = "normal";
+      if (stockLevel <= criticalLevel) {
+        stockStatus = "critical";
+      } else if (stockLevel <= minStock) {
+        stockStatus = "low";
+      }
+
+      return (
+        <div className="stock-info-container">
+          <div className={`stock-level ${stockStatus}`}>
+            <div className="stock-text">
+              <IonIcon icon={informationCircleOutline} />
+              <span>Stock: {stockLevel.toFixed(2)}</span>
+              <span className="min-stock">Min: {minStock}</span>
+              <span className="critical-level">Critical: {criticalLevel}</span>
+            </div>
+            <IonProgressBar
+              value={stockPercent / 100}
+              color={
+                stockStatus === "critical"
+                  ? "danger"
+                  : stockStatus === "low"
+                  ? "warning"
+                  : "success"
+              }
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <IonText className="stock-info-none">No stock info available</IonText>
+    );
+  };
 
   // badge color
   const getSizeColor = (sizeName: any): string => {
@@ -289,7 +694,6 @@ const Cart: React.FC = () => {
                 </IonButton>
               </IonRouterLink>
             </IonButtons>
-            <IonTitle>Cart</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent>
@@ -319,6 +723,20 @@ const Cart: React.FC = () => {
             </IonButton>
           </IonButtons>
           <IonTitle>Cart</IonTitle>
+          {cartItems.length > 0 && (
+            <IonButtons slot="end">
+              <div
+                className={`select-all-toggle ${selectAll ? "active" : ""}`}
+                onClick={toggleSelectAll}
+              >
+                <IonLabel>Select All</IonLabel>
+                <IonCheckbox
+                  checked={selectAll}
+                  onIonChange={toggleSelectAll}
+                />
+              </div>
+            </IonButtons>
+          )}
         </IonToolbar>
       </IonHeader>
 
@@ -358,15 +776,6 @@ const Cart: React.FC = () => {
             </IonButton>
           </div>
         ) : (
-          // <div className="empty-cart-container">
-          //   <IonIcon icon={cart} className="empty-cart-icon" />
-          //   <IonTitle>Your cart is empty</IonTitle>
-          //   <IonText>Looks like you haven't added any items yet.</IonText>
-          //   <IonButton expand="block" color="primary" routerLink="/home">
-          //     Browse Products
-          //     <IonIcon slot="end" icon={arrowForward} />
-          //   </IonButton>
-          // </div>
           <>
             <IonGrid>
               <IonRow>
@@ -382,6 +791,18 @@ const Cart: React.FC = () => {
                           className="cart-product-item-container"
                           lines="full"
                         >
+                          {/* Improved checkbox layout with proper spacing */}
+                          <div
+                            className="modern-checkbox-container"
+                            slot="start"
+                          >
+                            <IonCheckbox
+                              checked={selectedItems.includes(item.id)}
+                              onIonChange={() => toggleItemSelection(item.id)}
+                              className="cart-item-checkbox"
+                            />
+                          </div>
+
                           <div className="cart-badge-container">
                             <IonBadge
                               className="cart-size-badge"
@@ -413,17 +834,39 @@ const Cart: React.FC = () => {
                               >
                                 <IonIcon icon={trashSharp} color="danger" />
                               </IonButton>
-                            </div>
-
+                            </div>{" "}
                             <div className="cart-size-container">
                               <div className="cart-varieties-container">
                                 {Array.isArray(item.productVarieties) &&
                                   item.productVarieties.length > 0 && (
-                                    <div className="cart-varieties-text">
-                                      <IonText>
-                                        {item.productVarieties.join(", ")}
-                                      </IonText>
-                                    </div>
+                                    <>
+                                      {" "}
+                                      <div className="cart-varieties-text">
+                                        {item.productVarieties.map(
+                                          (variety: string, idx: number) => {
+                                            const stockStatus =
+                                              getStockStatusForVariety(
+                                                item.id,
+                                                variety
+                                              );
+                                            return (
+                                              <span
+                                                key={idx}
+                                                className={`variety-stock-text variety-stock-${stockStatus.status}`}
+                                              >
+                                                {variety}:{" "}
+                                                {stockStatus.status ===
+                                                "pending"
+                                                  ? "Loading..."
+                                                  : `${stockStatus.quantity.toFixed(
+                                                      0
+                                                    )} `}
+                                              </span>
+                                            );
+                                          }
+                                        )}
+                                      </div>
+                                    </>
                                   )}
                               </div>
 
@@ -510,9 +953,25 @@ const Cart: React.FC = () => {
                 </IonText>
               </div>
               <div className="footer-action-button-container">
-                <Link to="/home/cart/schedule" className="checkout-button-link">
-                  <IonButton className="footer-action-button schedule-button">
-                    Checkout
+                <Link
+                  to={{
+                    pathname: "/home/cart/schedule",
+                    state: {
+                      selectedItems: cartItems.filter((item) =>
+                        selectedItems.includes(item.id)
+                      ),
+                    },
+                  }}
+                  className="checkout-button-link"
+                >
+                  <IonButton
+                    className="footer-action-button schedule-button"
+                    disabled={selectedItems.length === 0}
+                  >
+                    Checkout{" "}
+                    {selectedItems.length > 0
+                      ? `(${selectedItems.length})`
+                      : ""}
                     <IonIcon slot="start" icon={bag} />
                     <IonIcon slot="end" icon={chevronForward} />
                   </IonButton>
@@ -528,6 +987,22 @@ const Cart: React.FC = () => {
         isOpen={showBYOKModal}
         onClose={() => setShowBYOKModal(false)}
         showToastMessage={handleShowToastMessage}
+      />
+
+      {/* Toast for stock limit notifications */}
+      <IonToast
+        isOpen={showToast}
+        onDidDismiss={() => setShowToast(false)}
+        message={toastMessage}
+        duration={3000}
+        position="bottom"
+        color="warning"
+        buttons={[
+          {
+            text: "OK",
+            role: "cancel",
+          },
+        ]}
       />
     </IonPage>
   );

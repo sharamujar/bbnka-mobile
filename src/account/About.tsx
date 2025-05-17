@@ -44,7 +44,7 @@ const About: React.FC = () => {
           <div className="about-container">
             <div className="about-logo-container">
               <IonImg
-                src="/assets/icon/favicon.png"
+                src="/assets/bbnka-logo.png"
                 alt="BBNKA Logo"
                 className="about-logo"
               />
@@ -142,7 +142,7 @@ const About: React.FC = () => {
               <h2 className="about-section-title">Connect With Us</h2>
               <div className="about-social-container">
                 <a
-                  href="https://facebook.com"
+                  href="https://www.facebook.com/AlingKikasBibingka"
                   className="about-social-link"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -150,7 +150,7 @@ const About: React.FC = () => {
                   <IonIcon icon={logoFacebook} className="about-social-icon" />
                 </a>
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/alingkikas/?hl=en"
                   className="about-social-link"
                   target="_blank"
                   rel="noopener noreferrer"

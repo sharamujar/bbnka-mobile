@@ -15,6 +15,7 @@ import { bag, home, notifications, person } from "ionicons/icons";
 import Login from "./pages/Login";
 import Registration from "./pages/Registration";
 import Home from "./tabs/Home";
+import Menu from "./products/Menu";
 import Account from "./tabs/Account";
 import Notifications from "./tabs/Notifications";
 import Orders from "./tabs/Orders";
@@ -45,24 +46,38 @@ import "./theme/variables.css";
 import "./theme/global.css";
 import "./App.css";
 import { StatusBar, Style } from "@capacitor/status-bar";
+import { Capacitor } from "@capacitor/core";
 import Schedule from "./checkout/Schedule";
 import Review from "./checkout/Review";
 
 // Configure StatusBar immediately on app load
-// try {
-//   StatusBar.setStyle({ style: Style.Dark });
-//   StatusBar.setBackgroundColor({ color: "#000000" });
-//   StatusBar.show();
-//   StatusBar.setOverlaysWebView({ overlay: true }); // Changed to true to allow content under status bar
-// } catch (error) {
-//   console.log("StatusBar not available on this platform");
-// }
+if (Capacitor.isNativePlatform()) {
+  try {
+    StatusBar.setStyle({ style: Style.Dark });
+    StatusBar.setBackgroundColor({ color: "#000000" });
+    StatusBar.show();
+
+    // Platform-specific configuration
+    if (Capacitor.getPlatform() === "android") {
+      StatusBar.setOverlaysWebView({ overlay: false });
+    } else {
+      StatusBar.setOverlaysWebView({ overlay: true });
+    }
+  } catch (error) {
+    console.log("StatusBar not available on this platform", error);
+  }
+}
 
 setupIonicReact();
 
 // AppContent component to access AuthContext
 const AppContent: React.FC = () => {
-  const { currentUser, hasUnverifiedEmail, isLoading } = useAuth();
+  const {
+    currentUser,
+    hasUnverifiedEmail,
+    isLoading,
+    verificationModalAlreadyShown,
+  } = useAuth();
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [showSplash, setShowSplash] = useState(true);
@@ -71,10 +86,21 @@ const AppContent: React.FC = () => {
   // Check if we need to show the verification modal when app reopens
   useEffect(() => {
     // Only show the verification modal once auth is loaded and we have a user with unverified email
-    if (!isLoading && currentUser && hasUnverifiedEmail) {
+    // AND if it hasn't already been shown during this session
+    if (
+      !isLoading &&
+      currentUser &&
+      hasUnverifiedEmail &&
+      !verificationModalAlreadyShown
+    ) {
       setShowVerificationModal(true);
     }
-  }, [isLoading, currentUser, hasUnverifiedEmail]);
+  }, [
+    isLoading,
+    currentUser,
+    hasUnverifiedEmail,
+    verificationModalAlreadyShown,
+  ]);
 
   // Handle splash screen timing separately
   useEffect(() => {
@@ -133,6 +159,9 @@ const AppContent: React.FC = () => {
               <Route exact path="/home">
                 {!currentUser ? <Redirect to="/login" /> : <Home />}
               </Route>
+              <Route exact path="/menu">
+                {!currentUser ? <Redirect to="/login" /> : <Menu />}
+              </Route>
               <Route exact path="/orders">
                 {!currentUser ? <Redirect to="/login" /> : <Orders />}
               </Route>
@@ -177,12 +206,15 @@ const AppContent: React.FC = () => {
             <IonTabBar slot="bottom">
               <IonTabButton tab="home" href="/home">
                 <IonIcon icon={home} />
+                <IonLabel>Home</IonLabel>
               </IonTabButton>
               <IonTabButton tab="orders" href="/orders">
                 <IonIcon icon={bag} />
+                <IonLabel>Orders</IonLabel>
               </IonTabButton>
               <IonTabButton tab="notifications" href="/notifications">
                 <IonIcon icon={notifications} />
+                <IonLabel>Notifications</IonLabel>
                 {unreadCount > 0 && (
                   <IonBadge color="danger" className="notification-badge">
                     {unreadCount}
@@ -191,6 +223,7 @@ const AppContent: React.FC = () => {
               </IonTabButton>
               <IonTabButton tab="account" href="/account">
                 <IonIcon icon={person} />
+                <IonLabel>Account</IonLabel>
               </IonTabButton>
             </IonTabBar>
           </IonTabs>

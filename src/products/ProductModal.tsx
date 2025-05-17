@@ -24,6 +24,9 @@ import {
   IonFooter,
   IonTitle,
   IonRouterLink,
+  IonToast,
+  IonRadio,
+  IonRadioGroup,
 } from "@ionic/react";
 import {
   close,
@@ -39,24 +42,69 @@ import {
   arrowForward,
   fastFood,
   chevronForward,
+  layersOutline,
+  calendarOutline,
+  chevronBack,
+  chevronBackSharp,
+  chevronBackCircle,
+  shapes,
 } from "ionicons/icons";
-import { collection, onSnapshot, getDocs } from "firebase/firestore";
-import { db } from "../firebase-config";
+import {
+  collection,
+  onSnapshot,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  query,
+  where,
+} from "firebase/firestore";
+import { db, auth } from "../firebase-config";
 import "../products/ProductModal.css";
 import { ProductModalProps } from "../interfaces/interfaces";
 import BuildYourOwnModal from "../components/BuildYourOwnModal";
 
 interface Size {
-  id: string;
+  id: string; // This is the primary key
+  sizeId?: string; // Optional backward compatibility
   name: string;
   dimensions: string;
-  slices: number;
-  shape: string;
+  shape: string; // Changed from slices to shape
   price: number;
   maxVarieties: number;
   imageUrl: string;
+  isPublished: boolean; // Added for testSizes
+  published: boolean; // Added for testSizes
   varieties: string[];
   status: "pending" | "approved" | "rejected";
+  type?: string; // Added type field to match with testStocks
+}
+
+// Interface for FixedSizeStock
+interface FixedSizeStock {
+  id: string;
+  criticalLevel: number;
+  expiryDate: string;
+  lastUpdated: string;
+  minimumStock: number;
+  productionDate: string;
+  quantity: number;
+  size: string;
+  type: string;
+  variety: string;
+}
+
+// Interface for product stocks from testStocks collection
+interface Stock {
+  id: string;
+  criticalLevel: number;
+  lastUpdated: string;
+  minimumStock: number;
+  productId: string; // Maps to the product id in testProducts
+  quantity: number;
+  sizeId: string; // If specific to a size
+  type: string; // Type of stock (e.g., 'tray')
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({
@@ -69,6 +117,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [availableSizes, setAvailableSizes] = useState<Size[]>([]);
   const [showBuildYourOwn, setShowBuildYourOwn] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<Size | null>(null);
+  const [showSizeSelector, setShowSizeSelector] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastColor, setToastColor] = useState("success");
+  const [isAddingToCart, setIsAddingToCart] = useState<boolean>(false);
+  const [varietyStocks, setVarietyStocks] = useState<Stock[]>([]);
+  const [fixedSizeStocks, setFixedSizeStocks] = useState<FixedSizeStock[]>([]);
 
   // Fetch sizes and detailed product information when product changes
   useEffect(() => {
@@ -79,34 +135,50 @@ const ProductModal: React.FC<ProductModalProps> = ({
     // Fetch all available sizes
     const fetchSizes = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "sizes"));
+        // Changed from sizes collection to testSizes collection
+        const querySnapshot = await getDocs(collection(db, "testSizes"));
         const sizeList = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
+          // Ensure varieties is always an array, even if missing in the data
           varieties: doc.data().varieties || [],
         }));
 
-        // More robust filtering with runtime checks for production build
-        const approvedSizes = sizeList.filter(
+        console.log("All test sizes:", sizeList);
+
+        // More robust filtering for published sizes - checking both published and isPublished flags
+        const publishedSizes = sizeList.filter(
           (size) =>
             size &&
             typeof size === "object" &&
-            "status" in size &&
-            size.status === "approved"
+            (("published" in size && size.published === true) ||
+              ("isPublished" in size && size.isPublished === true))
         );
-        setSizes(approvedSizes as Size[]);
 
-        // Filter sizes that have varieties for this product
+        setSizes(publishedSizes as Size[]);
+
+        // Filter sizes that have the current product name in their varieties array
         const productName = product.name;
-        const filteredSizes = approvedSizes.filter(
-          (size) =>
-            size &&
-            typeof size === "object" &&
-            "varieties" in size &&
-            Array.isArray(size.varieties) &&
-            size.varieties.includes(productName)
-        );
+        console.log("Filtering sizes for product:", productName);
 
+        const filteredSizes = publishedSizes.filter((size) => {
+          // Check if size has varieties array
+          if (!size.varieties || !Array.isArray(size.varieties)) {
+            return false;
+          }
+
+          // Check if any variety in the varieties array matches the product name
+          // Use more flexible matching by normalizing strings (trim whitespace, lowercase)
+          return size.varieties.some((varietyName: string) => {
+            if (typeof varietyName !== "string") return false;
+            return (
+              varietyName.trim().toLowerCase() ===
+              productName.trim().toLowerCase()
+            );
+          });
+        });
+
+        console.log("Filtered sizes for this product:", filteredSizes);
         setAvailableSizes(filteredSizes as Size[]);
       } catch (error) {
         console.error("Error fetching sizes:", error);
@@ -153,7 +225,153 @@ const ProductModal: React.FC<ProductModalProps> = ({
     fetchProductDetails();
   }, [product]);
 
+  // Reset UI state when the modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedSize(null);
+      setShowSizeSelector(false);
+
+      // Fetch stock information when modal opens
+      fetchVarietyStocks();
+      fetchFixedSizeStocks();
+    }
+  }, [isOpen]);
+
+  // Fetch variety stocks
+  const fetchVarietyStocks = async () => {
+    try {
+      const varietyStocksSnapshot = await getDocs(collection(db, "testStocks"));
+      const varietyStocksData = varietyStocksSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Stock[];
+      console.log("Product Modal - Stock data fetched:", varietyStocksData);
+      setVarietyStocks(varietyStocksData);
+    } catch (error) {
+      console.error("Error fetching stocks:", error);
+    }
+  };
+
+  // Fetch fixed size stocks for bibingka in small and solo sizes
+  const fetchFixedSizeStocks = async () => {
+    try {
+      const q = query(
+        collection(db, "testStocks"),
+        where("variety", "==", "Bibingka"),
+        where("type", "==", "fixed")
+      );
+      const fixedStocksSnapshot = await getDocs(q);
+      const fixedStocksData = fixedStocksSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as FixedSizeStock[];
+      setFixedSizeStocks(fixedStocksData);
+    } catch (error) {
+      console.error("Error fetching fixed size stocks:", error);
+    }
+  };
+
+  // Helper function to get fixed size stock for Bibingka
+  const getFixedSizeStock = (sizeName: string): FixedSizeStock | undefined => {
+    return fixedSizeStocks.find(
+      (stock) =>
+        stock.variety === product.name &&
+        stock.size.toLowerCase() === sizeName.toLowerCase()
+    );
+  };
+
+  // Helper function to get variety stock based on productId
+  const getVarietyStock = (productId: string): number => {
+    // Find the stock entry that matches the product ID
+    const stockEntry = varietyStocks.find(
+      (stock) => stock.productId === productId
+    );
+
+    // Return the quantity if found, otherwise return 0
+    return stockEntry ? stockEntry.quantity : 0;
+  };
+
+  // Helper function to determine stock status
+  const getStockStatus = (stock: FixedSizeStock | undefined) => {
+    if (!stock) return { status: "unavailable", text: "Unavailable" };
+
+    const { quantity, minimumStock, criticalLevel } = stock;
+
+    if (quantity <= 0) {
+      return {
+        status: "outOfStock",
+        text: "Out of Stock",
+        color: "danger",
+      };
+    } else if (quantity <= criticalLevel) {
+      return {
+        status: "low",
+        text: `Low: ${Math.round(quantity)} in stock`,
+        color: "danger",
+      };
+    } else if (quantity <= minimumStock) {
+      return {
+        status: "low",
+        text: `Limited: ${Math.round(quantity)} in stock`,
+        color: "warning",
+      };
+    } else {
+      return {
+        status: "available",
+        text: `Available: ${Math.round(quantity)} in stock`,
+        color: "success",
+      };
+    }
+  };
+
+  // Helper function to determine stock status based on product ID and size type from testStocks
+  const getProductStockStatus = (productId: string, sizeType?: string) => {
+    // Find the stock entry that matches both the product ID and the size type (if provided)
+    const stockEntry = varietyStocks.find(
+      (stock) =>
+        stock.productId === productId && (!sizeType || stock.type === sizeType)
+    );
+
+    if (!stockEntry)
+      return {
+        status: "unavailable",
+        text: "Unavailable",
+        color: "medium",
+      };
+
+    const { quantity, minimumStock, criticalLevel } = stockEntry;
+
+    if (quantity <= 0) {
+      return {
+        status: "outOfStock",
+        text: "Out of Stock",
+        color: "danger",
+      };
+    } else if (quantity <= criticalLevel) {
+      return {
+        status: "low",
+        text: `Low: ${Math.round(quantity)} in stock`,
+        color: "danger",
+      };
+    } else if (quantity <= minimumStock) {
+      return {
+        status: "low",
+        text: `Limited: ${Math.round(quantity)} in stock`,
+        color: "warning",
+      };
+    } else {
+      return {
+        status: "available",
+        text: `Available: ${Math.round(quantity)} in stock`,
+        color: "success",
+      };
+    }
+  };
+
   const handleClose = () => {
+    // Reset selection states when closing the modal
+    setSelectedSize(null);
+    setShowSizeSelector(false);
     onClose();
   };
 
@@ -164,6 +382,121 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleBuildYourOwnClose = () => {
     setShowBuildYourOwn(false);
+  };
+
+  // Handle size selection
+  const handleSizeSelect = (size: Size) => {
+    // Get stock status using product ID and size type for proper matching
+    const stockStatus = getProductStockStatus(product.id, size.type);
+
+    // Check if item is out of stock or unavailable
+    const isOutOfStock = stockStatus.status === "outOfStock";
+    const isUnavailable = stockStatus.status === "unavailable";
+
+    // Only set the selected size if it's in stock and available
+    if (!isOutOfStock && !isUnavailable) {
+      setSelectedSize(size);
+    } else if (isOutOfStock) {
+      // Show toast message for out-of-stock items
+      setToastMessage(`${size.name} size is currently out of stock`);
+      setToastColor("warning");
+      setShowToast(true);
+    } else if (isUnavailable) {
+      // Show toast message for unavailable items
+      setToastMessage(`${size.name} size is currently unavailable`);
+      setToastColor("medium");
+      setShowToast(true);
+    }
+  };
+
+  // Toggle size selector visibility
+  const toggleSizeSelector = () => {
+    setShowSizeSelector(!showSizeSelector);
+  };
+
+  // Add to cart functionality
+  const addToCart = async (size: Size) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setToastMessage("Please login to add items to your cart");
+      setToastColor("warning");
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      setIsAddingToCart(true); // Start loading indicator
+      const cartCollectionRef = collection(
+        db,
+        "customers",
+        currentUser.uid,
+        "cart"
+      );
+
+      // Check if this product and size combination already exists in the cart
+      const q = query(
+        cartCollectionRef,
+        where("productVarieties", "array-contains", product.name),
+        where("productSize", "==", size.name)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // Item already exists, update the quantity and price
+        const existingItem = querySnapshot.docs[0];
+        const existingData = existingItem.data();
+        const currentQuantity = existingData.productQuantity || 1;
+        const newQuantity = currentQuantity + 1;
+        const originalPrice = existingData.originalPrice || size.price;
+        const newPrice = originalPrice * newQuantity;
+
+        await updateDoc(existingItem.ref, {
+          productQuantity: newQuantity,
+          productPrice: newPrice,
+          updatedAt: new Date().toISOString(),
+        });
+
+        setToastMessage(`${product.name} added to cart successfully!`);
+      } else {
+        // Item doesn't exist, create a new one
+        const cartId = doc(cartCollectionRef).id;
+
+        await setDoc(doc(cartCollectionRef, cartId), {
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          productSize: size.name,
+          productVarieties: [product.name], // Add the product as a variety
+          productQuantity: 1,
+          productPrice: size.price,
+          originalPrice: size.price,
+          specialInstructions: null,
+          cartId,
+          userId: currentUser.uid,
+        });
+
+        setToastMessage(`${product.name} added to cart successfully!`);
+      }
+
+      setToastColor("success");
+      setShowToast(true);
+
+      // Reset selection state
+      setSelectedSize(null);
+      setShowSizeSelector(false);
+
+      // Close modal after short delay
+      setTimeout(() => {
+        setIsAddingToCart(false); // Stop loading indicator
+        handleClose();
+      }, 1500);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      setToastMessage("Failed to add item to cart. Please try again.");
+      setToastColor("danger");
+      setShowToast(true);
+      setIsAddingToCart(false); // Stop loading indicator on error
+    }
   };
 
   if (!product || loading) return null;
@@ -206,16 +539,12 @@ const ProductModal: React.FC<ProductModalProps> = ({
         <IonContent className="product-details-content">
           <div className="product-details-container">
             <div className="product-details-img">
-              <IonImg src={product.imageURL} alt={product.name} />
+              <IonImg src={product.imageUrl} alt={product.name} />
             </div>
 
             <div className="product-details-content">
               <div className="product-details-header">
                 <IonCardTitle>{product.name}</IonCardTitle>
-                {/* <div className="product-rating">
-                  <IonIcon icon={star} color="warning" />
-                  <span>{productDetails.rating}</span>
-              </div> */}
               </div>
 
               <p className="product-details-description">
@@ -239,55 +568,162 @@ const ProductModal: React.FC<ProductModalProps> = ({
           )}
         </div> */}
 
-              <div className="product-details-section">
-                <div className="product-details-section-title">
-                  <IonIcon icon={checkmarkCircle} />
-                  <span>{product.name} Sizes</span>
-                </div>
-                <p className="product-details-section-subtitle">
-                  This product is included in the following sizes. Each size has
-                  specific dimensions and number of servings:
-                </p>
-
-                {availableSizes.length > 0 ? (
-                  <IonGrid className="product-details-sizes-grid">
-                    <IonRow>
-                      {availableSizes
-                        .sort((a, b) => b.price - a.price)
-                        .map((size) => (
-                          <IonCol size="6" key={size.id}>
-                            <div className="product-details-size-info-card">
-                              <div className="product-details-size-info-name">
-                                {size.name}
-                              </div>
-                              <div className="product-details-size-info-price">
-                                ₱{size.price}
-                              </div>
-                              <div className="product-details-size-info-details">
-                                {size.slices && (
-                                  <div className="product-details-size-info-servings">
-                                    {size.slices} slices
-                                  </div>
-                                )}
-                                {size.dimensions && (
-                                  <div className="product-details-size-info-dimensions">
-                                    {size.dimensions}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </IonCol>
-                        ))}
-                    </IonRow>
-                  </IonGrid>
-                ) : (
-                  <div className="no-sizes-available">
-                    <IonText color="medium">
-                      This product is not currently available in any size.
-                    </IonText>
+              {/* Size Information Section - For Display Only */}
+              {!showSizeSelector && (
+                <div className="product-sizes-info">
+                  <div className="info-section-header">
+                    <IonIcon icon={layersOutline} />
+                    <h3 className="available-sizes-title">Available Sizes</h3>
                   </div>
-                )}
-              </div>
+
+                  {availableSizes.length > 0 ? (
+                    <div className="sizes-info-table">
+                      <div className="sizes-table-header">
+                        <div className="size-column">Size</div>
+                        <div className="dimensions-column">Dimensions</div>
+                        <div className="slices-column">Shape</div>
+                        <div className="price-column">Price</div>
+                      </div>
+                      <div className="sizes-table-body">
+                        {[...availableSizes]
+                          .sort((a, b) => b.price - a.price) // Sort from highest to lowest price
+                          .map((size) => (
+                            <div className="size-info-row" key={size.id}>
+                              <div className="size-column">{size.name}</div>
+                              <div className="dimensions-column">
+                                {size.dimensions || "—"}
+                              </div>
+                              <div className="slices-column">
+                                {size.shape || "—"}
+                              </div>
+                              <div className="price-column">₱{size.price}</div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="no-sizes-message">
+                      <IonText color="medium">
+                        This product is not currently available in any size.
+                      </IonText>
+                    </div>
+                  )}
+
+                  <div className="sizes-info-note">
+                    <IonIcon icon={informationCircleOutline} />
+                    <p>
+                      Prices may vary based on size and special requirements.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Interactive Size Selection Section - For Adding to Cart */}
+              {showSizeSelector && (
+                <div className="size-selection-container">
+                  <div className="info-section-header">
+                    <IonButton
+                      className="back-button"
+                      fill="clear"
+                      onClick={toggleSizeSelector}
+                    >
+                      <IonIcon slot="icon-only" icon={chevronBackCircle} />
+                    </IonButton>
+                    <h3>Select Size for {product.name}</h3>
+                  </div>
+
+                  {availableSizes.length > 0 ? (
+                    <IonRadioGroup
+                      value={selectedSize?.id || ""}
+                      onIonChange={(e) => {
+                        const selectedSizeId = e.detail.value;
+                        const size = availableSizes.find(
+                          (s) => s.id === selectedSizeId
+                        );
+                        if (size) {
+                          handleSizeSelect(size);
+                        }
+                      }}
+                    >
+                      <div className="interactive-sizes-list">
+                        {[...availableSizes]
+                          .sort((a, b) => b.price - a.price) // Sort from highest to lowest price
+                          .map((size) => {
+                            // Get stock information based on product ID and size type
+                            const stockStatus = getProductStockStatus(
+                              product.id,
+                              size.type
+                            ); // Check if item is out of stock or unavailable
+                            const isOutOfStock =
+                              stockStatus.status === "outOfStock";
+                            const isUnavailable =
+                              stockStatus.status === "unavailable";
+
+                            return (
+                              <div
+                                className={`size-selection-item ${
+                                  selectedSize?.id === size.id ? "selected" : ""
+                                } ${
+                                  isOutOfStock || isUnavailable
+                                    ? "out-of-stock"
+                                    : ""
+                                }`}
+                                key={size.id}
+                                onClick={() => handleSizeSelect(size)}
+                              >
+                                <div className="size-selection-details">
+                                  <div className="size-header">
+                                    <h4 className="size-name">{size.name}</h4>
+                                    {/* Display stock information */}
+                                    <div className="stock-indicator">
+                                      <IonBadge
+                                        color={stockStatus.color || "medium"}
+                                        className="stock-badge"
+                                      >
+                                        {stockStatus.text}
+                                      </IonBadge>
+                                    </div>
+                                  </div>
+
+                                  <div className="size-detail-item">
+                                    <IonIcon icon={layersOutline} />
+                                    {size.dimensions || "Standard"}
+                                  </div>
+
+                                  <div className="size-detail-item">
+                                    <IonIcon icon={shapes} />
+                                    {size.shape || "rectangle"}
+                                  </div>
+                                </div>
+
+                                {/* Radio button with price on top */}
+                                <div className="radio-container">
+                                  <div className="size-selection-price">
+                                    <span className="price-tag">
+                                      ₱{size.price}
+                                    </span>
+                                  </div>{" "}
+                                  <IonRadio
+                                    value={size.id}
+                                    mode="md"
+                                    disabled={isOutOfStock || isUnavailable}
+                                    className="custom-radio"
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </IonRadioGroup>
+                  ) : (
+                    <div className="no-sizes-message">
+                      <IonText color="medium">
+                        This product is not currently available in any size.
+                      </IonText>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* {productDetails.ingredients && (
                 <div className="product-details-section">
@@ -413,7 +849,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                 ₱{(index + 1) * 85}
                               </div>
                             </div>
-                          </div>
                     </IonCol>
                   ))}
                 </IonRow>
@@ -427,21 +862,70 @@ const ProductModal: React.FC<ProductModalProps> = ({
         <IonFooter className="product-modal-footer">
           <IonToolbar>
             <div className="build-your-own-footer">
-              <div className="build-your-own-text">
-                <h4>Want to order?</h4>
-                <p>Mix and match different kakanin</p>
-              </div>
-              <div className="footer-buttons">
-                <IonButton
-                  className="build-your-own-button"
-                  onClick={handleBuildYourOwn}
-                  fill="solid"
-                >
-                  Add To Cart
-                  <IonIcon slot="end" icon={chevronForward} />
-                  <IonIcon slot="start" icon={fastFood} />
-                </IonButton>
-              </div>
+              {showSizeSelector ? (
+                <div className="size-selection-footer">
+                  {/* <h4>
+                    {selectedSize
+                      ? `${selectedSize.name} - ₱${selectedSize.price}`
+                      : "Select a size above"}
+                  </h4> */}
+                  <div className="modal-footer-buttons select-size-footer">
+                    <IonButton
+                      className="footer-back-action-button select-size-back"
+                      onClick={toggleSizeSelector}
+                      fill="outline"
+                      disabled={isAddingToCart}
+                    >
+                      <IonIcon icon={chevronBack} slot="start" />
+                      Back
+                    </IonButton>
+                    <IonButton
+                      className="footer-action-button add-to-cart-button"
+                      disabled={!selectedSize || isAddingToCart}
+                      onClick={() => {
+                        if (selectedSize) {
+                          addToCart(selectedSize);
+                        }
+                      }}
+                    >
+                      {isAddingToCart ? (
+                        "Adding..."
+                      ) : (
+                        <>
+                          <IonIcon slot="start" icon={fastFood} />
+                          ADD TO CART
+                        </>
+                      )}
+                    </IonButton>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="product-modal-footer-buttons order-now-btn">
+                    <IonButton
+                      className="footer-back-action-button select-size-back"
+                      onClick={toggleSizeSelector}
+                      fill="outline"
+                    >
+                      <IonIcon icon={fastFood} slot="start" />
+                      Order Now
+                    </IonButton>
+
+                    <div className="options-divider">
+                      <div className="divider-text">OR</div>
+                    </div>
+
+                    <IonButton
+                      className="footer-action-button"
+                      onClick={handleBuildYourOwn}
+                      fill="solid"
+                    >
+                      <IonIcon icon={chevronForward} slot="end" />
+                      Customize Order
+                    </IonButton>
+                  </div>
+                </>
+              )}
             </div>
           </IonToolbar>
         </IonFooter>
@@ -453,6 +937,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
         showToastMessage={(message: string, success: boolean) => {
           // Handle toast message
         }}
+      />
+
+      <IonToast
+        isOpen={showToast}
+        onDidDismiss={() => setShowToast(false)}
+        message={toastMessage}
+        duration={2000}
+        color={toastColor}
       />
     </>
   );

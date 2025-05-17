@@ -27,6 +27,7 @@ import {
   useIonViewDidEnter,
   useIonViewWillLeave,
   IonText,
+  IonBadge,
 } from "@ionic/react";
 import {
   cart,
@@ -60,6 +61,7 @@ const Home: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<any[]>([]);
+  const [cartItemCount, setCartItemCount] = useState(0);
 
   // Modal state
   const [productDetailsModal, setProductDetailsModal] = useState(false);
@@ -85,6 +87,21 @@ const Home: React.FC = () => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("User is logged in:", user.email);
+        // Set up cart listener when user is authenticated
+        const cartRef = collection(db, "customers", user.uid, "cart");
+        const unsubscribeCart = onSnapshot(
+          cartRef,
+          (snapshot) => {
+            setCartItemCount(snapshot.size);
+          },
+          (error) => {
+            console.error("Error fetching cart items:", error);
+          }
+        );
+
+        return () => {
+          unsubscribeCart();
+        };
       } else if (location.pathname.includes("/home")) {
         console.log("No user detected, redirecting to login...");
         history.replace("/login");
@@ -141,6 +158,40 @@ const Home: React.FC = () => {
       unsubscribeProducts();
       unsubscribeCategories();
       unsubscribePromotions();
+    };
+  }, []);
+
+  // Fetch featured products
+  useEffect(() => {
+    const unsubscribeProducts = onSnapshot(
+      collection(db, "testProducts"),
+      (snapshot) => {
+        const productList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Filter products to only show approved AND featured ones
+        // const approvedFeaturedProducts = productList.filter(
+        //   (product) =>
+        //     product &&
+        //     typeof product === "object" &&
+        //     "status" in product &&
+        //     product.status === "approved" &&
+        //     "published" in product &&
+        //     product.published === true &&
+        //     "featured" in product &&
+        //     product.featured === true
+        // );
+        // setFeaturedProducts(approvedFeaturedProducts);
+
+        // Update loading state
+        // setLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribeProducts();
     };
   }, []);
 
@@ -221,6 +272,11 @@ const Home: React.FC = () => {
                 slot="icon-only"
                 size="small"
               ></IonIcon>
+              {cartItemCount > 0 && (
+                <IonBadge color="danger" className="cart-badge">
+                  {cartItemCount}
+                </IonBadge>
+              )}
             </IonButton>
           </IonButtons>
         </IonToolbar>
@@ -253,6 +309,10 @@ const Home: React.FC = () => {
           )}
         </IonCard>
 
+        <div>
+          <IonTitle className="home-product-title">Explore Our App</IonTitle>
+        </div>
+
         <IonCard
           className="home-byok-cta-card"
           onClick={() => setBYOKShowModal(true)}
@@ -261,7 +321,7 @@ const Home: React.FC = () => {
             <div className="home-byok-text">
               <IonCardTitle>Build Your Own Kakanin</IonCardTitle>
               <IonCardSubtitle>
-                Customize your kakanin with your favorite flavors!
+                Customize your order with your favorite kakanin!
               </IonCardSubtitle>
               <div className="home-byok-btn-container">
                 <IonButton
@@ -294,7 +354,42 @@ const Home: React.FC = () => {
           showToastMessage={handleShowToastMessage}
         />
 
-        <div>
+        <IonCard
+          className="home-menu-cta-card"
+          onClick={() => history.push("/menu")}
+        >
+          <div className="home-menu-content">
+            <div className="home-menu-text">
+              <IonCardTitle>View Our Menu</IonCardTitle>
+              <IonCardSubtitle>
+                Explore our delicious selection of traditional kakanin!
+              </IonCardSubtitle>
+              <div className="home-menu-btn-container">
+                <IonButton
+                  className="home-menu-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    history.push("/menu");
+                  }}
+                >
+                  <IonIcon
+                    icon={storefront}
+                    className="home-menu-icon"
+                    slot="start"
+                  ></IonIcon>
+                  View Products
+                  <IonIcon
+                    icon={chevronForward}
+                    className="home-menu-icon"
+                    slot="end"
+                  ></IonIcon>
+                </IonButton>
+              </div>
+            </div>
+          </div>
+        </IonCard>
+
+        {/* <div>
           <IonTitle className="home-product-title">Our Products</IonTitle>
         </div>
 
@@ -336,98 +431,6 @@ const Home: React.FC = () => {
                   <p className="no-products-text">No products available yet</p>
                 </div>
               </IonCol>
-            )}
-          </IonRow>
-        </IonGrid>
-
-        {/* <IonFab
-          vertical="bottom"
-          horizontal="end"
-          slot="fixed"
-          className={`order-now-fab ${!isVisible ? "hidden" : ""}`}
-        >
-          <IonButton
-            className="order-now-btn"
-            onClick={() => openProductModal(null)}
-          >
-            <div className="order-now-content">
-              <IonIcon icon={storefront} className="order-icon" />
-              <IonLabel className="order-label">Order Now</IonLabel>
-            </div>
-          </IonButton>
-        </IonFab> */}
-
-        {/* <div className="search-bar-container">
-          <IonItem className="search-bar" lines="none">
-            <IonInput
-              className="search-input"
-              type="text"
-              placeholder="Search products..."
-            />
-            <IonButton className="search-button" expand="block">
-              <IonIcon icon={searchOutline} />
-            </IonButton>
-          </IonItem>
-        </div>
-        <IonCard className="banner-container">
-          {promotions.length > 0 && <IonImg src={promotions[0].imageUrl} />}
-        </IonCard>
-        <div>
-          <IonTitle className="categories-title">Categories</IonTitle>
-        </div>
-        <div className="category-container">
-          {categories.map((category, index) => (
-            <IonButton
-              fill="clear"
-              key={category.id}
-              className={`category-button ${
-                activeCategory === category ? "active" : ""
-              }`}
-              onClick={() => handleCategorySelect(category)}
-            >
-              {category.name}
-            </IonButton>
-          ))}
-        </div>
-
-        <IonGrid className="product-grid">
-          <IonRow className="product-row">
-            {products.length > 0 ? (
-              products.map((product) => (
-                <IonCol key={product.id} size="6">
-                  <IonCard
-                    className="product-card"
-                    button={true}
-                    onClick={() => openProductModal(product)}
-                  >
-                    <div className="product-img">
-                      <IonImg src={product.imageURL} />
-                    </div>
-                    <div className="product-details">
-                      <IonCardHeader className="product-header">
-                        <IonCardTitle>{product.name}</IonCardTitle>
-                      </IonCardHeader>
-                      <IonCardHeader className="price-header">
-                        <div className="price-container">
-                          <IonCardSubtitle>Starting at</IonCardSubtitle>
-                          <IonCardTitle>₱{product.price}</IonCardTitle>
-                        </div>
-                        <IonButton
-                          className="add-button"
-                          size="small"
-                          shape="round"
-                        >
-                          <IonIcon className="add-icon" icon={add} />
-                        </IonButton>
-                      </IonCardHeader>
-                    </div>
-                  </IonCard>
-                </IonCol>
-              ))
-            ) : (
-              <div className="no-products-container">
-                <p className="no-products-text">No products available</p>
-              </div>
             )}
           </IonRow>
         </IonGrid> */}

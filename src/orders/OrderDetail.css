@@ -364,6 +364,11 @@
   color: white;
 }
 
+.order-detail-step-vertical.rejected .order-detail-step-icon-vertical {
+  background-color: var(--ion-color-danger);
+  color: white;
+}
+
 .order-detail-step-icon-vertical ion-icon {
   font-size: 18px;
 }
@@ -402,6 +407,11 @@
 
 .order-detail-step-vertical.pending .order-detail-step-label-vertical {
   color: #f57c00;
+  font-weight: 600;
+}
+
+.order-detail-step-vertical.rejected .order-detail-step-label-vertical {
+  color: var(--ion-color-danger);
   font-weight: 600;
 }
 
@@ -484,6 +494,13 @@
 
 .order-detail-step-vertical.active .order-detail-step-desc {
   color: #666;
+}
+
+.highlighted-reason {
+  font-size: 13px;
+  padding: 4px 0;
+  color: var(--ion-color-danger);
+  font-weight: 500;
 }
 
 /* Adjust card content padding to fit the tracking progress better */
@@ -574,4 +591,647 @@
   background: var(--ion-color-light);
   border-radius: 8px;
   margin: 16px 0;
+}
+
+/* Payment Appeal styles - modern and minimalist design */
+.payment-appeal-container {
+  margin: 20px 0 10px;
+  padding: 0;
+}
+
+.payment-rejection-info {
+  display: flex;
+  align-items: flex-start;
+  background-color: rgba(191, 89, 6, 0.05);
+  border-left: 3px solid var(--button-color);
+  padding: 16px;
+  border-radius: 10px;
+  margin: 0 0 16px;
+}
+
+.payment-rejection-info ion-icon {
+  color: var(--button-color);
+  font-size: 22px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.payment-rejection-info div {
+  flex: 1;
+}
+
+.payment-rejection-info h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+.payment-rejection-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.payment-appeal-button {
+  --background: var(--button-color);
+  --border-radius: 10px;
+  font-weight: 500;
+  --box-shadow: none;
+  margin: 0 0 10px;
+  height: 43px;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  font-size: 12px;
+}
+
+.payment-already-appealed {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 20px 0;
+  padding: 16px;
+  background-color: rgba(45, 211, 111, 0.08);
+  border-radius: 10px;
+}
+
+.payment-already-appealed ion-icon {
+  font-size: 28px;
+  color: #2dd36f;
+  flex-shrink: 0;
+}
+
+.payment-already-appealed div {
+  flex: 1;
+  text-align: left;
+}
+
+.payment-already-appealed h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+.payment-already-appealed p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #666;
+}
+
+/* Appeal Payment Modal - updated to match the provided design image */
+.appeal-payment-modal {
+  --width: 90%;
+  --height: auto;
+  --border-radius: 10px;
+  --box-shadow: none;
+  max-width: 400px;
+}
+
+.appeal-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.appeal-modal-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--header-color, #4f1f0d);
+  margin: 0;
+}
+
+.appeal-modal-close-button {
+  margin: 0;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  height: 36px;
+  --color: #888;
+}
+
+.appeal-payment-content {
+  padding: 20px 20px 24px;
+}
+
+.appeal-one-time-notice {
+  display: flex;
+  align-items: center;
+  background-color: #fff9e6;
+  border-left: 2px solid #bf5906;
+  padding: 14px 16px;
+  border-radius: 6px;
+  margin-bottom: 18px;
+}
+
+.appeal-one-time-notice ion-icon {
+  font-size: 20px;
+  color: #bf5906;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.appeal-one-time-notice p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4f1f0d;
+}
+
+.appeal-instructions {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.appeal-instructions p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.appeal-method-selector {
+  margin-bottom: 20px;
+}
+
+.method-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4f1f0d;
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.method-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.method-button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 16px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.method-button.active {
+  background-color: rgba(191, 89, 6, 0.08);
+  border: 1px solid #bf5906;
+}
+
+.method-button ion-icon {
+  font-size: 22px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.method-button.active ion-icon {
+  color: #bf5906;
+}
+
+.method-button span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+}
+
+.method-button.active span {
+  color: #bf5906;
+}
+
+.appeal-reference-input-field {
+  margin: 20px 0;
+}
+
+.appeal-reference-input {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  --placeholder-color: #999;
+  --background: #f5f5f5;
+  --border-radius: 8px;
+  --placeholder-opacity: 0.8;
+  margin-top: 5px;
+  --border-width: 0;
+  --highlight-height: 0;
+  font-size: 12px;
+}
+
+.appeal-reference-error {
+  display: block;
+  font-size: 12px;
+  color: var(--ion-color-danger);
+  margin-top: 6px;
+}
+
+.appeal-reference-valid {
+  display: block;
+  font-size: 12px;
+  color: var(--ion-color-success);
+  margin-top: 6px;
+}
+
+.appeal-reference-help-text {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-top: 8px;
+}
+
+.appeal-screenshot-upload {
+  margin: 20px 0;
+}
+
+.appeal-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border: 1px dashed #ddd;
+  border-radius: 8px;
+  padding: 30px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.appeal-upload-placeholder ion-icon {
+  font-size: 32px;
+  color: #999;
+  margin-bottom: 10px;
+}
+
+.appeal-upload-placeholder h4 {
+  font-size: 16px;
+  font-weight: 500;
+  color: #4f1f0d;
+  margin: 0 0 4px;
+}
+
+.appeal-upload-placeholder p {
+  font-size: 13px;
+  color: #888;
+  margin: 0;
+}
+
+.appeal-uploaded-screenshot-preview {
+  position: relative;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.appeal-uploaded-screenshot-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.appeal-remove-image-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  --border-radius: 50%;
+  --padding-start: 0;
+  --padding-end: 0;
+  margin: 0;
+  height: 36px;
+  width: 36px;
+  --background: rgba(255, 255, 255, 0.9);
+}
+
+.appeal-submit-button {
+  width: 100%;
+  --background: var(--button-color);
+  --border-radius: 8px;
+  --color: white;
+  margin: 0;
+  height: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  --box-shadow: none;
+  letter-spacing: 0.5px;
+}
+
+.appeal-submit-button:disabled {
+  --background: #ddd;
+  --color: #999;
+}
+
+.appeal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+  gap: 12px;
+}
+
+.appeal-back-button {
+  --border-color: var(--button-color);
+  --color: var(--button-color);
+  --border-width: 1px;
+  --border-style: solid;
+  --box-shadow: none;
+  flex: 1;
+  height: 48px;
+}
+
+.appeal-actions ion-button[color="tertiary"] {
+  --background: var(--button-color);
+  --box-shadow: none;
+  flex: 2;
+  height: 48px;
+}
+
+/* Order GCash Modal - Updated with new class names and modern design */
+.order-gcash-modal {
+  --border-radius: 20px 20px 0 0;
+  --max-width: 420px;
+  --max-height: 90%;
+  --box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  --background: #fafafa;
+}
+
+.order-gcash-modal ion-toolbar {
+  --background: transparent;
+  --color: var(--header-color);
+}
+
+.order-gcash-modal ion-title {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.order-modal-close-btn {
+  font-size: 24px;
+  margin: 0;
+  --color: #666;
+}
+
+.order-gcash-modal-content {
+  padding: 10px 20px 30px;
+}
+
+/* One-time notice banner */
+.order-appeal-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background-color: rgba(255, 249, 175, 0.3);
+  border-left: 3px solid var(--button-color);
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.order-appeal-notice ion-icon {
+  font-size: 22px;
+  color: var(--button-color);
+  flex-shrink: 0;
+}
+
+.order-appeal-notice h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+.order-appeal-notice p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Verification Method Selector */
+.order-verification-selector {
+  margin-bottom: 24px;
+}
+
+.order-verification-selector ion-segment {
+  --background: #f0f0f0;
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.order-verification-selector ion-segment-button {
+  --border-radius: 8px;
+  --indicator-color: var(--button-color);
+  --background-checked: rgba(191, 89, 6, 0.1);
+  --color-checked: var(--button-color);
+  min-height: 46px;
+  font-weight: 500;
+}
+
+.order-verification-selector ion-label {
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+
+.order-verification-selector ion-icon {
+  font-size: 18px;
+}
+
+/* Reference Number Container */
+.order-reference-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.order-reference-container h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+.order-reference-container p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.order-reference-input-item {
+  --background: #f5f5f5;
+  --border-radius: 10px;
+  --border-style: none;
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.order-reference-input {
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  --placeholder-color: #999;
+  font-size: 16px;
+  letter-spacing: 1px;
+  font-family: monospace;
+}
+
+.order-valid-reference {
+  --highlight-color-focused: #2dd36f;
+}
+
+.order-reference-error {
+  font-size: 14px;
+  margin: 8px 0 0 4px;
+  display: flex;
+  align-items: center;
+}
+
+.order-reference-valid {
+  font-size: 14px;
+  margin: 8px 0 0 4px;
+  display: flex;
+  align-items: center;
+}
+
+/* Screenshot Upload Container */
+.order-screenshot-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.order-screenshot-container h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+.order-screenshot-container p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.order-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border: 1px dashed #ddd;
+  border-radius: 10px;
+  padding: 30px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.order-upload-placeholder:hover {
+  background-color: #f0f0f0;
+}
+
+.order-upload-icon {
+  font-size: 32px;
+  color: #999;
+  margin-bottom: 12px;
+}
+
+.order-upload-placeholder p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.order-screenshot-preview {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.order-screenshot-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.order-remove-screenshot-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  --background: rgba(255, 255, 255, 0.9);
+  --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+/* Submit Button Container */
+.order-submit-container {
+  margin-top: 30px;
+}
+
+.order-submit-button {
+  --background: var(--button-color);
+  --border-radius: 10px;
+  --color: white;
+  height: 48px;
+  font-size: 14px;
+  font-weight: 600;
+  --box-shadow: 0 4px 10px rgba(191, 89, 6, 0.15);
+}
+
+.order-submit-button ion-spinner {
+  margin-right: 8px;
+}
+
+.order-submit-button:hover {
+  --background: #a84d05;
+}
+
+.order-submit-button.button-disabled {
+  --background: #e0e0e0;
+  --color: #999;
+}
+
+/* Payment action buttons */
+.payment-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.payment-cancel-button,
+.payment-appeal-button {
+  margin: 0;
+  height: 46px;
+  font-size: 14px !important;
+}
+
+.payment-appeal-button {
+  --background: var(--button-color);
+  --color: white;
 }

@@ -135,6 +135,7 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     <>
       <IonModal
         isOpen={isOpen}
+        backdropDismiss={false}
         onDidDismiss={onClose}
         className="verification-modal"
       >

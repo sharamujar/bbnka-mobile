@@ -51,6 +51,26 @@ ion-header ion-title {
   font-size: 22px;
 }
 
+/* Cart badge styling */
+.cart-button {
+  position: relative;
+}
+
+.cart-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 10px;
+  border-radius: 50%;
+  padding: 2px 4px;
+  min-width: 16px;
+  min-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(25%, -25%);
+}
+
 /* Banner section */
 .banner-container {
   margin: var(--spacing-md) var(--spacing-md) var(--spacing-lg);
@@ -72,7 +92,7 @@ ion-header ion-title {
 .home-byok-cta-card {
   border-radius: var(--border-radius-lg);
   overflow: hidden;
-  margin: 0 var(--spacing-md) var(--spacing-lg);
+  margin: 0 var(--spacing-md) var(--spacing-sm) var(--spacing-md);
   background: linear-gradient(135deg, #bf5906, #8c4204);
   border: none;
   box-shadow: var(--shadow-medium);
@@ -123,12 +143,67 @@ ion-header ion-title {
   margin-left: var(--spacing-xs);
 }
 
+/* Menu Products card */
+.home-menu-cta-card {
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  margin: 0 var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(135deg, #4f1f0d, #703114);
+  border: none;
+  box-shadow: var(--shadow-medium);
+  transition: transform 0.2s ease;
+}
+
+.home-menu-cta-card:active {
+  transform: scale(0.98);
+}
+
+.home-menu-content {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-lg);
+  position: relative;
+}
+
+.home-menu-text ion-card-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+  color: #ffffff;
+  letter-spacing: -0.3px;
+}
+
+.home-menu-text ion-card-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 400;
+  line-height: 1.4;
+  margin-bottom: var(--spacing-md);
+}
+
+.home-menu-btn {
+  --background: #ffffff;
+  --color: var(--header-color);
+  --border-radius: 24px;
+  --box-shadow: none;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  height: 38px;
+  margin: 0;
+}
+
+.home-menu-icon {
+  font-size: 16px;
+  margin-left: var(--spacing-xs);
+}
+
 /* Products section */
 .home-product-title {
   color: var(--header-color);
   font-weight: 700;
   font-size: 20px;
-  margin: 0;
+  margin-bottom: var(--spacing-md);
   letter-spacing: -0.3px;
   position: relative;
   display: inline-block;

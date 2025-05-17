@@ -21,9 +21,11 @@ interface AuthContextType {
   isCustomer: boolean;
   isLoading: boolean;
   hasUnverifiedEmail: boolean; // Add this to track unverified email status
+  verificationModalAlreadyShown: boolean; // Add this to track if verification modal has been shown
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
+  markVerificationModalAsShown: () => void; // Add this to mark verification modal as shown
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,6 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isCustomer, setIsCustomer] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasUnverifiedEmail, setHasUnverifiedEmail] = useState<boolean>(false);
+  const [verificationModalAlreadyShown, setVerificationModalAlreadyShown] =
+    useState(false);
 
   useEffect(() => {
     // Set up listener for authentication state changes
@@ -133,14 +137,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Method to mark verification modal as shown
+  const markVerificationModalAsShown = () => {
+    setVerificationModalAlreadyShown(true);
+  };
+
   const value = {
     currentUser,
     isCustomer,
     isLoading,
     hasUnverifiedEmail,
+    verificationModalAlreadyShown,
     login,
     register,
     logout,
+    markVerificationModalAsShown,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -13,10 +13,16 @@ import {
   IonChip,
   IonCard,
   IonCardContent,
+  IonCardTitle,
+  IonCardSubtitle,
   IonSkeletonText,
   IonBadge,
   useIonToast,
   RefresherEventDetail,
+  IonSegment,
+  IonSegmentButton,
+  IonLabel,
+  IonCardHeader,
 } from "@ionic/react";
 import {
   notificationsOutline,
@@ -28,19 +34,27 @@ import {
   arrowForwardOutline,
   checkmarkDoneOutline,
   closeCircle,
+  cardOutline,
+  megaphoneOutline,
+  calendarOutline,
 } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import "./Notifications.css";
 import {
   notificationService,
   Notification,
+  Announcement,
 } from "../services/NotificationService";
 
 const Notifications: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [present] = useIonToast();
   const history = useHistory();
+  const [activeSegment, setActiveSegment] = useState<
+    "notifications" | "announcements"
+  >("notifications");
 
   // Fetch notifications using our service
   const fetchNotifications = async () => {
@@ -60,9 +74,31 @@ const Notifications: React.FC = () => {
     }
   };
 
+  // Fetch announcements
+  const fetchAnnouncements = async () => {
+    try {
+      setLoading(true);
+      // Only fetch active announcements
+      const allAnnouncements = await notificationService.getAnnouncements(
+        false
+      );
+      setAnnouncements(allAnnouncements);
+    } catch (error) {
+      console.error("Error fetching announcements:", error);
+      present({
+        message: "Failed to load announcements",
+        duration: 3000,
+        color: "danger",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     fetchNotifications();
+    fetchAnnouncements();
   }, []);
 
   // Mark notification as read
@@ -113,6 +149,7 @@ const Notifications: React.FC = () => {
   const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
     try {
       await fetchNotifications();
+      await fetchAnnouncements();
       present({
         message: "Notifications refreshed",
         duration: 1500,
@@ -125,6 +162,11 @@ const Notifications: React.FC = () => {
 
   // Get icon for notification type
   const getNotificationIcon = (type: string, title: string) => {
+    // Rejected payment notification
+    if (title.includes("Payment Rejected")) {
+      return closeCircle;
+    }
+
     // Special handling for order status updates
     if (title.includes("Order Status Updated")) {
       if (title.includes("Completed") || title.includes("Ready")) {
@@ -141,12 +183,18 @@ const Notifications: React.FC = () => {
       return checkmarkCircle;
     }
 
+    // GCash payment icons
+    if (title.includes("GCash")) {
+      return cardOutline;
+    }
+
     // Default behavior based on type
     switch (type) {
       case "success":
         return checkmarkCircle;
       case "error":
-        return alertCircle;
+      case "danger":
+        return closeCircle;
       case "info":
         return informationCircle;
       default:
@@ -156,6 +204,11 @@ const Notifications: React.FC = () => {
 
   // Get color for notification type
   const getNotificationColor = (type: string, title: string) => {
+    // Rejected payment notification
+    if (title.includes("Payment Rejected")) {
+      return "danger";
+    }
+
     // Special handling for order status updates
     if (title.includes("Order Status Updated")) {
       if (title.includes("Completed") || title.includes("Ready for Pickup")) {
@@ -179,6 +232,7 @@ const Notifications: React.FC = () => {
       case "success":
         return "success";
       case "error":
+      case "danger":
         return "danger";
       case "info":
         return "primary";
@@ -246,11 +300,22 @@ const Notifications: React.FC = () => {
   };
 
   // Extract payment attribute for CSS styling
-  const getPaymentStatusAttribute = (title: string): string => {
+  const getPaymentStatusAttribute = (
+    title: string,
+    message: string
+  ): string => {
     if (title.includes("Payment Approved")) {
       return "approved";
     }
+    if (title.includes("Payment Rejected")) {
+      return "rejected";
+    }
     return "";
+  };
+
+  // Handle segment change
+  const handleSegmentChange = (value: "notifications" | "announcements") => {
+    setActiveSegment(value);
   };
 
   return (
@@ -259,13 +324,13 @@ const Notifications: React.FC = () => {
         <IonToolbar>
           <IonTitle>
             Notifications
-            {unreadCount > 0 && (
+            {unreadCount > 0 && activeSegment === "notifications" && (
               <IonBadge color="danger" className="notification-count-badge">
                 {unreadCount}
               </IonBadge>
             )}
           </IonTitle>
-          {notifications.length > 0 && (
+          {notifications.length > 0 && activeSegment === "notifications" && (
             <IonButton
               slot="end"
               fill="clear"
@@ -275,6 +340,26 @@ const Notifications: React.FC = () => {
               <IonIcon icon={checkmarkDoneOutline} />
             </IonButton>
           )}
+        </IonToolbar>
+
+        {/* Add segment control for switching between notifications and announcements */}
+        <IonToolbar>
+          <IonSegment
+            value={activeSegment}
+            onIonChange={(e) =>
+              handleSegmentChange(
+                e.detail.value as "notifications" | "announcements"
+              )
+            }
+            className="notifications-segment"
+          >
+            <IonSegmentButton value="notifications">
+              <IonLabel>Notifications</IonLabel>
+            </IonSegmentButton>
+            <IonSegmentButton value="announcements">
+              <IonLabel>Announcements</IonLabel>
+            </IonSegmentButton>
+          </IonSegment>
         </IonToolbar>
       </IonHeader>
 
@@ -317,83 +402,157 @@ const Notifications: React.FC = () => {
               </IonCard>
             ))}
           </div>
-        ) : notifications.length === 0 ? (
+        ) : activeSegment === "notifications" ? (
+          notifications.length === 0 ? (
+            <div className="empty-notifications">
+              <IonIcon icon={notificationsOutline} className="empty-icon" />
+              <IonText className="empty-text">
+                No notifications at this time
+              </IonText>
+              <p className="empty-subtext">
+                We'll notify you about order updates, promotions, and more.
+              </p>
+            </div>
+          ) : (
+            <div className="notifications-list">
+              {notifications.map((notification) => (
+                <IonCard
+                  key={notification.id}
+                  className={`notification-card ${
+                    notification.isRead ? "read" : "unread"
+                  }`}
+                  onClick={() => handleNotificationClick(notification)}
+                  data-type={notification.type}
+                  data-status={getNotificationStatusAttribute(
+                    notification.title,
+                    notification.message
+                  )}
+                  data-payment={getPaymentStatusAttribute(
+                    notification.title,
+                    notification.message
+                  )}
+                >
+                  <IonCardContent>
+                    <div className="notification-header">
+                      <h3 className="notification-title">
+                        <IonIcon
+                          icon={getNotificationIcon(
+                            notification.type,
+                            notification.title
+                          )}
+                          color={getNotificationColor(
+                            notification.type,
+                            notification.title
+                          )}
+                          className="notification-icon"
+                        />
+                        {notification.title}
+
+                        {/* Payment rejection status indicator */}
+                        {/* {notification.title.includes("Payment Rejected") && (
+                          <span className="payment-status-indicator rejected">
+                            Rejected
+                          </span>
+                        )} */}
+
+                        {/* Payment approval status indicator */}
+                        {/* {notification.title.includes("Payment Approved") && (
+                          <span className="payment-status-indicator approved">
+                            Paid
+                          </span>
+                        )} */}
+                      </h3>
+                      {!notification.isRead && (
+                        <IonChip
+                          color="primary"
+                          outline={true}
+                          className="unread-chip"
+                        >
+                          New
+                        </IonChip>
+                      )}
+                    </div>
+                    <p className="notification-message">
+                      {notification.message}
+                    </p>
+                    <div className="notification-footer">
+                      <span className="notification-time">
+                        <IonIcon icon={timeOutline} className="time-icon" />
+                        {formatDate(notification.createdAt)}
+                      </span>
+                      {notification.orderId && (
+                        <IonButton
+                          fill="clear"
+                          size="small"
+                          className="view-order-btn"
+                          color={getNotificationColor(
+                            notification.type,
+                            notification.title
+                          )}
+                        >
+                          View Order Details
+                          <IonIcon
+                            slot="end"
+                            icon={arrowForwardOutline}
+                            className="view-icon"
+                          />
+                        </IonButton>
+                      )}
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              ))}
+            </div>
+          )
+        ) : // Display Announcements
+        announcements.length === 0 ? (
           <div className="empty-notifications">
-            <IonIcon icon={notificationsOutline} className="empty-icon" />
+            <IonIcon icon={megaphoneOutline} className="empty-icon" />
             <IonText className="empty-text">
-              No notifications at this time
+              No announcements at this time
             </IonText>
             <p className="empty-subtext">
-              We'll notify you about order updates, promotions, and more.
+              Check back later for updates from the store.
             </p>
           </div>
         ) : (
-          <div className="notifications-list">
-            {notifications.map((notification) => (
-              <IonCard
-                key={notification.id}
-                className={`notification-card ${
-                  notification.isRead ? "read" : "unread"
-                }`}
-                onClick={() => handleNotificationClick(notification)}
-                data-type={notification.type}
-                data-status={getNotificationStatusAttribute(
-                  notification.title,
-                  notification.message
-                )}
-                data-payment={getPaymentStatusAttribute(notification.title)}
-              >
-                <IonCardContent>
-                  <div className="notification-header">
-                    <h3 className="notification-title">
+          <div className="announcements-list">
+            {announcements.map((announcement) => (
+              <IonCard key={announcement.id} className="announcement-card">
+                <IonCardHeader>
+                  <div className="announcement-header">
+                    <div className="announcement-title-container">
                       <IonIcon
-                        icon={getNotificationIcon(
-                          notification.type,
-                          notification.title
-                        )}
-                        color={getNotificationColor(
-                          notification.type,
-                          notification.title
-                        )}
-                        className="notification-icon"
-                      />
-                      {notification.title}
-                    </h3>
-                    {!notification.isRead && (
-                      <IonChip
+                        icon={megaphoneOutline}
                         color="primary"
-                        outline={true}
-                        className="unread-chip"
-                      >
-                        New
-                      </IonChip>
-                    )}
+                        className="announcement-icon"
+                      />
+                      <IonCardTitle className="announcement-title">
+                        {announcement.title}
+                      </IonCardTitle>
+                    </div>
+                    <div className="announcement-time">
+                      <IonIcon icon={calendarOutline} className="time-icon" />
+                      <span>{announcement.publishDate}</span>
+                    </div>
                   </div>
-                  <p className="notification-message">{notification.message}</p>
-                  <div className="notification-footer">
-                    <span className="notification-time">
-                      <IonIcon icon={timeOutline} className="time-icon" />
-                      {formatDate(notification.createdAt)}
-                    </span>
-                    {notification.orderId && (
-                      <IonButton
-                        fill="clear"
-                        size="small"
-                        className="view-order-btn"
-                        color={getNotificationColor(
-                          notification.type,
-                          notification.title
-                        )}
-                      >
-                        View Order Details
-                        <IonIcon
-                          slot="end"
-                          icon={arrowForwardOutline}
-                          className="view-icon"
-                        />
-                      </IonButton>
-                    )}
-                  </div>
+                </IonCardHeader>
+                <IonCardContent>
+                  <p className="announcement-content">{announcement.content}</p>
+                  {announcement.imageUrl && (
+                    <div className="announcement-image-container">
+                      <img
+                        src={announcement.imageUrl}
+                        alt={announcement.title}
+                        className="announcement-image"
+                      />
+                    </div>
+                  )}
+                  {announcement.expiryDate && (
+                    <div className="announcement-expiry">
+                      <small>Valid until: {announcement.expiryDate}</small>
+                    </div>
+                  )}
                 </IonCardContent>
               </IonCard>
             ))}
