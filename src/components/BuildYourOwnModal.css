@@ -4,12 +4,6 @@
   --background: #f8f8f8;
 }
 
-/* .build-your-own-modal ion-header ion-toolbar {
-  --background: white;
-  --border-color: transparent;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-} */
-
 .build-your-own-modal .title-toolbar {
   font-weight: 700;
   font-size: 18px;
@@ -27,18 +21,6 @@
   position: relative;
   padding: 10px 0;
 }
-
-/* .step-indicator::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 15%;
-  right: 15%;
-  height: 2px;
-  background-color: #e0e0e0;
-  transform: translateY(-50%);
-  z-index: 0;
-} */
 
 .byok-step-item {
   display: flex;

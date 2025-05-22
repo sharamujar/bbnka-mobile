@@ -257,21 +257,17 @@ const Review: React.FC = () => {
     setVerificationResult(null);
 
     try {
-      // Simulate verification process
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Store in local storage (just save "SCREENSHOT_UPLOADED" as a flag)
       localStorage.setItem("gcashReference", "SCREENSHOT_UPLOADED");
       localStorage.setItem("paymentMethod", "gcash");
 
-      // Store the image in localStorage (in a real app, you'd upload to storage)
       localStorage.setItem("gcashScreenshot", selectedImage);
 
       setIsLoading(false);
       setVerificationResult("success");
       setVerificationComplete(true);
 
-      // Update the state to reflect the change
       setOrderDetails({
         ...orderDetails,
         paymentMethod: "gcash",
@@ -929,7 +925,7 @@ const Review: React.FC = () => {
     }
   };
 
-  // Validate GCash reference number (basic validation)
+  // Validate GCash reference number
   useEffect(() => {
     if (referenceNumber.trim() === "") {
       setIsValidReference(false);
@@ -962,11 +958,9 @@ const Review: React.FC = () => {
       return;
     }
 
-    // If all checks pass
     setIsValidReference(true);
     setReferenceError("");
 
-    // Force button state update
     const verifyButton = document.querySelector(
       ".verify-button"
     ) as HTMLIonButtonElement;

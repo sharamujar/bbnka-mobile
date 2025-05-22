@@ -185,8 +185,6 @@ const Payment: React.FC = () => {
       setIsValidReference(false);
       localStorage.removeItem("gcashReference");
     }
-
-    // Update order status based on payment method and pickup option
     updateOrderStatus(value, pickupOption);
   };
 
@@ -194,13 +192,11 @@ const Payment: React.FC = () => {
     paymentMethod: string,
     pickupOption: "now" | "later"
   ) => {
-    let orderStatus = "scheduled"; // Default status is "Order Placed"
+    let orderStatus = "scheduled";
 
     if (paymentMethod === "gcash") {
-      // For GCash payments, status is always "awaiting_payment_verification"
       orderStatus = "awaiting_payment_verification";
     } else {
-      // For cash payments, always use "scheduled" (Order Placed) initially
       orderStatus = "scheduled";
     }
 
@@ -241,30 +237,22 @@ const Payment: React.FC = () => {
     setVerificationResult(null);
 
     try {
-      // Simulate verification process
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Store in local storage
       localStorage.setItem("gcashReference", referenceNumber);
       localStorage.setItem("paymentMethod", "gcash");
 
-      // Update order status for GCash payment
       updateOrderStatus("gcash", pickupOption);
 
       setIsLoading(false);
       setVerificationResult("success");
       setVerificationComplete(true);
 
-      // Enable the Review button immediately
       document
         .querySelector(".footer-action-button")
         ?.removeAttribute("disabled");
 
-      // Update the state to reflect the change
       setPaymentMethod("gcash");
-
-      // No longer automatically closing the modal
-      // User will close it themselves with a button
     } catch (error) {
       setIsLoading(false);
       setVerificationResult("error");

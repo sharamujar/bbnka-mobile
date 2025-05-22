@@ -1,0 +1,37 @@
+.time-slot-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background-color: #f5f5f5;
+  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid transparent;
+}
+
+.time-slot-chip.selected {
+  background-color: rgba(191, 89, 6, 0.1);
+  color: #bf5906;
+  border: 1px solid rgba(191, 89, 6, 0.3);
+  box-shadow: 0 1px 4px rgba(191, 89, 6, 0.15);
+  font-weight: 600;
+}
+
+.time-slot-chip:hover:not(.disabled):not(.selected) {
+  background-color: #eee;
+  transform: translateY(-1px);
+}
+
+.time-slot-chip.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #eaeaea;
+  color: #999;
+}

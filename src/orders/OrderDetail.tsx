@@ -174,7 +174,6 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
   cancellationReason, // Use the cancellation reason
   cancellationNote, // Use the cancellation note
 }) => {
-  // Order step definitions with optional Stock Reserved step for scheduled orders
   const getOrderSteps = () => {
     const baseSteps = [
       {
@@ -193,7 +192,6 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
       });
     }
 
-    // Add remaining steps for all orders
     return [
       ...baseSteps,
       {
@@ -264,7 +262,6 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
       return -2; // Special value for pending payment
     }
 
-    // Map status directly to step index
     switch (currentStatus) {
       // Inventory system status values
       case "Order Confirmed":
@@ -273,7 +270,7 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
         // Stock Reserved is only valid for scheduled orders
         return isScheduled ? 1 : 0;
       case "Preparing Order":
-        return isScheduled ? 2 : 1; // Index depends on whether Stock Reserved is included
+        return isScheduled ? 2 : 1;
       case "Ready for Pickup":
         return isScheduled ? 3 : 2;
       case "Completed":
@@ -458,34 +455,35 @@ const OrderTrackingProgress: React.FC<OrderTrackingProgressProps> = ({
               </div>
             </div>
           </div>
-        ) : isCancelled ? (
-          // Special handling for cancelled orders - show only the cancelled step
-          // Updated to match the rejected payment layout
+        ) : isCancelled ? ( // Enhanced design for cancelled orders
           <div className="order-detail-step-vertical active cancelled rejected">
             <div className="order-detail-step-content">
               <div className="order-detail-step-icon-vertical">
                 <IonIcon icon={closeCircle} />
               </div>
               <div className="order-detail-step-info">
+                {" "}
                 <div className="order-detail-step-label-vertical">
                   Order Cancelled
                 </div>
                 <div className="order-detail-step-desc">
-                  Your order has been cancelled
+                  <div>Your order has been cancelled</div>
                   <span className="order-detail-step-date">
                     {statusTimestamps["Cancelled"]
                       ? formatDate(statusTimestamps["Cancelled"])
                       : formatDate(createdAt)}
                   </span>
-                </div>
-                {/* Display cancellation reason if available, similar to rejection reason */}
+                </div>{" "}
+                {/* Simple, modern cancellation reason display */}
                 {cancellationReason && (
-                  <div className="order-detail-rejection-reason">
-                    Reason:{" "}
+                  <div className="cancellation-reason-minimal">
+                    <span className="reason-label">Reason: </span>
                     {CANCELLATION_REASONS.find(
                       (reason) => reason.value === cancellationReason
                     )?.label || cancellationReason}
-                    {cancellationNote && <>: {cancellationNote}</>}
+                    {cancellationNote && (
+                      <span className="note-text">{cancellationNote}</span>
+                    )}
                   </div>
                 )}
               </div>

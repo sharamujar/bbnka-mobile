@@ -71,6 +71,7 @@ import { useHistory } from "react-router";
 import { Link } from "react-router-dom";
 import "./Cart.css";
 import BuildYourOwnModal from "../components/BuildYourOwnModal";
+import { determineProductType } from "./StockHelper";
 
 const Cart: React.FC = () => {
   const user = auth.currentUser;
@@ -92,75 +93,333 @@ const Cart: React.FC = () => {
   const handleShowToastMessage = (message: string, success: boolean) => {
     console.log("Toast message (not shown):", message, success);
     // We're not showing a toast here, but the BuildYourOwnModal requires this prop
-  };
-
-  // Function to fetch stock information for a specific product
+  }; // Function to fetch stock information for a specific product
   const fetchStockInfo = async (productId: string, productType: string) => {
     try {
-      const stocksRef = collection(db, "testStocks");
-      let q = query(stocksRef, where("productId", "==", productId));
+      console.log(
+        `Cart - Fetching stock info for productId=${productId}, type=${
+          productType || "null"
+        }`
+      );
 
-      // If product type is available, add it to the query
+      // Validate inputs to prevent empty queries
+      if (!productId) {
+        console.log("No productId provided, can't fetch stock info");
+        return null;
+      }
+
+      const stocksRef = collection(db, "testStocks"); // First try with the specific product type
       if (productType) {
-        q = query(
-          stocksRef,
-          where("productId", "==", productId),
-          where("type", "==", productType.toLowerCase())
+        const typeLower = productType.toLowerCase();
+        console.log(`Cart - Querying with type=${typeLower}`);
+
+        // Try different variations of the product type (exact match and starting with)
+        const potentialTypes = [typeLower];
+
+        // Map common type variations
+        if (typeLower === "small" || typeLower.startsWith("small")) {
+          potentialTypes.push("small");
+        } else if (typeLower === "solo" || typeLower.startsWith("solo")) {
+          potentialTypes.push("solo");
+        } else if (typeLower === "tray" || typeLower.includes("tray")) {
+          potentialTypes.push("tray");
+        } else if (typeLower === "bilao" || typeLower.includes("bilao")) {
+          potentialTypes.push("bilao");
+        }
+
+        // Try each potential type
+        for (const type of potentialTypes) {
+          const typeQ = query(
+            stocksRef,
+            where("productId", "==", productId),
+            where("type", "==", type)
+          );
+
+          const typeSnapshot = await getDocs(typeQ);
+          if (!typeSnapshot.empty) {
+            const stockData = typeSnapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            console.log(
+              `Cart - Found ${stockData.length} stock entries with type=${type} match:`,
+              stockData
+            );
+            return stockData;
+          }
+        }
+
+        console.log(
+          `Cart - No stock found with type ${productType} or variations, trying fallback`
         );
       }
 
-      const stocksSnapshot = await getDocs(q);
+      // If no results or no product type specified, try without type constraint
+      console.log(`Cart - Trying fallback query for productId=${productId}`);
+      const fallbackQ = query(stocksRef, where("productId", "==", productId));
+      const fallbackSnapshot = await getDocs(fallbackQ);
 
-      if (!stocksSnapshot.empty) {
-        const stockData = stocksSnapshot.docs.map((doc) => ({
+      if (!fallbackSnapshot.empty) {
+        const stockData = fallbackSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+        console.log(
+          `Cart - Found ${stockData.length} stock entries with fallback query:`,
+          stockData
+        );
         return stockData;
+      } // If we still don't have stock data, try different product types as a last resort
+      const productTypes = ["small", "solo", "tray", "bilao", "fixed"];
+
+      // If productType is provided but not in our standard list, add it
+      if (productType && !productTypes.includes(productType.toLowerCase())) {
+        productTypes.unshift(productType.toLowerCase());
       }
 
+      for (const type of productTypes) {
+        console.log(
+          `Cart - Trying type=${type} as last resort for productId=${productId}`
+        );
+
+        const typeQ = query(stocksRef, where("type", "==", type));
+
+        const typeSnapshot = await getDocs(typeQ);
+        if (!typeSnapshot.empty) {
+          // Filter results to match our product ID
+          const stockData = typeSnapshot.docs
+            .map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }))
+            .filter(
+              (item: any) =>
+                item.productId === productId ||
+                (item.variety &&
+                  item.variety.toLowerCase() === productId.toLowerCase())
+            );
+
+          if (stockData.length > 0) {
+            console.log(
+              `Cart - Found ${stockData.length} stock entries with type=${type} as last resort:`,
+              stockData
+            );
+            return stockData;
+          }
+        }
+      }
+
+      console.log(`Cart - No stock found for productId=${productId}`);
       return null;
     } catch (error) {
       console.error("Error fetching stock info:", error);
       return null;
     }
   };
-
   // Function to update stock information for all cart items
   const updateStockInfo = async () => {
     const stocksMap: Record<string, any> = {};
+    console.log("Updating stock info for", cartItems.length, "items");
 
     for (const item of cartItems) {
-      if (item.productId) {
-        // For regular products
-        const stockInfo = await fetchStockInfo(
-          item.productId,
-          item.productType
-        );
-        if (stockInfo) {
-          stocksMap[item.id] = stockInfo;
-        }
-      } else if (item.productIds && Array.isArray(item.productIds)) {
-        // For bilao products with multiple varieties
-        const multiStockInfo = [];
-        for (let i = 0; i < item.productIds.length; i++) {
-          const productId = item.productIds[i];
-          const productVariety = item.productVarieties?.[i] || null;
+      try {
+        if (item.productId) {
+          // For regular products from ProductModal
+          console.log(
+            `Processing item ${item.id} with productId=${item.productId}`
+          );
 
-          if (productId) {
-            const stockInfo = await fetchStockInfo(productId, item.productType);
-            if (stockInfo) {
-              multiStockInfo.push({
-                variety: productVariety,
-                stockInfo: stockInfo,
-              });
+          // Fetch stock directly from testStocks collection
+          const stocksRef = collection(db, "testStocks");
+          const stockQuery = query(
+            stocksRef,
+            where("productId", "==", item.productId)
+          );
+          if (item.productType) {
+            // Try with product type first
+            const typeLower = item.productType.toLowerCase();
+
+            // Define potential type variations based on the actual type
+            const potentialTypes = [typeLower];
+
+            // Map common type variations
+            if (typeLower === "small" || typeLower.startsWith("small")) {
+              potentialTypes.push("small");
+            } else if (typeLower === "solo" || typeLower.startsWith("solo")) {
+              potentialTypes.push("solo");
+            } else if (typeLower === "tray" || typeLower.includes("tray")) {
+              potentialTypes.push("tray");
+            } else if (typeLower === "bilao" || typeLower.includes("bilao")) {
+              potentialTypes.push("bilao");
+            }
+
+            // Try each potential type
+            let stockFound = false;
+            for (const type of potentialTypes) {
+              if (stockFound) continue;
+
+              const typedStockQuery = query(
+                stocksRef,
+                where("productId", "==", item.productId),
+                where("type", "==", type)
+              );
+
+              const typedStockSnapshot = await getDocs(typedStockQuery);
+              if (!typedStockSnapshot.empty) {
+                const stockData = typedStockSnapshot.docs[0].data();
+                console.log(
+                  `Found stock with type=${type} for ${item.productId}:`,
+                  stockData
+                );
+                stocksMap[item.id] = {
+                  quantity: stockData.quantity || 0,
+                  minimumStock: stockData.minimumStock || 10,
+                  criticalLevel: stockData.criticalLevel || 5,
+                  type: type, // Store the actual type that was found
+                };
+                stockFound = true;
+                continue;
+              }
+            }
+
+            // If we found a stock with one of the potential types, skip the fallback query
+            if (stockFound) continue;
+          }
+
+          // Fallback to query without type constraint
+          const stockSnapshot = await getDocs(stockQuery);
+          if (!stockSnapshot.empty) {
+            const stockData = stockSnapshot.docs[0].data();
+            console.log(`Found stock for ${item.productId}:`, stockData);
+            stocksMap[item.id] = {
+              quantity: stockData.quantity || 0,
+              minimumStock: stockData.minimumStock || 10,
+              criticalLevel: stockData.criticalLevel || 5,
+            };
+          } else {
+            // If still no data, check for variety-based stock
+            const varietyQuery = query(
+              stocksRef,
+              where("variety", "==", item.productVarieties?.[0] || "")
+            );
+
+            const varietySnapshot = await getDocs(varietyQuery);
+            if (!varietySnapshot.empty) {
+              const stockData = varietySnapshot.docs[0].data();
+              console.log(
+                `Found stock by variety for ${item.productVarieties?.[0]}:`,
+                stockData
+              );
+              stocksMap[item.id] = {
+                quantity: stockData.quantity || 0,
+                minimumStock: stockData.minimumStock || 10,
+                criticalLevel: stockData.criticalLevel || 5,
+              };
             }
           }
-        }
+        } else if (item.productIds && Array.isArray(item.productIds)) {
+          // For products with multiple varieties (not just bilao)
+          const multiStockInfo = [];
+          for (let i = 0; i < item.productIds.length; i++) {
+            const productId = item.productIds[i];
+            const productVariety = item.productVarieties?.[i] || null;
 
-        if (multiStockInfo.length > 0) {
-          stocksMap[item.id] = multiStockInfo;
+            if (productId) {
+              // Try to get stock data with the specified product type first
+              if (item.productType) {
+                const typeLower = item.productType.toLowerCase();
+                console.log(
+                  `Checking ${productVariety} with type=${typeLower}`
+                );
+
+                // Define potential type variations based on the actual type
+                const potentialTypes = [typeLower];
+
+                // Map common type variations
+                if (typeLower === "small" || typeLower.startsWith("small")) {
+                  potentialTypes.push("small");
+                } else if (
+                  typeLower === "solo" ||
+                  typeLower.startsWith("solo")
+                ) {
+                  potentialTypes.push("solo");
+                } else if (typeLower === "tray" || typeLower.includes("tray")) {
+                  potentialTypes.push("tray");
+                } else if (
+                  typeLower === "bilao" ||
+                  typeLower.includes("bilao")
+                ) {
+                  potentialTypes.push("bilao");
+                }
+
+                // Try each potential type
+                let stockFound = false;
+                for (const type of potentialTypes) {
+                  if (stockFound) continue;
+
+                  const typedStockQuery = query(
+                    collection(db, "testStocks"),
+                    where("productId", "==", productId),
+                    where("type", "==", type)
+                  );
+
+                  const typedStockSnapshot = await getDocs(typedStockQuery);
+                  if (!typedStockSnapshot.empty) {
+                    const stockData = typedStockSnapshot.docs[0].data();
+                    console.log(
+                      `Found ${productVariety} stock with type=${type}:`,
+                      stockData
+                    );
+                    multiStockInfo.push({
+                      variety: productVariety,
+                      stockInfo: {
+                        quantity: stockData.quantity || 0,
+                        minimumStock: stockData.minimumStock || 10,
+                        criticalLevel: stockData.criticalLevel || 5,
+                        type: type, // Store the actual type that was found
+                      },
+                    });
+                    stockFound = true;
+                  }
+                }
+
+                // If stock was found with one of the potential types, continue to next variety
+                if (stockFound) continue;
+              }
+
+              // Fallback to query without type constraint if no stock found with specific type
+              const stocksRef = collection(db, "testStocks");
+              const stockQuery = query(
+                stocksRef,
+                where("productId", "==", productId)
+              );
+
+              const stockSnapshot = await getDocs(stockQuery);
+              if (!stockSnapshot.empty) {
+                const stockData = stockSnapshot.docs[0].data();
+                console.log(
+                  `Found ${productVariety} stock without type constraint:`,
+                  stockData
+                );
+                multiStockInfo.push({
+                  variety: productVariety,
+                  stockInfo: {
+                    quantity: stockData.quantity || 0,
+                    minimumStock: stockData.minimumStock || 10,
+                    criticalLevel: stockData.criticalLevel || 5,
+                    type: stockData.type || "unknown",
+                  },
+                });
+              }
+            }
+          }
+
+          if (multiStockInfo.length > 0) {
+            stocksMap[item.id] = multiStockInfo;
+          }
         }
+      } catch (error) {
+        console.error(`Error processing stock for item ${item.id}:`, error);
       }
     }
 
@@ -305,12 +564,42 @@ const Cart: React.FC = () => {
                 `Updating cart item ${item.id} with product IDs:`,
                 productIds
               );
+
+              // Determine the appropriate product type based on item properties
+              let productType = item.productType;
+              if (!productType) {
+                // Try to infer product type from size or other properties
+                if (item.productSize) {
+                  const sizeName =
+                    typeof item.productSize === "object"
+                      ? item.productSize.name?.toLowerCase()
+                      : item.productSize.toLowerCase();
+
+                  if (sizeName) {
+                    if (sizeName.includes("small")) {
+                      productType = "small";
+                    } else if (sizeName.includes("solo")) {
+                      productType = "solo";
+                    } else if (sizeName.includes("tray")) {
+                      productType = "tray";
+                    } else if (sizeName.includes("bilao")) {
+                      productType = "bilao";
+                    } else {
+                      productType = "bilao"; // Default if unable to determine
+                    }
+                  } else {
+                    productType = "bilao"; // Default if size name is undefined
+                  }
+                } else {
+                  productType = "bilao"; // Default if no size info available
+                }
+              }
+
               updates.push({
                 itemId: item.id,
                 data: {
                   productIds: productIds,
-                  // Also set productType if missing
-                  productType: item.productType || "bilao",
+                  productType: productType,
                 },
               });
             }
@@ -322,12 +611,42 @@ const Cart: React.FC = () => {
               console.log(
                 `Updating cart item ${item.id} with product ID ${productId} based on name`
               );
+
+              // Determine the appropriate product type based on item properties
+              let productType = item.productType;
+              if (!productType) {
+                // Try to infer product type from size or other properties
+                if (item.productSize) {
+                  const sizeName =
+                    typeof item.productSize === "object"
+                      ? item.productSize.name?.toLowerCase()
+                      : item.productSize.toLowerCase();
+
+                  if (sizeName) {
+                    if (sizeName.includes("small")) {
+                      productType = "small";
+                    } else if (sizeName.includes("solo")) {
+                      productType = "solo";
+                    } else if (sizeName.includes("tray")) {
+                      productType = "tray";
+                    } else if (sizeName.includes("bilao")) {
+                      productType = "bilao";
+                    } else {
+                      productType = "bilao"; // Default if unable to determine
+                    }
+                  } else {
+                    productType = "bilao"; // Default if size name is undefined
+                  }
+                } else {
+                  productType = "bilao"; // Default if no size info available
+                }
+              }
+
               updates.push({
                 itemId: item.id,
                 data: {
                   productId: productId,
-                  // Also set productType if missing
-                  productType: item.productType || "bilao",
+                  productType: productType,
                 },
               });
             }
@@ -357,6 +676,14 @@ const Cart: React.FC = () => {
 
   // Selection handling functions
   const toggleItemSelection = (itemId: string) => {
+    // Check if the item is out of stock
+    if (isItemOutOfStock(itemId)) {
+      // Display a toast notification to inform the user
+      setToastMessage("Cannot select out of stock item");
+      setShowToast(true);
+      return; // Don't allow selection of out-of-stock items
+    }
+
     setSelectedItems((prev) => {
       if (prev.includes(itemId)) {
         // If item is already selected, unselect it
@@ -373,9 +700,18 @@ const Cart: React.FC = () => {
     if (selectAll) {
       setSelectedItems([]);
     } else {
-      // Otherwise select all items
-      const allItemIds = cartItems.map((item) => item.id);
-      setSelectedItems(allItemIds);
+      // Otherwise select all items that are in stock
+      const inStockItemIds = cartItems
+        .filter((item) => !isItemOutOfStock(item.id))
+        .map((item) => item.id);
+
+      setSelectedItems(inStockItemIds);
+
+      // If some items were out of stock and not selected, show a message
+      if (inStockItemIds.length < cartItems.length) {
+        setToastMessage("Out of stock items cannot be selected");
+        setShowToast(true);
+      }
     }
     setSelectAll(!selectAll);
   };
@@ -391,12 +727,19 @@ const Cart: React.FC = () => {
 
   // Initialize selected items when cart loads
   useEffect(() => {
-    if (!loading && cartItems.length > 0) {
-      // By default, select all items
-      const allItemIds = cartItems.map((item) => item.id);
-      setSelectedItems(allItemIds);
+    if (
+      !loading &&
+      cartItems.length > 0 &&
+      Object.keys(productStocks).length > 0
+    ) {
+      // By default, select all items that are in stock
+      const inStockItemIds = cartItems
+        .filter((item) => !isItemOutOfStock(item.id))
+        .map((item) => item.id);
+
+      setSelectedItems(inStockItemIds);
     }
-  }, [loading, cartItems]);
+  }, [loading, cartItems, productStocks]);
 
   // Calculate cart totals for selected items only
   const subtotal = cartItems.reduce((total, item) => {
@@ -412,6 +755,17 @@ const Cart: React.FC = () => {
 
   const updateQuantity = async (cartId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
+
+    // Check available stock and round off the quantity
+    const availableStock = getAvailableStock(cartId);
+    const roundedQuantity = Math.round(newQuantity);
+
+    // If requested quantity exceeds available stock, show message and use available stock instead
+    if (roundedQuantity > availableStock && availableStock > 0) {
+      setToastMessage(`Only ${availableStock} item(s) available in stock`);
+      setShowToast(true);
+      newQuantity = availableStock;
+    }
 
     const currentUser = auth.currentUser;
     if (!currentUser) return;
@@ -475,30 +829,112 @@ const Cart: React.FC = () => {
       console.error("Error removing item from cart:", error);
     }
   };
+  // Helper function to check if an item is out of stock
+  const isItemOutOfStock = (itemId: string) => {
+    const stockData = productStocks[itemId];
+
+    // Consider item out of stock if no stock data is available
+    if (!stockData) {
+      return true;
+    }
+
+    // For direct quantity objects
+    if (!Array.isArray(stockData)) {
+      // If quantity is 0 or undefined/null, item is out of stock
+      return stockData.quantity === 0 || stockData.quantity === undefined;
+    }
+
+    // For arrays (multiple varieties), check if all varieties are out of stock
+    if (stockData.length === 0) {
+      return true;
+    }
+
+    // Check if any of the varieties have stock
+    return stockData.every((stockItem) => {
+      const stockInfo = Array.isArray(stockItem.stockInfo)
+        ? stockItem.stockInfo[0]
+        : stockItem.stockInfo;
+
+      return !stockInfo || stockInfo.quantity === 0;
+    });
+  };
 
   // Helper function to get stock status for a single variety
   const getStockStatusForVariety = (itemId: string, varietyName: string) => {
     const stockData = productStocks[itemId];
-    if (!stockData || !Array.isArray(stockData)) {
+
+    // Handle missing stock data
+    if (!stockData) {
+      console.log(`No stock data for item ${itemId}`);
       return { status: "pending", quantity: 0 };
     }
 
+    // Handle direct quantity objects from ProductModal
+    if (!Array.isArray(stockData)) {
+      console.log(
+        `Stock data for ${itemId} is not an array, checking if it has quantity directly`
+      );
+
+      if (stockData.quantity !== undefined) {
+        const stockLevel = stockData.quantity || 0;
+        const minStock = stockData.minimumStock || 10; // Default if missing
+        const criticalLevel = stockData.criticalLevel || 5; // Default if missing
+
+        let status = "normal";
+        if (stockLevel <= criticalLevel) {
+          status = "critical";
+        } else if (stockLevel <= minStock) {
+          status = "low";
+        }
+
+        console.log(`Direct stock for ${itemId}: ${stockLevel} (${status})`);
+        return {
+          status,
+          quantity: stockLevel,
+          color:
+            status === "critical"
+              ? "danger"
+              : status === "low"
+              ? "warning"
+              : "success",
+        };
+      }
+
+      return { status: "unknown", quantity: 0 };
+    }
+
+    // Handle array of stock data (for bilao products with multiple varieties)
     // Find the stock data for this specific variety
     const varietyStock = stockData.find(
       (stock) => stock.variety === varietyName
     );
-    if (
-      !varietyStock ||
-      !varietyStock.stockInfo ||
-      varietyStock.stockInfo.length === 0
-    ) {
+
+    if (!varietyStock) {
+      console.log(
+        `No variety stock found for ${varietyName} in item ${itemId}`
+      );
       return { status: "unknown", quantity: 0 };
     }
 
-    const stockItem = varietyStock.stockInfo[0];
+    if (!varietyStock.stockInfo) {
+      console.log(`No stockInfo for variety ${varietyName} in item ${itemId}`);
+      return { status: "unknown", quantity: 0 };
+    }
+
+    // Handle both array and direct object formats for stockInfo
+    let stockItem;
+    if (Array.isArray(varietyStock.stockInfo)) {
+      if (varietyStock.stockInfo.length === 0) {
+        return { status: "unknown", quantity: 0 };
+      }
+      stockItem = varietyStock.stockInfo[0];
+    } else {
+      stockItem = varietyStock.stockInfo;
+    }
+
     const stockLevel = stockItem.quantity || 0;
-    const minStock = stockItem.minimumStock || 0;
-    const criticalLevel = stockItem.criticalLevel || 0;
+    const minStock = stockItem.minimumStock || 10; // Default values if missing
+    const criticalLevel = stockItem.criticalLevel || 5;
 
     let status = "normal";
     if (stockLevel <= criticalLevel) {
@@ -507,6 +943,9 @@ const Cart: React.FC = () => {
       status = "low";
     }
 
+    console.log(
+      `Stock for ${itemId}, variety ${varietyName}: ${stockLevel} (${status})`
+    );
     return {
       status,
       quantity: stockLevel,
@@ -517,15 +956,47 @@ const Cart: React.FC = () => {
           ? "warning"
           : "success",
     };
+  }; // Function to get available stock quantity for an item
+  const getAvailableStock = (itemId: string): number => {
+    const stockData = productStocks[itemId];
+
+    // If no stock data available, return 0 (out of stock)
+    if (!stockData) {
+      return 0;
+    }
+
+    // For direct quantity objects
+    if (!Array.isArray(stockData)) {
+      // If quantity is undefined/null, item has no stock data
+      return stockData.quantity !== undefined
+        ? Math.round(stockData.quantity)
+        : 0;
+    }
+
+    // For arrays (multiple varieties), get the lowest stock among varieties
+    if (stockData.length === 0) {
+      return 0;
+    }
+
+    // Find the lowest stock quantity among all varieties
+    const lowestStock = stockData.reduce((lowest, stockItem) => {
+      const stockInfo = Array.isArray(stockItem.stockInfo)
+        ? stockItem.stockInfo[0]
+        : stockItem.stockInfo;
+
+      const quantity =
+        stockInfo?.quantity !== undefined ? Math.round(stockInfo.quantity) : 0;
+      return Math.min(lowest, quantity);
+    }, Infinity);
+
+    return lowestStock === Infinity ? 0 : lowestStock;
   };
 
   const sortedCartItems = [...cartItems].sort((a, b) => {
     const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return timeB - timeA;
-  });
-
-  // Helper function to render stock information
+  }); // Helper function to render stock information
   const renderStockInfo = (itemId: string) => {
     const stockData = productStocks[itemId];
 
@@ -535,17 +1006,66 @@ const Cart: React.FC = () => {
       );
     }
 
+    // Handle direct quantity objects (from ProductModal)
+    if (stockData.quantity !== undefined) {
+      // This is a direct stock object
+      const stockLevel = stockData.quantity || 0;
+      const minStock = stockData.minimumStock || 10; // Default if missing
+      const criticalLevel = stockData.criticalLevel || 5; // Default if missing
+      const stockPercent = Math.min((stockLevel / minStock) * 100, 100);
+
+      let stockStatus = "normal";
+      if (stockLevel <= criticalLevel) {
+        stockStatus = "critical";
+      } else if (stockLevel <= minStock) {
+        stockStatus = "low";
+      }
+
+      return (
+        <div className="stock-info-container">
+          <div className={`stock-level ${stockStatus}`}>
+            <div className="stock-text">
+              <IonIcon icon={informationCircleOutline} />
+              <span>Stock: {Math.round(stockLevel)}</span>
+              <span className="min-stock">Min: {minStock}</span>
+              <span className="critical-level">Critical: {criticalLevel}</span>
+            </div>
+            <IonProgressBar
+              value={stockPercent / 100}
+              color={
+                stockStatus === "critical"
+                  ? "danger"
+                  : stockStatus === "low"
+                  ? "warning"
+                  : "success"
+              }
+            />
+          </div>
+        </div>
+      );
+    }
+
     if (Array.isArray(stockData)) {
       // Multiple varieties
       return (
         <div className="stock-info-container">
           {stockData.map((stock, index) => {
-            if (!stock.stockInfo || stock.stockInfo.length === 0) return null;
+            if (!stock.stockInfo) return null;
 
-            const stockItem = stock.stockInfo[0];
+            // Handle both array and direct object cases
+            let stockItem;
+            if (Array.isArray(stock.stockInfo)) {
+              if (stock.stockInfo.length === 0) return null;
+              stockItem = stock.stockInfo[0];
+            } else {
+              stockItem = stock.stockInfo;
+            }
+
+            if (!stockItem) return null;
+
             const stockLevel = stockItem.quantity || 0;
-            const minStock = stockItem.minimumStock || 0;
-            const criticalLevel = stockItem.criticalLevel || 0;
+            const minStock = stockItem.minimumStock || 10; // Default if missing
+            const criticalLevel = stockItem.criticalLevel || 5; // Default if missing
             const stockPercent = Math.min((stockLevel / minStock) * 100, 100);
 
             let stockStatus = "normal";
@@ -563,7 +1083,7 @@ const Cart: React.FC = () => {
                 <div className={`stock-level ${stockStatus}`}>
                   <div className="stock-text">
                     <IonIcon icon={informationCircleOutline} />
-                    <span>Stock: {stockLevel.toFixed(2)}</span>
+                    <span>Stock: {Math.round(stockLevel)}</span>
                   </div>
                   <IonProgressBar
                     value={stockPercent / 100}
@@ -581,12 +1101,12 @@ const Cart: React.FC = () => {
           })}
         </div>
       );
-    } else if (stockData && stockData.length > 0) {
-      // Single item
+    } else if (stockData && Array.isArray(stockData) && stockData.length > 0) {
+      // Single item as array
       const stockItem = stockData[0];
       const stockLevel = stockItem.quantity || 0;
-      const minStock = stockItem.minimumStock || 0;
-      const criticalLevel = stockItem.criticalLevel || 0;
+      const minStock = stockItem.minimumStock || 10;
+      const criticalLevel = stockItem.criticalLevel || 5;
       const stockPercent = Math.min((stockLevel / minStock) * 100, 100);
 
       let stockStatus = "normal";
@@ -601,7 +1121,7 @@ const Cart: React.FC = () => {
           <div className={`stock-level ${stockStatus}`}>
             <div className="stock-text">
               <IonIcon icon={informationCircleOutline} />
-              <span>Stock: {stockLevel.toFixed(2)}</span>
+              <span>Stock: {Math.round(stockLevel)}</span>
               <span className="min-stock">Min: {minStock}</span>
               <span className="critical-level">Critical: {criticalLevel}</span>
             </div>
@@ -787,22 +1307,33 @@ const Cart: React.FC = () => {
                         key={item.id}
                         id={`cart-item-${item.cartId}`}
                       >
+                        {" "}
                         <IonItem
-                          className="cart-product-item-container"
+                          className={`cart-product-item-container ${
+                            isItemOutOfStock(item.id)
+                              ? "cart-item-out-of-stock"
+                              : ""
+                          }`}
                           lines="full"
                         >
-                          {/* Improved checkbox layout with proper spacing */}
+                          {/* Improved checkbox layout with proper spacing */}{" "}
                           <div
-                            className="modern-checkbox-container"
+                            className={`modern-checkbox-container ${
+                              isItemOutOfStock(item.id) ? "out-of-stock" : ""
+                            }`}
                             slot="start"
                           >
                             <IonCheckbox
                               checked={selectedItems.includes(item.id)}
                               onIonChange={() => toggleItemSelection(item.id)}
-                              className="cart-item-checkbox"
+                              className={`cart-item-checkbox ${
+                                isItemOutOfStock(item.id)
+                                  ? "disabled-checkbox"
+                                  : ""
+                              }`}
+                              disabled={isItemOutOfStock(item.id)}
                             />
                           </div>
-
                           <div className="cart-badge-container">
                             <IonBadge
                               className="cart-size-badge"
@@ -817,14 +1348,20 @@ const Cart: React.FC = () => {
                               )}
                             </IonBadge>
                           </div>
-
                           <div className="cart-content-container">
                             <div className="cart-bottom-row">
                               <div className="product-name-container">
+                                {" "}
                                 <IonText className="cart-name-text">
                                   {typeof item.productSize === "object"
                                     ? item.productSize.name
                                     : item.productSize || "Unknown Size"}
+                                  {/* {isItemOutOfStock(item.id) && (
+                                    <span className="cart-item-out-of-stock-label">
+                                      {" "}
+                                      OUT OF STOCK
+                                    </span>
+                                  )} */}
                                 </IonText>
                               </div>
                               <IonButton
@@ -887,19 +1424,19 @@ const Cart: React.FC = () => {
                                     }
                                   >
                                     <IonIcon icon={removeCircle} />
-                                  </IonButton>
+                                  </IonButton>{" "}
                                   <IonInput
                                     type="number"
                                     value={item.productQuantity || 1}
                                     min={1}
-                                    max={99}
+                                    max={getAvailableStock(item.id) || 1}
                                     onIonChange={(e) => {
                                       const value = parseInt(
                                         e.detail.value!,
                                         10
                                       );
                                       if (!isNaN(value) && value > 0) {
-                                        // Update the quantity in Firestore
+                                        // Update the quantity in Firestore with stock limit check
                                         updateQuantity(item.id, value);
                                       }
                                     }}
@@ -909,6 +1446,10 @@ const Cart: React.FC = () => {
                                     className="byok-quantity-button"
                                     fill="clear"
                                     size="small"
+                                    disabled={
+                                      (item.productQuantity || 1) >=
+                                      getAvailableStock(item.id)
+                                    }
                                     onClick={() =>
                                       updateQuantity(
                                         item.id,
@@ -923,7 +1464,6 @@ const Cart: React.FC = () => {
                             </div>
                           </div>
                         </IonItem>
-
                         <IonItemOptions side="end">
                           <IonItemOption
                             className="cart-delete-button"
@@ -953,12 +1493,15 @@ const Cart: React.FC = () => {
                 </IonText>
               </div>
               <div className="footer-action-button-container">
+                {" "}
                 <Link
                   to={{
                     pathname: "/home/cart/schedule",
                     state: {
-                      selectedItems: cartItems.filter((item) =>
-                        selectedItems.includes(item.id)
+                      selectedItems: cartItems.filter(
+                        (item) =>
+                          selectedItems.includes(item.id) &&
+                          !isItemOutOfStock(item.id)
                       ),
                     },
                   }}

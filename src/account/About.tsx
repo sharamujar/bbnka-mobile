@@ -44,7 +44,7 @@ const About: React.FC = () => {
           <div className="about-container">
             <div className="about-logo-container">
               <IonImg
-                src="/assets/bbnka-logo.png"
+                src="/assets/logo.png"
                 alt="BBNKA Logo"
                 className="about-logo"
               />

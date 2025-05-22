@@ -1,17 +1,9 @@
 .registration-wrapper {
   display: flex;
   flex-direction: column;
-  /* justify-content: center;
-    align-items: center; */
-  /* min-height: 100vh; */
   height: 100vh;
-  /* max-height: 115vh; */
   width: 100%;
 }
-
-/* .register-img {
-    width: 100%;
-} */
 
 .register-form-container {
   width: 100%;
@@ -19,26 +11,18 @@
   padding: 2rem 0.5rem 0 0.5rem;
   border-radius: 15px 15px 0 0;
   margin-top: -10px;
-  /* position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: stretch; */
-  /* min-height: 200px; */
 }
 
 .register-title-wrapper {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  /* margin-bottom: 20px; */
   padding: 0 1rem 0 1rem;
 }
 
 .register-input-wrapper {
   display: flex;
   flex-direction: column;
-  /* gap: 15px; */
 }
 
 .register-button-wrapper {
@@ -82,9 +66,7 @@
   .register-img-wrapper {
     width: 50%;
     height: 100vh;
-    /* border-radius: 50px; */
     overflow: hidden;
-    /* padding: 20px; */
   }
 
   .register-img {
@@ -96,7 +78,6 @@
   .register-input-wrapper {
     display: flex;
     flex-direction: column;
-    /* gap: 15px; */
   }
 }
 

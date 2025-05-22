@@ -22,6 +22,8 @@ import {
   IonList,
   IonRadioGroup,
   IonRadio,
+  IonChip,
+  IonRippleEffect,
 } from "@ionic/react";
 import {
   chevronBackCircleOutline,
@@ -33,7 +35,9 @@ import {
   walk,
   walkOutline,
   chevronBack,
+  checkmarkCircle,
 } from "ionicons/icons";
+import TimePickerSheet from "../components/TimePickerSheet";
 import dayjs from "dayjs";
 import CheckoutStepProgress from "../components/CheckoutStepProgress";
 import "./Schedule.css";
@@ -63,6 +67,7 @@ const Schedule: React.FC = () => {
   const [alertHeader, setAlertHeader] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
   const [isStoreOpen, setIsStoreOpen] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   // All possible time slots with 15-minute intervals (updated to use ranges)
   const generateAllTimeSlots = () => {
@@ -269,12 +274,18 @@ const Schedule: React.FC = () => {
 
     return dates;
   };
-
   // Helper function to format a date nicely
   const formatDateToDisplay = (dateString: string) => {
     const date = dayjs(dateString);
     // Format as: "Monday, April 5, 2023"
     return date.format("dddd, MMMM D, YYYY");
+  };
+
+  // Function to format time slot display in the chip
+  const formatTimeSlotForChip = (timeSlot: string) => {
+    // The timeSlot is in format "h:mm AM - h:mm AM"
+    // We can keep it as is, or customize formatting if desired
+    return timeSlot;
   };
 
   const nextStep = () => {
@@ -336,12 +347,10 @@ const Schedule: React.FC = () => {
           <IonTitle>Schedule</IonTitle>
         </IonToolbar>
       </IonHeader>
-
       <IonContent className="schedule-content">
         <div className="checkout-progress-container">
           <CheckoutStepProgress currentStep={currentStep} />
         </div>
-
         {/* Pickup Option Selection Cards */}
         <div className="schedule-container">
           <IonCard className="schedule-card">
@@ -420,8 +429,7 @@ const Schedule: React.FC = () => {
               </IonRadioGroup>
             </IonCardContent>
           </IonCard>
-        </div>
-
+        </div>{" "}
         {/* If Pickup Today is selected */}
         {pickupOption === "now" && (
           <div className="schedule-form-container">
@@ -431,35 +439,37 @@ const Schedule: React.FC = () => {
                 {pickupDate ? formatDateToDisplay(pickupDate) : "Today"}
               </IonText>
             </IonItem>
-
-            <IonItem className="time-selection-item">
+            <IonItem
+              className="time-selection-item"
+              button
+              detail={false}
+              onClick={() =>
+                availableTimeSlots.length > 0 && setShowTimePicker(true)
+              }
+            >
               <IonLabel className="selection-label">Pick a Time</IonLabel>
-              <IonSelect
-                className="time-select"
-                placeholder="Select Time"
-                value={pickupTime}
-                onIonChange={(e) => {
-                  setPickupTime(e.detail.value);
-                  localStorage.setItem("pickupTime", e.detail.value);
-                }}
-                disabled={availableTimeSlots.length === 0}
-                interface="action-sheet"
-                justify="end"
-              >
-                {availableTimeSlots.map((time) => (
-                  <IonSelectOption
-                    key={time}
-                    value={time}
-                    className="time-option"
-                  >
-                    {time}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </IonItem>
-
+              <div className="time-display-container">
+                {pickupTime ? (
+                  <IonChip className="selected-time-chip">
+                    <IonIcon icon={timeOutline} />
+                    <IonLabel>{pickupTime}</IonLabel>
+                    {pickupTime && (
+                      <IonIcon icon={checkmarkCircle} color="success" />
+                    )}
+                  </IonChip>
+                ) : (
+                  <IonText color="medium">Select a time</IonText>
+                )}
+              </div>
+              <IonRippleEffect></IonRippleEffect>
+            </IonItem>{" "}
             {availableTimeSlots.length === 0 && (
               <div className="no-slots-container">
+                <IonIcon
+                  icon={timeOutline}
+                  color="medium"
+                  style={{ fontSize: "24px", marginRight: "8px" }}
+                />
                 <IonText className="no-slots-message">
                   No available time slots for today. Please use Pickup Tomorrow
                   option.
@@ -467,8 +477,7 @@ const Schedule: React.FC = () => {
               </div>
             )}
           </div>
-        )}
-
+        )}{" "}
         {/* If Schedule Pickup is selected */}
         {pickupOption === "later" && (
           <div className="schedule-form-container">
@@ -478,35 +487,37 @@ const Schedule: React.FC = () => {
                 {pickupDate ? formatDateToDisplay(pickupDate) : "Tomorrow"}
               </IonText>
             </IonItem>
-
-            <IonItem className="time-selection-item">
+            <IonItem
+              className="time-selection-item"
+              button
+              detail={false}
+              onClick={() =>
+                availableTimeSlots.length > 0 && setShowTimePicker(true)
+              }
+            >
               <IonLabel className="selection-label">Pick a Time</IonLabel>
-              <IonSelect
-                className="time-select"
-                placeholder="Select Time"
-                value={pickupTime}
-                onIonChange={(e) => {
-                  setPickupTime(e.detail.value);
-                  localStorage.setItem("pickupTime", e.detail.value);
-                }}
-                disabled={availableTimeSlots.length === 0}
-                interface="action-sheet"
-                justify="end"
-              >
-                {availableTimeSlots.map((time) => (
-                  <IonSelectOption
-                    key={time}
-                    value={time}
-                    className="time-option"
-                  >
-                    {time}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </IonItem>
-
+              <div className="time-display-container">
+                {pickupTime ? (
+                  <IonChip className="selected-time-chip">
+                    <IonIcon icon={timeOutline} />
+                    <IonLabel>{pickupTime}</IonLabel>
+                    {pickupTime && (
+                      <IonIcon icon={checkmarkCircle} color="success" />
+                    )}
+                  </IonChip>
+                ) : (
+                  <IonText color="medium">Select a time</IonText>
+                )}
+              </div>
+              <IonRippleEffect></IonRippleEffect>
+            </IonItem>{" "}
             {availableTimeSlots.length === 0 && (
               <div className="no-slots-container">
+                <IonIcon
+                  icon={timeOutline}
+                  color="medium"
+                  style={{ fontSize: "24px", marginRight: "8px" }}
+                />
                 <IonText className="no-slots-message">
                   No available time slots for tomorrow.
                 </IonText>
@@ -515,7 +526,6 @@ const Schedule: React.FC = () => {
           </div>
         )}
       </IonContent>
-
       <IonFooter>
         <IonToolbar>
           <div className="modal-footer-buttons">
@@ -545,14 +555,25 @@ const Schedule: React.FC = () => {
             </IonButton>
           </div>
         </IonToolbar>
-      </IonFooter>
-
+      </IonFooter>{" "}
       <IonAlert
         isOpen={showAlert}
         onDidDismiss={() => setShowAlert(false)}
         header={alertHeader}
         message={alertMessage}
         buttons={["OK"]}
+      />
+      {/* Time Picker Sheet Component */}
+      <TimePickerSheet
+        isOpen={showTimePicker}
+        onClose={() => setShowTimePicker(false)}
+        availableTimeSlots={availableTimeSlots}
+        selectedTime={pickupTime}
+        onTimeSelected={(time) => {
+          setPickupTime(time);
+          localStorage.setItem("pickupTime", time);
+          setShowTimePicker(false);
+        }}
       />
     </IonPage>
   );

@@ -5,49 +5,25 @@ import {
   IonButton,
   IonIcon,
   IonImg,
-  IonCardHeader,
   IonCardTitle,
-  IonChip,
   IonHeader,
   IonButtons,
   IonToolbar,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonList,
-  IonItem,
-  IonLabel,
   IonBadge,
-  IonAccordion,
-  IonAccordionGroup,
   IonText,
   IonFooter,
   IonTitle,
-  IonRouterLink,
   IonToast,
   IonRadio,
   IonRadioGroup,
 } from "@ionic/react";
 import {
   close,
-  star,
-  time,
-  restaurant,
-  medkit,
-  nutrition,
-  alertCircleOutline,
-  informationCircleOutline,
-  snowOutline,
-  checkmarkCircle,
-  arrowForward,
   fastFood,
-  chevronForward,
   layersOutline,
-  calendarOutline,
   chevronBack,
-  chevronBackSharp,
-  chevronBackCircle,
   shapes,
+  cartOutline,
 } from "ionicons/icons";
 import {
   collection,
@@ -66,19 +42,19 @@ import { ProductModalProps } from "../interfaces/interfaces";
 import BuildYourOwnModal from "../components/BuildYourOwnModal";
 
 interface Size {
-  id: string; // This is the primary key
-  sizeId?: string; // Optional backward compatibility
+  id: string;
+  sizeId?: string;
   name: string;
   dimensions: string;
-  shape: string; // Changed from slices to shape
+  shape: string;
   price: number;
   maxVarieties: number;
   imageUrl: string;
-  isPublished: boolean; // Added for testSizes
-  published: boolean; // Added for testSizes
+  isPublished: boolean;
+  published: boolean;
   varieties: string[];
   status: "pending" | "approved" | "rejected";
-  type?: string; // Added type field to match with testStocks
+  type?: string;
 }
 
 // Interface for FixedSizeStock
@@ -101,10 +77,10 @@ interface Stock {
   criticalLevel: number;
   lastUpdated: string;
   minimumStock: number;
-  productId: string; // Maps to the product id in testProducts
+  productId: string;
   quantity: number;
-  sizeId: string; // If specific to a size
-  type: string; // Type of stock (e.g., 'tray')
+  sizeId: string;
+  type: string;
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({
@@ -146,7 +122,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
         console.log("All test sizes:", sizeList);
 
-        // More robust filtering for published sizes - checking both published and isPublished flags
         const publishedSizes = sizeList.filter(
           (size) =>
             size &&
@@ -168,7 +143,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
           }
 
           // Check if any variety in the varieties array matches the product name
-          // Use more flexible matching by normalizing strings (trim whitespace, lowercase)
           return size.varieties.some((varietyName: string) => {
             if (typeof varietyName !== "string") return false;
             return (
@@ -185,11 +159,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
       }
     };
 
-    // Fetch additional product details if needed
     const fetchProductDetails = async () => {
       try {
-        // This is where you could fetch additional product details
-        // For now, we'll just simulate this by adding more information
         setProductDetails({
           ...product,
           nutritionalInfo: {
@@ -431,20 +402,24 @@ const ProductModal: React.FC<ProductModalProps> = ({
         "customers",
         currentUser.uid,
         "cart"
-      );
-
-      // Check if this product and size combination already exists in the cart
-      const q = query(
-        cartCollectionRef,
-        where("productVarieties", "array-contains", product.name),
-        where("productSize", "==", size.name)
-      );
-
+      ); // Get all cart items to check for duplicates with EXACTLY the same varieties
+      const q = query(cartCollectionRef);
       const querySnapshot = await getDocs(q);
 
-      if (!querySnapshot.empty) {
+      // Find an existing item with the exact same size AND varieties
+      const existingItem = querySnapshot.docs.find((doc) => {
+        const data = doc.data();
+        // Check if both size and product match exactly
+        return (
+          data.productSize === size.name &&
+          Array.isArray(data.productVarieties) &&
+          data.productVarieties.length === 1 &&
+          data.productVarieties[0] === product.name
+        );
+      });
+
+      if (existingItem) {
         // Item already exists, update the quantity and price
-        const existingItem = querySnapshot.docs[0];
         const existingData = existingItem.data();
         const currentQuantity = existingData.productQuantity || 1;
         const newQuantity = currentQuantity + 1;
@@ -462,6 +437,25 @@ const ProductModal: React.FC<ProductModalProps> = ({
         // Item doesn't exist, create a new one
         const cartId = doc(cartCollectionRef).id;
 
+        // Determine the product type based on the size object or size name
+        let productType = size.type || null; // First try to use the type property from size
+
+        if (!productType) {
+          // If no type is available in the size object, infer it from the size name
+          const sizeName = size.name.toLowerCase();
+          if (sizeName.includes("small")) {
+            productType = "small";
+          } else if (sizeName.includes("solo")) {
+            productType = "solo";
+          } else if (sizeName.includes("tray")) {
+            productType = "tray";
+          } else if (sizeName.includes("bilao")) {
+            productType = "bilao";
+          } else {
+            productType = "bilao"; // Default if unable to determine
+          }
+        }
+
         await setDoc(doc(cartCollectionRef, cartId), {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -473,6 +467,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
           specialInstructions: null,
           cartId,
           userId: currentUser.uid,
+          productType: productType, // Add explicit product type
+          productId: product.id, // Also add the product ID directly
         });
 
         setToastMessage(`${product.name} added to cart successfully!`);
@@ -519,22 +515,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <IonTitle>Product Details</IonTitle>
           </IonToolbar>
         </IonHeader>
-        {/* <IonToolbar className="product-details-toolbar">
-          <IonButtons slot="start">
-            <IonButton
-              className="product-details-back-button"
-              onClick={handleClose}
-            >
-              <IonIcon className="product-details-back-icon" icon={close} />
-            </IonButton>
-            <IonTitle className="title-toolbar">Product Details</IonTitle>
-          </IonButtons>
-          {productDetails?.bestseller && (
-            <IonChip className="bestseller-chip" slot="end">
-              Bestseller
-            </IonChip>
-          )}
-        </IonToolbar> */}
 
         <IonContent className="product-details-content">
           <div className="product-details-container">
@@ -551,85 +531,12 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 {product.description}
               </p>
 
-              {/* <div className="product-details-summary">
-                {productDetails.preparationTime && (
-                  <div className="detail-item">
-                    <IonIcon icon={time} />
-                    <span>{productDetails.preparationTime} mins</span>
-                  </div>
-                )}
-                {productDetails.nutritionalInfo && (
-                  <div className="detail-item">
-                    <IonIcon icon={restaurant} />
-                    <span>
-                      {productDetails.nutritionalInfo.calories} calories
-                    </span>
-            </div>
-          )}
-        </div> */}
-
               {/* Size Information Section - For Display Only */}
               {!showSizeSelector && (
                 <div className="product-sizes-info">
                   <div className="info-section-header">
                     <IonIcon icon={layersOutline} />
                     <h3 className="available-sizes-title">Available Sizes</h3>
-                  </div>
-
-                  {availableSizes.length > 0 ? (
-                    <div className="sizes-info-table">
-                      <div className="sizes-table-header">
-                        <div className="size-column">Size</div>
-                        <div className="dimensions-column">Dimensions</div>
-                        <div className="slices-column">Shape</div>
-                        <div className="price-column">Price</div>
-                      </div>
-                      <div className="sizes-table-body">
-                        {[...availableSizes]
-                          .sort((a, b) => b.price - a.price) // Sort from highest to lowest price
-                          .map((size) => (
-                            <div className="size-info-row" key={size.id}>
-                              <div className="size-column">{size.name}</div>
-                              <div className="dimensions-column">
-                                {size.dimensions || "—"}
-                              </div>
-                              <div className="slices-column">
-                                {size.shape || "—"}
-                              </div>
-                              <div className="price-column">₱{size.price}</div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="no-sizes-message">
-                      <IonText color="medium">
-                        This product is not currently available in any size.
-                      </IonText>
-                    </div>
-                  )}
-
-                  <div className="sizes-info-note">
-                    <IonIcon icon={informationCircleOutline} />
-                    <p>
-                      Prices may vary based on size and special requirements.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Interactive Size Selection Section - For Adding to Cart */}
-              {showSizeSelector && (
-                <div className="size-selection-container">
-                  <div className="info-section-header">
-                    <IonButton
-                      className="back-button"
-                      fill="clear"
-                      onClick={toggleSizeSelector}
-                    >
-                      <IonIcon slot="icon-only" icon={chevronBackCircle} />
-                    </IonButton>
-                    <h3>Select Size for {product.name}</h3>
                   </div>
 
                   {availableSizes.length > 0 ? (
@@ -724,137 +631,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   )}
                 </div>
               )}
-
-              {/* {productDetails.ingredients && (
-                <div className="product-details-section">
-                  <div className="section-title">
-                    <IonIcon icon={nutrition} />
-                    <span>Ingredients</span>
-                  </div>
-                  <div className="ingredients-list">
-                    {productDetails.ingredients.map(
-                      (ingredient: string, index: number) => (
-                        <IonChip key={index} className="ingredient-chip">
-                          {ingredient}
-                        </IonChip>
-                      )
-                    )}
-                  </div>
-                </div>
-              )} */}
-
-              {/* {productDetails.allergens && (
-                <div className="product-details-section">
-                  <div className="section-title">
-                    <IonIcon icon={alertCircleOutline} />
-                    <span>Allergen Information</span>
-                  </div>
-                  <div className="allergen-info">
-                    {productDetails.allergens.map(
-                      (allergen: string, index: number) => (
-                        <div key={index} className="allergen-item">
-                          <span className="allergen-bullet">•</span> {allergen}
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              )} */}
-
-              {/* {productDetails.preparation && (
-                <div className="product-details-section">
-                  <div className="section-title">
-                    <IonIcon icon={informationCircleOutline} />
-                    <span>Preparation</span>
-                  </div>
-                  <p className="additional-info-text">
-                    {productDetails.preparation}
-                  </p>
-                </div>
-              )} */}
-
-              {/* {productDetails.storage && (
-                <div className="product-details-section">
-                  <div className="section-title">
-                    <IonIcon icon={snowOutline} />
-                    <span>Storage</span>
-                  </div>
-                  <p className="additional-info-text">{productDetails.storage}</p>
-                </div>
-              )} */}
-
-              {/* {productDetails.nutritionalInfo && (
-                <div className="product-details-section">
-                  <div className="section-title">
-                    <IonIcon icon={nutrition} />
-                    <span>Nutritional Information</span>
-                  </div>
-                  <IonList className="nutritional-list">
-                    <IonItem>
-                      <IonLabel>Calories</IonLabel>
-                      <IonBadge slot="end">
-                        {productDetails.nutritionalInfo.calories} kcal
-                      </IonBadge>
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Protein</IonLabel>
-                      <IonBadge slot="end">
-                        {productDetails.nutritionalInfo.protein}g
-                      </IonBadge>
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Carbohydrates</IonLabel>
-                      <IonBadge slot="end">
-                        {productDetails.nutritionalInfo.carbs}g
-                      </IonBadge>
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel>Fats</IonLabel>
-                      <IonBadge slot="end">
-                        {productDetails.nutritionalInfo.fats}g
-                      </IonBadge>
-                    </IonItem>
-                  </IonList>
-                </div>
-              )} */}
-
-              {/* <div className="product-details-section">
-                <div className="section-title">
-                  <IonIcon icon={restaurant} />
-                  <span>You May Also Like</span>
-                </div>
-                <div className="recommended-products">
-              <IonGrid>
-                <IonRow>
-                      
-                      {[1, 2].map((index) => (
-                        <IonCol size="6" key={index}>
-                          <div
-                            className="recommended-product"
-                            onClick={handleClose}
-                          >
-                            <div className="recommended-product-image">
-                              <IonImg
-                                src={`/assets/product${index + 1}.jpg`}
-                                alt={`Recommended product ${index}`}
-                              />
-                            </div>
-                            <div className="recommended-product-info">
-                              <div className="recommended-product-name">
-                                {index === 0
-                                  ? "Bibingka Special"
-                                  : "Puto Bumbong"}
-                              </div>
-                              <div className="recommended-product-price">
-                                ₱{(index + 1) * 85}
-                              </div>
-                            </div>
-                    </IonCol>
-                  ))}
-                </IonRow>
-              </IonGrid>
-              </div>
-              </div> */}
             </div>
           </div>
         </IonContent>
@@ -864,11 +640,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <div className="build-your-own-footer">
               {showSizeSelector ? (
                 <div className="size-selection-footer">
-                  {/* <h4>
-                    {selectedSize
-                      ? `${selectedSize.name} - ₱${selectedSize.price}`
-                      : "Select a size above"}
-                  </h4> */}
                   <div className="modal-footer-buttons select-size-footer">
                     <IonButton
                       className="footer-back-action-button select-size-back"
@@ -904,11 +675,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   <div className="product-modal-footer-buttons order-now-btn">
                     <IonButton
                       className="footer-back-action-button select-size-back"
-                      onClick={toggleSizeSelector}
+                      onClick={handleBuildYourOwn}
                       fill="outline"
                     >
                       <IonIcon icon={fastFood} slot="start" />
-                      Order Now
+                      Customize Order
                     </IonButton>
 
                     <div className="options-divider">
@@ -917,11 +688,21 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
                     <IonButton
                       className="footer-action-button"
-                      onClick={handleBuildYourOwn}
-                      fill="solid"
+                      disabled={!selectedSize || isAddingToCart}
+                      onClick={() => {
+                        if (selectedSize) {
+                          addToCart(selectedSize);
+                        }
+                      }}
                     >
-                      <IonIcon icon={chevronForward} slot="end" />
-                      Customize Order
+                      {isAddingToCart ? (
+                        "Adding..."
+                      ) : (
+                        <>
+                          <IonIcon slot="end" icon={cartOutline} />
+                          ADD TO CART
+                        </>
+                      )}
                     </IonButton>
                   </div>
                 </>

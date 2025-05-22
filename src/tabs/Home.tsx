@@ -58,8 +58,6 @@ const Home: React.FC = () => {
 
   // Product state
   const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [cartItemCount, setCartItemCount] = useState(0);
 
@@ -74,10 +72,8 @@ const Home: React.FC = () => {
 
   const [showBYOKModal, setBYOKShowModal] = useState(false);
 
-  // Dummy function for BuildYourOwnModal
   const handleShowToastMessage = (message: string, success: boolean) => {
     console.log("Toast message (not shown):", message, success);
-    // Toast is not shown but BuildYourOwnModal requires this prop
   };
 
   // Check if user is logged in
@@ -87,7 +83,6 @@ const Home: React.FC = () => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("User is logged in:", user.email);
-        // Set up cart listener when user is authenticated
         const cartRef = collection(db, "customers", user.uid, "cart");
         const unsubscribeCart = onSnapshot(
           cartRef,
@@ -118,7 +113,7 @@ const Home: React.FC = () => {
           ...doc.data(),
         }));
 
-        // Filter products to only show approved ones with runtime check
+        // Filter products to only show approved ones
         const approvedProducts = productList.filter(
           (product) =>
             product &&
@@ -127,17 +122,6 @@ const Home: React.FC = () => {
             product.status === "approved"
         );
         setProducts(approvedProducts);
-      }
-    );
-
-    const unsubscribeCategories = onSnapshot(
-      collection(db, "categories"),
-      (snapshot) => {
-        const categoryList = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setCategories(categoryList);
       }
     );
 
@@ -156,7 +140,6 @@ const Home: React.FC = () => {
       console.log("Home: Cleaning up listeners");
       unsubscribeAuth();
       unsubscribeProducts();
-      unsubscribeCategories();
       unsubscribePromotions();
     };
   }, []);
@@ -170,23 +153,6 @@ const Home: React.FC = () => {
           id: doc.id,
           ...doc.data(),
         }));
-
-        // Filter products to only show approved AND featured ones
-        // const approvedFeaturedProducts = productList.filter(
-        //   (product) =>
-        //     product &&
-        //     typeof product === "object" &&
-        //     "status" in product &&
-        //     product.status === "approved" &&
-        //     "published" in product &&
-        //     product.published === true &&
-        //     "featured" in product &&
-        //     product.featured === true
-        // );
-        // setFeaturedProducts(approvedFeaturedProducts);
-
-        // Update loading state
-        // setLoading(false);
       }
     );
 
@@ -194,19 +160,6 @@ const Home: React.FC = () => {
       unsubscribeProducts();
     };
   }, []);
-
-  // Set the first category as active when categories are loaded
-  // useEffect(() => {
-  //   if (categories.length > 0 && !activeCategory) {
-  //     setActiveCategory(categories[0]);
-  //     handleCategorySelect(categories[0]);
-  //   }
-  // }, [categories, activeCategory]);
-
-  // const handleCategorySelect = (category: string) => {
-  //   setActiveCategory(category);
-  //   console.log("Selected Category:", category);
-  // };
 
   const openProductModal = (product: any) => {
     setSelectedProduct(product);
@@ -388,52 +341,6 @@ const Home: React.FC = () => {
             </div>
           </div>
         </IonCard>
-
-        {/* <div>
-          <IonTitle className="home-product-title">Our Products</IonTitle>
-        </div>
-
-        <IonGrid className="home-product-grid">
-          <IonRow className="home-product-row">
-            {products.length > 0 ? (
-              [...products]
-                .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
-                .map((product) => (
-                  <IonCol key={product.id} size="6">
-                    <IonCard
-                      className="home-product-card"
-                      onClick={() => openProductModal(product)}
-                      button
-                    >
-                      <div className="home-product-img">
-                        <IonImg src={product.imageURL} alt={product.name} />
-                      </div>
-                      <div className="home-product-details">
-                        <h3 className="home-product-name">{product.name}</h3>
-                        {product.description && (
-                          <p className="home-product-description">
-                            {product.description.length > 35
-                              ? `${product.description.substring(0, 35)}...`
-                              : product.description}
-                          </p>
-                        )}
-                      </div>
-                    </IonCard>
-                  </IonCol>
-                ))
-            ) : (
-              <IonCol size="12">
-                <div className="no-products-container">
-                  <IonIcon
-                    icon={storefrontOutline}
-                    style={{ fontSize: "48px", color: "#8a7e75", opacity: 0.6 }}
-                  />
-                  <p className="no-products-text">No products available yet</p>
-                </div>
-              </IonCol>
-            )}
-          </IonRow>
-        </IonGrid> */}
 
         <ProductModal
           isOpen={productDetailsModal}

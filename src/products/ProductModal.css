@@ -335,31 +335,31 @@
   padding: 16px 12px;
   display: flex;
   align-items: center;
-  justify-content: center; /* Center align the text */
-  text-align: center; /* Ensure text is centered */
+  justify-content: center;
+  text-align: center;
 }
 
 .size-column {
   flex: 0.8;
-  font-weight: 700; /* Bolder text for size names */
-  color: #5d3a1b; /* Dark brown text */
+  font-weight: 700;
+  color: #5d3a1b;
 }
 
 .dimensions-column {
   flex: 1;
-  color: #5d3a1b; /* Dark brown text */
+  color: #5d3a1b;
 }
 
 .slices-column {
   flex: 1;
-  color: #5d3a1b; /* Dark brown text */
+  color: #5d3a1b;
 }
 
 .price-column {
   flex: 0.7;
-  font-weight: 700; /* Bolder text for prices */
-  color: var(--button-color); /* Orange price color matching screenshot */
-  justify-content: center; /* Center the price */
+  font-weight: 700;
+  color: var(--button-color);
+  justify-content: center;
 }
 
 /* Hover effect for rows */

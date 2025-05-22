@@ -171,7 +171,6 @@ const Login: React.FC = () => {
       return;
     }
 
-    // Set loading state
     setIsLoggingIn(true);
 
     try {

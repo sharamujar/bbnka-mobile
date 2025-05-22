@@ -30,7 +30,6 @@ ion-content {
   display: flex;
   flex-direction: column;
   gap: 3px;
-
   padding: 0 1rem 0 1rem;
 }
 

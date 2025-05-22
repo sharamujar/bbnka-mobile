@@ -914,3 +914,29 @@ ion-checkbox:active {
   background-color: rgba(153, 153, 153, 0.15);
   color: #999;
 }
+
+/* Out of stock styling */
+.out-of-stock {
+  opacity: 0.7;
+}
+
+.disabled-checkbox {
+  --border-color: var(--ion-color-medium);
+  --background-checked: var(--ion-color-medium);
+  --checkmark-color: var(--ion-color-light);
+}
+
+.cart-item-out-of-stock-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  background-color: rgba(var(--ion-color-danger-rgb), 0.8);
+  color: white;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  border-radius: 4px;
+  z-index: 10;
+  white-space: nowrap;
+}

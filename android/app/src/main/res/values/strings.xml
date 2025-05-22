@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">bbnka-mobile</string>
+    <string name="app_name">BBNKA</string>
     <string name="title_activity_main">bbnka-mobile</string>
     <string name="package_name">bbnka.mobile</string>
     <string name="custom_url_scheme">bbnka.mobile</string>

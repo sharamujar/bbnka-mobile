@@ -176,12 +176,8 @@ const Registration: React.FC = () => {
   const validateFirstName = (firstName: string) => {
     if (!firstName) {
       return "First Name is required";
-    } else if (firstName.length < 2) {
-      return "First Name must be at least 2 characters";
     } else if (!/^[A-Za-z\s\-']+$/.test(firstName)) {
       return "First Name can only contain letters, spaces, hyphens and apostrophes";
-    } else if (firstName.length > 30) {
-      return "First Name cannot exceed 30 characters";
     } else {
       return "";
     }
@@ -190,12 +186,8 @@ const Registration: React.FC = () => {
   const validateLastName = (lastName: string) => {
     if (!lastName) {
       return "Last Name is required";
-    } else if (lastName.length < 2) {
-      return "Last Name must be at least 2 characters";
     } else if (!/^[A-Za-z\s\-']+$/.test(lastName)) {
       return "Last Name can only contain letters, spaces, hyphens and apostrophes";
-    } else if (lastName.length > 30) {
-      return "Last Name cannot exceed 30 characters";
     } else {
       return "";
     }
@@ -206,21 +198,17 @@ const Registration: React.FC = () => {
       return "Phone Number is required";
     }
 
-    // Remove spaces, dashes and parentheses for validation
     const cleanedPhoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, "");
 
-    // Check if starts with +63
     if (!cleanedPhoneNumber.startsWith("+63")) {
       return "Phone number must start with +63";
     }
 
-    // Ensure that after +63, the next digit must be 9
     if (!cleanedPhoneNumber.startsWith("+639")) {
       return "After +63, the next digit must be 9";
     }
 
-    // After +63 prefix, should have 10 digits (Philippine mobile format)
-    const digitsPart = cleanedPhoneNumber.substring(3); // Skip the +63 part
+    const digitsPart = cleanedPhoneNumber.substring(3);
 
     if (!/^[0-9]{10}$/.test(digitsPart)) {
       return "Please enter a valid mobile number";
@@ -233,7 +221,6 @@ const Registration: React.FC = () => {
   const checkPhoneNumberExists = async (phoneNumber: string) => {
     if (!phoneNumber) return false;
 
-    // Clean the phone number for consistent comparison
     const cleanedPhoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, "");
 
     try {

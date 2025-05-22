@@ -147,9 +147,18 @@
 .schedule-form-container {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 12px;
   margin: 20px;
   animation: fadeIn 0.3s ease-in-out;
+  transition: all 0.3s ease;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .schedule-form-container {
+    will-change: opacity, transform;
+  }
 }
 
 /* Date Selection */
@@ -177,18 +186,40 @@
   --border-radius: 12px;
   --background: white;
   --border-color: transparent;
+  --inner-padding-end: 16px;
   box-shadow: 0 2px 8px rgba(79, 31, 13, 0.08);
+  cursor: pointer;
 }
 
-.time-select {
-  width: 100%;
-  max-width: 100%;
-  --padding-end: 0;
-  text-align: right;
-}
-
-.time-select[disabled] {
+.time-selection-item[disabled] {
   opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.time-display-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 100px;
+}
+
+.selected-time-chip {
+  margin: 0;
+  background-color: rgba(191, 89, 6, 0.1);
+  color: var(--button-color);
+  font-weight: 500;
+  border-radius: 16px;
+  height: 32px;
+}
+
+.selected-time-chip ion-icon {
+  margin-right: 4px;
+  color: var(--button-color);
+}
+
+.selected-time-chip ion-label {
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .time-option {
@@ -206,17 +237,22 @@
 /* No Time Slots Message */
 .no-slots-container {
   display: flex;
+  align-items: center;
   justify-content: center;
   background-color: rgba(191, 89, 6, 0.05);
   border-radius: 12px;
   padding: 16px;
-  margin-top: 8px;
+  margin-top: 12px;
+  box-shadow: 0 1px 3px rgba(79, 31, 13, 0.05);
+  border: 1px dashed rgba(191, 89, 6, 0.2);
+  animation: fadeIn 0.5s ease;
 }
 
 .no-slots-message {
   font-size: 14px;
   color: var(--header-color);
   text-align: center;
+  font-weight: 500;
 }
 
 /* Footer Styling */

@@ -15,46 +15,27 @@ import {
   IonCardContent,
   IonRadioGroup,
   IonRadio,
-  IonItem,
-  IonLabel,
-  IonInput,
-  IonTextarea,
   IonFooter,
-  IonCheckbox,
   IonToast,
   IonText,
   IonImg,
-  IonRouterLink,
-  IonProgressBar,
   IonBadge,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import {
   close,
-  addCircleOutline,
-  removeCircleOutline,
   chevronForward,
   chevronBack,
   checkmarkCircle,
   cartOutline,
-  arrowBackCircle,
-  chevronForwardCircle,
-  chevronBackCircleOutline,
-  removeCircle,
-  addCircle,
   checkmarkOutline,
-  arrowBackOutline,
-  arrowForwardOutline,
-  arrowForward,
-  alertCircleOutline,
   addOutline,
-  calendarOutline, // Added missing calendarOutline icon
 } from "ionicons/icons";
+import { determineProductType } from "../checkout/StockHelper";
 import {
   collection,
   getDocs,
   doc,
-  getDoc,
   query,
   where,
   setDoc,
@@ -115,34 +96,21 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
   const [selectedVarieties, setSelectedVarieties] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [specialInstructions, setSpecialInstructions] = useState("");
-
   // UI states
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [showAddedToCartToast, setShowAddedToCartToast] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const [loadingSelectedVarietyNames, setLoadingSelectedVarietyNames] =
+    useState<string[]>([]);
 
   // Calculated total
   const [totalPrice, setTotalPrice] = useState(0);
-
-  // const getSizeImage = (sizeName: string): string => {
-  //   const sizeImages: Record<string, string> = {
-  //     "Big Bilao": "/assets/bilao.webp",
-  //     Tray: "/assets/rectangle.webp",
-  //     Small: "/assets/round.webp",
-  //     "Half-Tray": "/assets/rectangle.webp",
-  //     Solo: "/assets/round.webp",
-  //     "1/4 Slice": "/assets/slice1.webp",
-  //   };
-
-  //   return sizeImages[sizeName] ?? "/assets/default.png";
-  // };
 
   // Fetch sizes and varieties
   useEffect(() => {
     const fetchSizes = async () => {
       try {
-        // Using testSizes collection
         const sizesSnapshot = await getDocs(collection(db, "testSizes"));
         const sizesData = sizesSnapshot.docs.map((doc) => {
           const data = doc.data();
@@ -150,13 +118,11 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
           return {
             sizeId: doc.id,
             ...data,
-            // Check both potential field names for varieties and ensure it's always an array
             varieties: data.varieties || data.variety || [],
           };
         }) as Size[];
         console.log("BYOM - All sizes data:", sizesData);
 
-        // More robust filtering with runtime checks for production build
         const approvedPublishedSizes = sizesData.filter(
           (size) =>
             size &&
@@ -210,7 +176,6 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
 
     const fetchVarietyStocks = async () => {
       try {
-        // Fetch all stock data from testStocks collection
         const stocksSnapshot = await getDocs(collection(db, "testStocks"));
         const stocksData = stocksSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -402,14 +367,23 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
       return prev; // No change if at limit
     });
   };
-
   const handleAddToCart = async () => {
     if (!selectedSize || selectedVarieties.length === 0) {
       showToastMessage("Please select a size and at least one variety.", false);
       return;
     }
 
+    // Store the current variety names before setting loading state
+    const currentVarietyNames = selectedVarieties
+      .map((varietyId) => {
+        const variety = filteredVarieties.find((v) => v.id === varietyId);
+        return variety ? variety.name : null;
+      })
+      .filter(Boolean) as string[];
+
+    setLoadingSelectedVarietyNames(currentVarietyNames);
     setIsAddingToCart(true);
+
     const currentUser = auth.currentUser;
     if (!currentUser) {
       console.log("User is not logged in.");
@@ -439,35 +413,113 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
           const variety = filteredVarieties.find((v) => v.id === varietyId);
           return variety ? variety.name : null;
         })
-        .filter(Boolean);
-
-      // Check if an item with the same size and varieties exists
-      const q = query(
-        cartCollectionRef,
-        where("productSize", "==", selectedSizeObj.name)
-      );
-
+        .filter(Boolean); // Get all cart items to check for duplicates
+      const q = query(cartCollectionRef);
       const querySnapshot = await getDocs(q);
 
+      // Find an existing item with the EXACT same size AND varieties
       const existingCartItem = querySnapshot.docs.find((doc) => {
         const data = doc.data();
-        return (
-          JSON.stringify(data.productVarieties.sort()) ===
-          JSON.stringify(varietyNames.sort())
-        );
-      });
+        // Check if size matches
+        if (data.productSize !== selectedSizeObj.name) return false;
 
+        // Check if varieties array contains the same elements (order doesn't matter)
+        if (!data.productVarieties || !Array.isArray(data.productVarieties))
+          return false;
+
+        // Both arrays must have the same length
+        if (data.productVarieties.length !== varietyNames.length) return false;
+        // Check if both arrays contain exactly the same varieties (order doesn't matter)
+        // First check if lengths match
+        if (data.productVarieties.length !== varietyNames.length) return false;
+
+        // Sort both arrays to ensure same order before comparison
+        const sortedExisting = [...data.productVarieties].sort();
+        const sortedNew = [...varietyNames].sort();
+
+        // Check if every sorted item matches at the same position
+        for (let i = 0; i < sortedExisting.length; i++) {
+          if (sortedExisting[i] !== sortedNew[i]) return false;
+        }
+
+        // If we got here, arrays contain the same elements
+        return true;
+      });
       if (existingCartItem) {
-        const newQuantity = existingCartItem.data().productQuantity + quantity;
+        const existingData = existingCartItem.data();
+        const newQuantity = existingData.productQuantity + quantity; // Determine or preserve the product type using the utility function
+        let productType = existingData.productType;
+        if (!productType) {
+          // First check if the selectedSizeObj has a type property
+          if (selectedSizeObj.type) {
+            productType = selectedSizeObj.type.toLowerCase();
+          } else {
+            // If there's no existing product type, infer it from the size name using utility function
+            productType = determineProductType(selectedSizeObj.name, null);
+          }
+        }
+
+        console.log(
+          `BuildYourOwn - Updating cart item with productType=${productType}`
+        ); // Log before updating to track the type
+        console.log(`BuildYourOwn - About to update cart item with: 
+          - Size: ${selectedSizeObj.name}
+          - Type: ${productType}
+          - Quantity: ${newQuantity}
+          - Original type: ${existingData.productType || "none"}`);
+
         await updateDoc(existingCartItem.ref, {
           productQuantity: newQuantity,
           productPrice: selectedSizeObj.price * newQuantity,
           originalPrice: selectedSizeObj.price,
           updatedAt: new Date().toISOString(),
+          productType: productType,
         });
         showToastMessage(`Updated cart: ${newQuantity} items`, true);
       } else {
-        const cartId = doc(cartCollectionRef).id;
+        const cartId = doc(cartCollectionRef).id; // Determine the product type using the utility function
+        let productType = selectedSizeObj.type || null;
+
+        if (!productType) {
+          // If no type is available in the size object, infer it from the size name
+          productType = determineProductType(selectedSizeObj.name, null);
+        } else {
+          // Ensure existing type is standardized
+          productType = determineProductType(null, productType);
+        }
+
+        // Ensure productType is lowercase to match stock type in database
+        if (productType) {
+          productType = productType.toLowerCase();
+        }
+
+        console.log(
+          `BuildYourOwn - Adding to cart with size=${selectedSizeObj.name}, productType=${productType}`
+        );
+
+        // Get product IDs for the varieties to set productId
+        const productIds = [];
+        for (const name of varietyNames) {
+          try {
+            const prodQ = query(
+              collection(db, "testProducts"),
+              where("name", "==", name)
+            );
+            const prodSnapshot = await getDocs(prodQ);
+            if (!prodSnapshot.empty) {
+              productIds.push(prodSnapshot.docs[0].id);
+            }
+          } catch (err) {
+            console.error(`Error finding product ID for variety ${name}:`, err);
+          }
+        } // Log detailed information before creating the cart item
+        console.log(`BuildYourOwn - About to add new cart item with: 
+          - Size: ${selectedSizeObj.name}
+          - Type: ${productType}
+          - Original size type: ${selectedSizeObj.type || "none"}
+          - Varieties: ${JSON.stringify(varietyNames)}
+          - ProductIds: ${JSON.stringify(productIds)}`);
+
         await setDoc(doc(cartCollectionRef, cartId), {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -479,6 +531,8 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
           specialInstructions: specialInstructions || null,
           cartId,
           userId: currentUser.uid,
+          productType: productType,
+          productIds: productIds.length > 0 ? productIds : null,
         });
 
         showToastMessage("Added to cart successfully!", true);
@@ -491,6 +545,7 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
       showToastMessage("Failed to add to cart", false);
     } finally {
       setIsAddingToCart(false);
+      setLoadingSelectedVarietyNames([]);
     }
   };
 
@@ -515,11 +570,11 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
       setQuantity(1);
     }
   }, [isOpen]);
-
   const resetForm = () => {
     setStep(1);
     setSelectedSize("");
     setSelectedVarieties([]);
+    setLoadingSelectedVarietyNames([]);
     // setQuantity(1);
     setSpecialInstructions("");
   };
@@ -988,7 +1043,6 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
             <div className="byok-review-section">
               <div className="byok-review-summary">
                 <IonTitle>Your Customized Kakanin</IonTitle>
-
                 <div className="review-detail">
                   <span className="review-label">Size:</span>
                   <span className="review-value">
@@ -996,14 +1050,15 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                       ? sizes.find((s) => s.sizeId === selectedSize)?.name
                       : "None selected"}
                   </span>
-                </div>
-
+                </div>{" "}
                 <div className="review-detail">
                   <span className="review-label review-label-variety">
                     Varieties:
                   </span>
                   <span className="review-value review-value-varieties">
-                    {selectedVarieties.length > 0
+                    {isAddingToCart && loadingSelectedVarietyNames.length > 0
+                      ? loadingSelectedVarietyNames.join(", ")
+                      : selectedVarieties.length > 0
                       ? selectedVarieties
                           .map(
                             (varietyId) =>
@@ -1015,7 +1070,6 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                       : "None selected"}
                   </span>
                 </div>
-
                 {/* If Bibingka is selected and size is small or solo, display stock info */}
                 {selectedVarieties.some((varietyId) => {
                   const variety = filteredVarieties.find(
@@ -1049,7 +1103,6 @@ const BuildYourOwnModal: React.FC<BuildYourOwnModalProps> = ({
                     }
                     return null;
                   })()}
-
                 {/* Display expiry date for Bibingka if available */}
                 {selectedVarieties.some((varietyId) => {
                   const variety = filteredVarieties.find(
